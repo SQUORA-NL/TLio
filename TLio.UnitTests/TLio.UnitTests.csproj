@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="4.2.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
+    <ProjectReference Include="..\TLio.Commands\TLio.Commands.csproj" />
+    <ProjectReference Include="..\TLio.Functions\TLio.Functions.csproj" />
+    <ProjectReference Include="..\TLio.Client\TLio.Client.csproj" />
+    <ProjectReference Include="..\TLio.Json\TLio.Json.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>TLio XML adapter: INodeAdapter and IItemsFetcher implementations backed by System.Xml.Linq (XElement) and XPath.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
+  </ItemGroup>
+
+</Project>

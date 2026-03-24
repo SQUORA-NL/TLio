@@ -1,0 +1,174 @@
+using TLio.Core;
+using TLio.Core.Contracts;
+using TLio.Core.Models;
+
+namespace TLio.Commands.Logic;
+
+/// <summary>
+/// Generic base class for Add, Set, and Put — the three commands that write a
+/// value to a node addressed by a path expression.
+///
+/// Mirrors JLio's PropertyChangeCommand but all format-specific operations are
+/// delegated to INodeAdapter&lt;TNode&gt; and IItemsFetcher&lt;TNode&gt;.
+///
+/// Supports both:
+///   - Legacy syntax: path contains the full path to the property (e.g. "$.a.b")
+///   - New syntax:   path selects target objects; Property names the field (e.g. path="$.items[*]", property="name")
+/// </summary>
+public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
+{
+    public string? Path { get; set; }
+
+    /// <summary>
+    /// Optional. When set, the path selects the target objects and this property
+    /// name is the field within each object to operate on (new syntax).
+    /// When null, the property name is derived from the last element of Path (legacy syntax).
+    /// </summary>
+    public string? Property { get; set; }
+
+    public IFunctionSupportedValue<TNode>? Value { get; set; }
+
+    public override TLioExecutionResult<TNode> Execute(TNode dataContext, IExecutionContext<TNode> context)
+    {
+        ResetSuccess();
+        var validation = ValidateCommandInstance();
+        if (!validation.IsValid)
+        {
+            validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            return TLioExecutionResult<TNode>.Failed(dataContext);
+        }
+
+        if (Property != null)
+            ExecuteNewSyntax(dataContext, context);
+        else
+            ExecuteLegacySyntax(dataContext, context);
+
+        return new TLioExecutionResult<TNode>(IsSuccessful, dataContext);
+    }
+
+    // ── New syntax ────────────────────────────────────────────────────────────
+    // path selects target objects; Property is the field name on each
+
+    private void ExecuteNewSyntax(TNode dataContext, IExecutionContext<TNode> context)
+    {
+        var targets = context.ItemsFetcher.SelectNodes(Path!, dataContext);
+        if (targets.Count == 0)
+        {
+            context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes matched path '{Path}'");
+            return;
+        }
+
+        foreach (var target in targets)
+        {
+            var valueResult = Value!.GetValue(target, dataContext, context);
+            if (!valueResult.Success)
+            {
+                MarkFailed();
+                continue;
+            }
+            var computedValue = valueResult.Data.First ?? context.NodeAdapter.CreateNull();
+            ApplyValueToTarget(Property!, target, computedValue, dataContext, context);
+        }
+    }
+
+    // ── Legacy syntax ─────────────────────────────────────────────────────────
+    // property name is the leaf element of Path; parent is the target object
+
+    private void ExecuteLegacySyntax(TNode dataContext, IExecutionContext<TNode> context)
+    {
+        var (parentPath, propertyName) = context.ItemsFetcher.SplitParentAndLeaf(Path!);
+
+        // Resolve any =indirect() in parentPath
+        var resolvedParentPath = context.ItemsFetcher.ProcessIndirectPath(parentPath, dataContext) ?? parentPath;
+
+        var parents = context.ItemsFetcher.SelectNodes(resolvedParentPath, dataContext);
+        if (parents.Count == 0)
+        {
+            // Try to create the parent path if missing
+            context.ItemsFetcher.EnsurePath(resolvedParentPath, dataContext, context.NodeAdapter);
+            parents = context.ItemsFetcher.SelectNodes(resolvedParentPath, dataContext);
+        }
+
+        foreach (var parent in parents)
+        {
+            var valueResult = Value!.GetValue(parent, dataContext, context);
+            if (!valueResult.Success)
+            {
+                MarkFailed();
+                continue;
+            }
+            var computedValue = valueResult.Data.First ?? context.NodeAdapter.CreateNull();
+            ApplyValueToTarget(propertyName, parent, computedValue, dataContext, context);
+        }
+    }
+
+    // ── Template method ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Apply <paramref name="value"/> to <paramref name="propertyName"/> on
+    /// <paramref name="targetNode"/>. Subclasses implement the specific semantics
+    /// (add-only, replace-only, or upsert).
+    /// </summary>
+    protected abstract void ApplyValueToTarget(
+        string propertyName,
+        TNode targetNode,
+        TNode value,
+        TNode dataContext,
+        IExecutionContext<TNode> context);
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    protected void AddProperty(string propertyName, TNode targetNode, TNode value, IExecutionContext<TNode> context)
+    {
+        if (context.NodeAdapter.IsObject(targetNode))
+            context.NodeAdapter.SetProperty(targetNode, propertyName, value);
+        else if (context.NodeAdapter.IsArray(targetNode))
+            context.NodeAdapter.AppendToArray(targetNode, value);
+        else
+            context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: cannot add property to a primitive node");
+    }
+
+    protected void ReplaceProperty(string propertyName, TNode targetNode, TNode value, IExecutionContext<TNode> context)
+    {
+        if (context.NodeAdapter.IsObject(targetNode))
+        {
+            var existing = context.NodeAdapter.GetProperty(targetNode, propertyName);
+            if (existing == null)
+            {
+                context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: property '{propertyName}' not found");
+                return;
+            }
+            context.NodeAdapter.Replace(existing, value);
+        }
+        else if (context.NodeAdapter.IsArray(targetNode))
+        {
+            context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: cannot set a named property on an array node");
+        }
+    }
+
+    protected void UpsertProperty(string propertyName, TNode targetNode, TNode value, IExecutionContext<TNode> context)
+    {
+        if (context.NodeAdapter.IsObject(targetNode))
+        {
+            context.NodeAdapter.SetProperty(targetNode, propertyName, value);
+        }
+        else if (context.NodeAdapter.IsArray(targetNode))
+        {
+            // For Put on an array: replace entire array contents
+            var elements = context.NodeAdapter.GetArrayElements(targetNode).ToList();
+            for (int i = elements.Count - 1; i >= 0; i--)
+                context.NodeAdapter.RemoveFromArray(targetNode, i);
+            context.NodeAdapter.AppendToArray(targetNode, value);
+        }
+    }
+
+    public override ValidationResult ValidateCommandInstance()
+    {
+        var result = new ValidationResult();
+        if (string.IsNullOrWhiteSpace(Path))
+            result.AddError($"{CommandName}: Path is required.");
+        if (Value is null)
+            result.AddError($"{CommandName}: Value is required.");
+        return result;
+    }
+}

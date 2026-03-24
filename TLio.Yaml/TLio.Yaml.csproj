@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>TLio YAML adapter: INodeAdapter and IItemsFetcher implementations. Depends on YamlDotNet.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- YamlDotNet provides the YamlNode model and serialiser -->
+    <PackageReference Include="YamlDotNet" Version="16.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
+  </ItemGroup>
+
+</Project>

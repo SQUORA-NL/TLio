@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>TLio Client: the scripting engine that parses and executes TLio scripts. Format-neutral — format support is registered through the provider pattern.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
+    <ProjectReference Include="..\TLio.Commands\TLio.Commands.csproj" />
+    <ProjectReference Include="..\TLio.Functions\TLio.Functions.csproj" />
+  </ItemGroup>
+
+</Project>

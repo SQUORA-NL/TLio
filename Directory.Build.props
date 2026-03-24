@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Deterministic>true</Deterministic>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors>CS8600;CS8602;CS8604;CS8618</WarningsNotAsErrors>
+  </PropertyGroup>
+</Project>
