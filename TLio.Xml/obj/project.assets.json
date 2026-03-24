@@ -172,11 +172,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Xml\\TLio.Xml.csproj",
+      "projectUniqueName": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Xml\\TLio.Xml.csproj",
       "projectName": "TLio.Xml",
-      "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Xml\\TLio.Xml.csproj",
+      "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Xml\\TLio.Xml.csproj",
       "packagesPath": "C:\\Users\\frans\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Xml\\obj\\",
+      "outputPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Xml\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -199,8 +199,8 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Core\\TLio.Core.csproj": {
-              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Core\\TLio.Core.csproj"
+            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Core\\TLio.Core.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Core\\TLio.Core.csproj"
             }
           }
         }

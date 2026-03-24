@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute(@"TLio System.Text.Json adapter: INodeAdapter and IItemsFetcher implementations backed by System.Text.Json.Nodes.JsonNode and a JsonPath library. Provides identical transformation behaviour to TLio.Json (Newtonsoft) but using the in-box System.Text.Json stack.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f51ff400366270f45b5351469cfa57f831d3926e")]
 [assembly: System.Reflection.AssemblyProductAttribute("TLio.Json.SystemText")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TLio.Json.SystemText")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

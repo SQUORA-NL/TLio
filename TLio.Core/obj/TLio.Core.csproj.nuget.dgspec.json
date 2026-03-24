@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Core\\TLio.Core.csproj": {}
+    "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Core\\TLio.Core.csproj": {}
   },
   "projects": {
-    "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Core\\TLio.Core.csproj": {
+    "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Core\\TLio.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Core\\TLio.Core.csproj",
+        "projectUniqueName": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Core\\TLio.Core.csproj",
         "projectName": "TLio.Core",
-        "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Core\\TLio.Core.csproj",
+        "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Core\\TLio.Core.csproj",
         "packagesPath": "C:\\Users\\frans\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Core\\obj\\",
+        "outputPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Core\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "776mZcL43GY=",
+  "dgSpecHash": "T7RbCB9xsMA=",
   "success": true,
-  "projectFilePath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.UnitTests\\TLio.UnitTests.csproj",
+  "projectFilePath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.UnitTests\\TLio.UnitTests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\frans\\.nuget\\packages\\microsoft.codecoverage\\17.12.0\\microsoft.codecoverage.17.12.0.nupkg.sha512",
     "C:\\Users\\frans\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\9.0.0\\microsoft.extensions.dependencyinjection.abstractions.9.0.0.nupkg.sha512",

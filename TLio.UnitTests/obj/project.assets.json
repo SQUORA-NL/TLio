@@ -913,11 +913,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.UnitTests\\TLio.UnitTests.csproj",
+      "projectUniqueName": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.UnitTests\\TLio.UnitTests.csproj",
       "projectName": "TLio.UnitTests",
-      "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.UnitTests\\TLio.UnitTests.csproj",
+      "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.UnitTests\\TLio.UnitTests.csproj",
       "packagesPath": "C:\\Users\\frans\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.UnitTests\\obj\\",
+      "outputPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.UnitTests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -940,20 +940,20 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Client\\TLio.Client.csproj": {
-              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Client\\TLio.Client.csproj"
+            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Client\\TLio.Client.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Client\\TLio.Client.csproj"
             },
-            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Commands\\TLio.Commands.csproj": {
-              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Commands\\TLio.Commands.csproj"
+            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Commands\\TLio.Commands.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Commands\\TLio.Commands.csproj"
             },
-            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Core\\TLio.Core.csproj": {
-              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Core\\TLio.Core.csproj"
+            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Core\\TLio.Core.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Core\\TLio.Core.csproj"
             },
-            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Functions\\TLio.Functions.csproj": {
-              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Functions\\TLio.Functions.csproj"
+            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Functions\\TLio.Functions.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Functions\\TLio.Functions.csproj"
             },
-            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Json\\TLio.Json.csproj": {
-              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\TLio.Json\\TLio.Json.csproj"
+            "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Json\\TLio.Json.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Json\\TLio.Json.csproj"
             }
           }
         }

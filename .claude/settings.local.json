@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/frans/source/tests-claude/Tlio.claude/**)",
+      "Bash(powershell.exe -File \".specify/scripts/powershell/setup-plan.ps1\" -Json)",
+      "Bash(powershell.exe -Version 5.1 -File \".specify/scripts/powershell/setup-plan.ps1\" -Json)",
+      "Bash(powershell.exe -Command \"& { . ''.specify/scripts/powershell/setup-plan.ps1'' -Json }\")",
+      "Bash(pwsh -File \"C:\\\\Users\\\\frans\\\\source\\\\tests-claude\\\\Tlio.claude\\\\.specify\\\\scripts\\\\powershell\\\\setup-plan.ps1\" -Json)",
+      "Read(//usr/**)",
+      "Read(//usr/local/**)",
+      "Read(//c//**)",
+      "Read(//c/Program Files/**)",
+      "Bash(git -C \"C:\\\\Users\\\\frans\\\\source\\\\tests-claude\\\\Tlio.claude\" log --oneline -10)",
+      "Bash(ls \"C:\\\\Users\\\\Frans\\\\source\\\\tests-claude\\\\Tlio.claude\\\\.claude\\\\worktrees\\\\quirky-meninsky\\\\specs\\\\002-migration-from-jlio\"\" 2>/dev/null && echo \"---\" && ls \"C:UsersFranssourcetests-claudeTlio.claude.claudeworktreesquirky-meninsky\"\")"
+    ]
+  }
+}
