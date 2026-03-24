@@ -1,7 +1,40 @@
 # Plan 002 — Migration from JLio to TLio
 
-**Spec:** [spec.md](./spec.md)
+**Branch**: `002-migration-from-jlio` | **Date**: 2026-03-24 | **Spec**: [spec.md](./spec.md)
 **Status:** Draft
+
+---
+
+## Technical Context
+
+**Language/Version**: C# / .NET 10
+**Primary Dependencies**: Newtonsoft.Json, System.Text.Json, JsonPath.Net (json-everything), xUnit
+**Storage**: N/A
+**Testing**: xUnit Theory (data-driven fixture triplets)
+**Target Platform**: .NET 10 class library (multi-project solution)
+**Project Type**: library
+**Performance Goals**: Match JLio behavior identically — no measurable regression
+**Constraints**: Zero format-specific code in TLio.Core or TLio.Commands; all adapter code confined to TLio.Json / TLio.Json.SystemText
+**Scale/Scope**: 10 commands, 60+ functions, 2 JSON adapters, 73+ ported test files
+
+---
+
+## Constitution Check
+
+*Re-evaluated 2026-03-24 — PASS on all articles.*
+
+| Article | Status | Notes |
+|---------|--------|-------|
+| I — Format Neutrality | ✓ | All format-specific ops via `INodeAdapter<TNode>` / `IItemsFetcher<TNode>` |
+| II — Dependency Inversion | ✓ | Everything injected through `IExecutionContext<TNode>` |
+| III — Generic-First | ✓ | `TNode` parameter propagates through all Core/Commands types |
+| IV — Separation of Process/Execution | ✓ | Commands follow Find → Compute → Operate pattern exclusively |
+| V — Swappable Selection | ✓ | `IItemsFetcher<TNode>` + `IJsonPathProvider<TNode>` both pluggable |
+| VI — Test-First | ✓ | spec.md + plan.md + tasks.md in place; fixture triplets required before code |
+| VII — Simplicity Gate | ✓ | 7 projects justified (see Complexity Tracking) |
+| VIII — Backward Migration Path | ✓ | `TLio.Json` is behaviourally equivalent to JLio |
+| IX — No Leaking Internals | ✓ | `JToken` never appears in Core or Commands namespace |
+| X — Logging is Observability | ✓ | All warnings/errors via `IExecutionLogger`; never via exceptions for expected conditions |
 
 ---
 
