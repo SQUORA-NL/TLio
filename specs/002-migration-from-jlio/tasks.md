@@ -17,6 +17,10 @@ Legend: `[P]` = parallelisable · `[!]` = hard requirement (must not be weakened
 
 ## Phase 2A — Complete Newtonsoft JsonNodeAdapter (`TLio.Json`)
 
+> ⚠ **Article VI Correction**: Implementation tasks below were completed before unit tests
+> were written (constitution violation). Tests must be written as the **immediate next step**.
+> Tests are expected to pass; any failures must be fixed before Phase 3 proceeds.
+
 - [x] [P] Implement `JsonNodeAdapter.RemoveFromParent` — port `JsonMethods.RemoveItemFromTarget` (handles JProperty and JArray cases)
 - [x] [P] Implement `JsonNodeAdapter.DeepMergeInto` — port deep-merge from JLio's `CopyMove` root-merge and `Merge` command logic
 - [x] [P] Implement `JsonNodeAdapter.GetParentNode` — port semantic-parent logic from `JsonPathItemsFetcher.NavigateToParent` (skips JProperty, JArray intermediaries)
@@ -25,12 +29,16 @@ Legend: `[P]` = parallelisable · `[!]` = hard requirement (must not be weakened
 - [x] [P] Implement `JsonNodeAdapter.TryGetDouble` — coerce JToken to double? (handles numeric JValue types)
 - [x] [P] Implement `JsonNodeAdapter.TryGetString` — coerce JToken to string? (handles all JValue types via JToken.ToString)
 - [x] [P] Implement `JsonNodeAdapter.DeepEquals` — use `JToken.DeepEquals()`
-- [ ] Write `JsonNodeAdapterTests` — cover all INodeAdapter members for object, array, primitive, null nodes
-- [ ] `[!]` All `JsonNodeAdapterTests` pass
+- [x] Write `JsonNodeAdapterTests` — cover all INodeAdapter members for object, array, primitive, null nodes
+- [x] `[!]` All `JsonNodeAdapterTests` pass
 
 ---
 
 ## Phase 2B — Complete Newtonsoft JsonPathItemsFetcher (`TLio.Json`)
+
+> ⚠ **Article VI Correction**: Implementation tasks below were completed before unit tests
+> were written (constitution violation). Tests must be written as the **immediate next step**.
+> Tests are expected to pass; any failures must be fixed before Phase 3 proceeds.
 
 - [x] [P] Implement `JsonPathItemsFetcher.GetParent` — port `NavigateToParent` including semantic-parent level counting (skips JProperty/JArray wrappers)
 - [x] [P] Implement `JsonPathItemsFetcher.ResolveRelativePath` — port `@` and `<--` resolution from JLio
@@ -38,8 +46,8 @@ Legend: `[P]` = parallelisable · `[!]` = hard requirement (must not be weakened
 - [x] [P] Implement `JsonPathItemsFetcher.SplitParentAndLeaf` — port `JsonSplittedPath` / `JsonPathMethods.SplitPath` (respects bracket nesting, handles `[*]` etc.)
 - [x] [P] Implement `JsonPathItemsFetcher.ProcessIndirectPath` — port regex-based `=indirect(path)` substitution from JLio
 - [x] [P] Implement `JsonPathItemsFetcher.GetIntellisense` — port property suggestion logic from JLio
-- [ ] Write `JsonPathFetcherTests` — cover root, nested, array-index, recursive-descent, wildcard, filter, parent-navigation, indirect paths
-- [ ] `[!]` All `JsonPathFetcherTests` pass; results match JLio's existing `JsonPathMethodsTests`
+- [x] Write `JsonPathFetcherTests` — cover root, nested, array-index, recursive-descent, wildcard, filter, parent-navigation, indirect paths
+- [x] `[!]` All `JsonPathFetcherTests` pass; results match JLio's existing `JsonPathMethodsTests`
 
 ---
 
@@ -50,9 +58,9 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 ### PropertyChangeCommand<TNode> (base for Add/Set/Put)
 
-- [ ] Complete `PropertyChangeCommand.ExecuteNewSyntax` — new-syntax loop using INodeAdapter
-- [ ] Complete `PropertyChangeCommand.ExecuteLegacySyntax` — legacy path-split + EnsurePath + loop
-- [ ] Complete `PropertyChangeCommand.ReplaceProperty` — full implementation using INodeAdapter
+- [x] Complete `PropertyChangeCommand.ExecuteNewSyntax` — new-syntax loop using INodeAdapter
+- [x] Complete `PropertyChangeCommand.ExecuteLegacySyntax` — legacy path-split + EnsurePath + loop
+- [x] Complete `PropertyChangeCommand.ReplaceProperty` — full implementation using INodeAdapter
 - [ ] Write `PropertyChangeCommandBaseTests` — legacy vs new syntax, missing path, type mismatches
 
 ### Add<TNode>
@@ -97,19 +105,19 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 ### IfElse<TNode>
 
-- [ ] Create `TLio.Commands/IfElse.cs` — port from JLio.Commands.IfElse (uses INodeAdapter.DeepEquals for First==Second comparison)
+- [x] Create `TLio.Commands/IfElse.cs` — port from JLio.Commands.IfElse (uses INodeAdapter.DeepEquals for First==Second comparison)
 - [ ] `[!]` Port `IfElseTests` with identical assertions
 - [ ] Run ported IfElse tests; all must pass
 
 ### Compare<TNode>
 
-- [ ] Create `TLio.Commands/Advanced/Compare.cs` — port from JLio
+- [x] Create `TLio.Commands/Advanced/Compare.cs` — port from JLio
 - [ ] `[!]` Port `CompareTests` with identical assertions
 - [ ] Run ported Compare tests; all must pass
 
 ### Merge<TNode>
 
-- [ ] Create `TLio.Commands/Advanced/Merge.cs` — port from JLio (uses INodeAdapter.DeepMergeInto)
+- [x] Create `TLio.Commands/Advanced/Merge.cs` — port from JLio (uses INodeAdapter.DeepMergeInto)
 - [ ] `[!]` Port `MergeTests` with identical assertions
 - [ ] Run ported Merge tests; all must pass
 
@@ -133,19 +141,19 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 ### Phase 4B — Value pipeline (prerequisite for all function tests)
 
-- [ ] Create `TLio.Core/Models/FunctionSupportedValue.cs` — wraps `IFunction<TNode>`, handles logging, mirrors JLio's `FunctionSupportedValue`
+- [x] Create `TLio.Core/Models/FunctionSupportedValue.cs` — wraps `IFunction<TNode>`, handles logging, mirrors JLio's `FunctionSupportedValue`
 - [ ] Update `FixedValue<TNode>` — add support for nested `=func()` expansion via `FunctionConverter<TNode>` injection
-- [ ] Create `TLio.Core/Models/PathValue.cs` — `IFunctionSupportedValue<TNode>` that evaluates a path expression (replaces JLio's path-as-value pattern)
+- [x] Create `TLio.Core/Models/PathValue.cs` — `IFunctionSupportedValue<TNode>` that evaluates a path expression (replaces JLio's path-as-value pattern)
 - [ ] Write `ValuePipelineTests` — FixedValue with literal, string, object, array; PathValue; nested FunctionSupportedValue
 
 ### Phase 4A — Core functions (`TLio.Functions`)
 
-- [ ] [P] Port `Fetch<TNode>` — evaluate path arg, return first match or default; identical to JLio
-- [ ] [P] Port `Indirect<TNode>` — path-to-path resolution
-- [ ] [P] Port `Promote<TNode>` — wrap node in new object property
-- [ ] [P] Port `Partial<TNode>` — filter object to named properties only
-- [ ] [P] Port `ScriptPath<TNode>` — return current node's path string; support relative `@.<--` args
-- [ ] [P] Port `Datetime<TNode>` — format current datetime; same time selection tokens as JLio
+- [x] [P] Port `Fetch<TNode>` — evaluate path arg, return first match or default; identical to JLio
+- [x] [P] Port `Indirect<TNode>` — path-to-path resolution
+- [x] [P] Port `Promote<TNode>` — wrap node in new object property
+- [x] [P] Port `Partial<TNode>` — filter object to named properties only
+- [x] [P] Port `ScriptPath<TNode>` — return current node's path string; support relative `@.<--` args
+- [x] [P] Port `Datetime<TNode>` — format current datetime; same time selection tokens as JLio
 - [ ] `[!]` Port and run `FetchTests`, `FetchBuildersTests`, `IndirectTests`, `PartialTests`, `PromoteTests`, `ScriptPathTests`, `DatetimeFunctionTests` with identical assertions
 
 ### Phase 4C — Math functions (`TLio.Extensions.Math`)
@@ -178,10 +186,10 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 ## Phase 5 — Script parser (`TLio.Client`)
 
-- [ ] Create `FunctionConverter<TNode>` — parse `=funcName(arg1, arg2, ...)` strings; port `SplitText.GetChoppedElements` for delimiter-aware splitting
-- [ ] Create `CommandConverter<TNode>` — JSON discriminator deserialization using `ICommandsProvider<TNode>`
-- [ ] Create `ParseOptions<TNode>` — register all built-in commands and functions; `CreateDefault()` factory; fluent `RegisterCommand/RegisterFunction`
-- [ ] Implement `ScriptEngine<TNode>.Execute(string scriptJson, TNode data, IExecutionContext<TNode>)` — parse + execute
+- [x] Create `FunctionConverter<TNode>` — parse `=funcName(arg1, arg2, ...)` strings; port `SplitText.GetChoppedElements` for delimiter-aware splitting
+- [x] Create `CommandConverter<TNode>` — JSON discriminator deserialization using `ICommandsProvider<TNode>`
+- [x] Create `ParseOptions<TNode>` — register all built-in commands and functions; `CreateDefault()` factory; fluent `RegisterCommand/RegisterFunction`
+- [x] Implement `ScriptEngine<TNode>.Execute(string scriptJson, TNode data, IExecutionContext<TNode>)` — parse + execute
 - [ ] `[!]` Port `JLioEngineTests`, `JLioEngineIntegrationTests`, `JLioEngineConfigurationTests` with identical assertions
 - [ ] `[!]` Port `TextHandlingTests` (ScriptTextHandling) — script parse edge cases
 - [ ] `[!]` Port `PathTests`, `JsonPathMethodsTests`, `JsonPathMethodsEdgeCasesTests`

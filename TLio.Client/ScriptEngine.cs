@@ -35,8 +35,9 @@ public class ScriptEngine<TNode>
     /// </summary>
     public TLioExecutionResult<TNode> Execute(string scriptText, TNode data, IExecutionContext<TNode> context)
     {
-        // TODO: parse scriptText into TLioScript<TNode> using _commandsProvider and _functionsProvider
-        throw new NotImplementedException("Script parsing not yet implemented — see tasks.md");
+        var converter = new CommandConverter<TNode>(_commandsProvider, _functionsProvider, context.NodeAdapter);
+        var script = converter.ParseScript(scriptText);
+        return script.Execute(data, context);
     }
 
     /// <summary>Execute a pre-parsed script object directly.</summary>

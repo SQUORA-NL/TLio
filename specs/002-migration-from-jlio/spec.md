@@ -78,7 +78,8 @@ so that I can avoid a Newtonsoft dependency.
 **Acceptance criteria:**
 - All ported JLio command tests also pass against `TLio.Json.SystemText.SystemTextJsonExecutionContext.CreateDefault()`.
 - All ported JLio function tests pass against the System.Text.Json adapter.
-- JsonPath expression coverage is equivalent between Newtonsoft and System.Text.Json (same paths, same results).
+- JsonPath expression coverage is equivalent for all ported JLio test cases: every test that passes against Newtonsoft must also pass against System.Text.Json.
+- Edge-case deviations between `JsonCons.JsonPath` (RFC 9535) and Newtonsoft's Jayway-based `SelectTokens` are acceptable **only if** no ported JLio test asserts on the differing behaviour. Every such deviation must be documented in `specs/002-migration-from-jlio/jsonpath-compatibility.md`.
 
 ---
 
@@ -98,14 +99,18 @@ so that I do not need to rewrite scripts when migrating.
 
 ### US-05 — Extension packs can be ported to TLio
 
-As a developer maintaining the Math, Text, TimeDate, ETL, and JSchema extension packs,
+As a developer maintaining the Math, Text, TimeDate, and ETL extension packs,
 I want to port each extension pack to TLio using the generic `FunctionBase<TNode>` and
 `CommandBase<TNode>` base classes,
 so that the extensions are format-agnostic and work across all data adapters.
 
 **Acceptance criteria:**
-- Each extension pack has a TLio equivalent that compiles against TLio.Core only.
+- Each extension pack (Math, Text, TimeDate, ETL) has a TLio equivalent that compiles against TLio.Core only.
 - All extension tests, ported to TLio, pass against the Newtonsoft adapter.
+
+> **Out of scope — JSchema:** Porting `JLio.Extensions.JSchema` is deferred to a separate spec.
+> JSchema validation introduces a dependency on a JSON Schema library that requires its own
+> adapter design. It is not part of this migration spec.
 
 ---
 

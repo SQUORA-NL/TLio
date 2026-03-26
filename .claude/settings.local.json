@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Bash(*)",
       "Read(//c/Users/frans/source/tests-claude/Tlio.claude/**)",
       "Bash(powershell.exe -File \".specify/scripts/powershell/setup-plan.ps1\" -Json)",
       "Bash(powershell.exe -Version 5.1 -File \".specify/scripts/powershell/setup-plan.ps1\" -Json)",
