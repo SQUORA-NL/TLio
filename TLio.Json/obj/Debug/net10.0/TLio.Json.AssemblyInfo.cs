@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("TLio JSON adapter: INodeAdapter and IItemsFetcher implementations backed by Newto" +
     "nsoft.Json and JsonPath."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+55436c32f383f22e489d7de71d34c25f1793a287")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6232b5aad4259f1c718feb6f2cdf8f2e2428bab7")]
 [assembly: System.Reflection.AssemblyProductAttribute("TLio.Json")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TLio.Json")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -166,9 +166,9 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 ### Phase 4D — Text functions (`TLio.Extensions.Text`)
 
-- [ ] Create `TLio.Extensions.Text` project referencing only TLio.Core
-- [ ] [P] Port all 25+ text functions (Concat, Length, Substring, ToUpper, ToLower, Trim, TrimStart, TrimEnd, StartsWith, EndsWith, Contains, Replace, Split, Join, IndexOf, Format, Parse, PadLeft, PadRight, NewGuid, IsEmpty)
-- [ ] `[!]` Port and run all text test files with identical assertions
+- [x] Create `TLio.Extensions.Text` project referencing only TLio.Core
+- [x] [P] Port all 25+ text functions (Concat, Length, Substring, ToUpper, ToLower, Trim, TrimStart, TrimEnd, StartsWith, EndsWith, Contains, Replace, Split, Join, IndexOf, Format, Parse, PadLeft, PadRight, NewGuid, IsEmpty)
+- [x] `[!]` Port and run all text test files with identical assertions
 
 ### Phase 4E — TimeDate functions (`TLio.Extensions.TimeDate`)
 
