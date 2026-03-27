@@ -158,11 +158,11 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 ### Phase 4C — Math functions (`TLio.Extensions.Math`)
 
-- [ ] Create `TLio.Extensions.Math` project referencing only TLio.Core
-- [ ] [P] Port all 25+ math functions (Sum, Avg, Count, Min, Max, Median, Ceiling, Floor, Round, Sqrt, Pow, Abs, Subtract, Modulo, Calculate, SumIf, SumIfs, CountIf, CountIfs, AverageIf, AverageIfs, MinIfs, MaxIfs)
-- [ ] `[!]` Port and run all math test files (AvgTests, SumTests, CountTests, etc.) with identical assertions
-- [ ] `[!]` Port `MathIntegerOutputTests` — integer vs double output must match exactly
-- [ ] `[!]` Port `MathNullHandlingTests` — null argument handling must match exactly
+- [x] Create `TLio.Extensions.Math` project referencing only TLio.Core
+- [x] [P] Port all 25+ math functions (Sum, Avg, Count, Min, Max, Median, Ceiling, Floor, Round, Sqrt, Pow, Abs, Subtract, Modulo, Calculate, SumIf, SumIfs, CountIf, CountIfs, AverageIf, AverageIfs, MinIfs, MaxIfs)
+- [x] `[!]` Port and run all math test files (AvgTests, SumTests, CountTests, etc.) with identical assertions
+- [x] `[!]` Port `MathIntegerOutputTests` — integer vs double output must match exactly
+- [x] `[!]` Port `MathNullHandlingTests` — null argument handling must match exactly
 
 ### Phase 4D — Text functions (`TLio.Extensions.Text`)
 

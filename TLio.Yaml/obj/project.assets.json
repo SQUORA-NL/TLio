@@ -209,11 +209,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Yaml\\TLio.Yaml.csproj",
+      "projectUniqueName": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Yaml\\TLio.Yaml.csproj",
       "projectName": "TLio.Yaml",
-      "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Yaml\\TLio.Yaml.csproj",
+      "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Yaml\\TLio.Yaml.csproj",
       "packagesPath": "C:\\Users\\frans\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Yaml\\obj\\",
+      "outputPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Yaml\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -236,8 +236,8 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Core\\TLio.Core.csproj": {
-              "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Core\\TLio.Core.csproj"
+            "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Core\\TLio.Core.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Core\\TLio.Core.csproj"
             }
           }
         }

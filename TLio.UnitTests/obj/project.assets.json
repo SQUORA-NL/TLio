@@ -398,6 +398,19 @@
           "bin/placeholder/TLio.Core.dll": {}
         }
       },
+      "TLio.Extensions.Math/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "TLio.Core": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/TLio.Extensions.Math.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/TLio.Extensions.Math.dll": {}
+        }
+      },
       "TLio.Functions/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
@@ -882,6 +895,11 @@
       "path": "../TLio.Core/TLio.Core.csproj",
       "msbuildProject": "../TLio.Core/TLio.Core.csproj"
     },
+    "TLio.Extensions.Math/1.0.0": {
+      "type": "project",
+      "path": "../TLio.Extensions.Math/TLio.Extensions.Math.csproj",
+      "msbuildProject": "../TLio.Extensions.Math/TLio.Extensions.Math.csproj"
+    },
     "TLio.Functions/1.0.0": {
       "type": "project",
       "path": "../TLio.Functions/TLio.Functions.csproj",
@@ -902,6 +920,7 @@
       "TLio.Client >= 1.0.0",
       "TLio.Commands >= 1.0.0",
       "TLio.Core >= 1.0.0",
+      "TLio.Extensions.Math >= 1.0.0",
       "TLio.Functions >= 1.0.0",
       "TLio.Json >= 1.0.0"
     ]
@@ -948,6 +967,9 @@
             },
             "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Core\\TLio.Core.csproj": {
               "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Core\\TLio.Core.csproj"
+            },
+            "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Extensions.Math\\TLio.Extensions.Math.csproj": {
+              "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Extensions.Math\\TLio.Extensions.Math.csproj"
             },
             "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Functions\\TLio.Functions.csproj": {
               "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Functions\\TLio.Functions.csproj"
