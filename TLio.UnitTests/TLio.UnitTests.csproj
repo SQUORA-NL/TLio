@@ -21,6 +21,7 @@
     <ProjectReference Include="..\TLio.Extensions.Math\TLio.Extensions.Math.csproj" />
     <ProjectReference Include="..\TLio.Extensions.Text\TLio.Extensions.Text.csproj" />
     <ProjectReference Include="..\TLio.Extensions.TimeDate\TLio.Extensions.TimeDate.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.ETL\TLio.Extensions.ETL.csproj" />
   </ItemGroup>
 
 </Project>
