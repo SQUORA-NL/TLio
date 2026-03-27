@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>TLio ETL extension commands: Flatten, Restore, Resolve, ToCsv. Format-agnostic via INodeAdapter.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
+    <ProjectReference Include="..\TLio.Commands\TLio.Commands.csproj" />
+  </ItemGroup>
+
+</Project>

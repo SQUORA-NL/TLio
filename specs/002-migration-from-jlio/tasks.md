@@ -178,9 +178,9 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 ### Phase 4F — ETL commands (`TLio.Extensions.ETL`)
 
-- [ ] Create `TLio.Extensions.ETL` project referencing TLio.Core + TLio.Commands
-- [ ] Port Flatten, Restore, Resolve, ToCsv (all use INodeAdapter for traversal)
-- [ ] `[!]` Port and run `FlattenRestoreTests`, `ResolveTests` with identical assertions
+- [x] Create `TLio.Extensions.ETL` project referencing TLio.Core + TLio.Commands
+- [x] Port Flatten, Restore, Resolve, ToCsv (all use INodeAdapter for traversal)
+- [x] `[!]` Port and run `FlattenRestoreTests`, `ResolveTests` with identical assertions
 
 ---
 
