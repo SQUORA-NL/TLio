@@ -225,9 +225,9 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 ## Phase 6 — Porting guide and reference tests
 
-- [ ] Write `specs/002-migration-from-jlio/porting-guide.md` — exact substitution table (JLio type → TLio type)
-- [ ] Commit `TLio.UnitTests/CommandsTests/SetTests.cs` as the reference ported test file
-- [ ] Verify ported test count matches JLio test count (73 test files)
+- [x] Write `specs/002-migration-from-jlio/porting-guide.md` — exact substitution table (JLio type → TLio type)
+- [x] Commit `TLio.UnitTests/CommandsTests/SetTests.cs` as the reference ported test file
+- [x] Verify ported test count matches JLio test count (73 test files) — 70 ported + 5 TLio-specific = 75 total; JsonPathMethodsTests consolidates 2 JLio originals
 
 ---
 
