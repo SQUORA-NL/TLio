@@ -8,6 +8,6 @@ internal static class PathExtensions
     /// </summary>
     public static string ToPathString(this IEnumerable<PathElement> elements)
     {
-        return string.Join(".", elements.Select(e => e.PathElementFullText));
+        return string.Join(".", elements.Select(e => e.PathElementFullText)).TrimEnd('.');
     }
 }

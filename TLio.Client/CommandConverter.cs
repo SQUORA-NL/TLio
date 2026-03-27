@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using TLio.Commands.Advanced;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 
@@ -149,7 +150,108 @@ public class CommandConverter<TNode>
             return subScript;
         }
 
+        if (targetType.IsGenericType &&
+            targetType.GetGenericTypeDefinition() == typeof(DecisionTableConfig<>))
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+                return null;
+            return ParseDecisionTableConfig(element);
+        }
+
         return null;
+    }
+
+    // ── DecisionTable config parsing ──────────────────────────────────────────
+
+    private DecisionTableConfig<TNode> ParseDecisionTableConfig(JsonElement element)
+    {
+        var config = new DecisionTableConfig<TNode>();
+
+        if (element.TryGetProperty("inputs", out var inputs) &&
+            inputs.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var inp in inputs.EnumerateArray())
+            {
+                var di = new DecisionInput();
+                if (inp.TryGetProperty("name", out var n)) di.Name = n.GetString() ?? string.Empty;
+                if (inp.TryGetProperty("path", out var p)) di.Path = p.GetString() ?? string.Empty;
+                config.Inputs.Add(di);
+            }
+        }
+
+        if (element.TryGetProperty("outputs", out var outputs) &&
+            outputs.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var out_ in outputs.EnumerateArray())
+            {
+                var dout = new DecisionOutput();
+                if (out_.TryGetProperty("name", out var n)) dout.Name = n.GetString() ?? string.Empty;
+                if (out_.TryGetProperty("path", out var p)) dout.Path = p.GetString() ?? string.Empty;
+                config.Outputs.Add(dout);
+            }
+        }
+
+        if (element.TryGetProperty("rules", out var rules) &&
+            rules.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var ruleEl in rules.EnumerateArray())
+            {
+                var rule = new DecisionRule<TNode>();
+                if (ruleEl.TryGetProperty("priority", out var pri) &&
+                    pri.TryGetInt32(out var priVal))
+                    rule.Priority = priVal;
+
+                if (ruleEl.TryGetProperty("conditions", out var conds) &&
+                    conds.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var cond in conds.EnumerateObject())
+                    {
+                        var condNode = _nodeAdapter.Parse(cond.Value.GetRawText());
+                        rule.Conditions[cond.Name] = condNode;
+                    }
+                }
+
+                if (ruleEl.TryGetProperty("results", out var results) &&
+                    results.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var res in results.EnumerateObject())
+                    {
+                        var value = ConvertJsonValue(res.Value, typeof(IFunctionSupportedValue<TNode>));
+                        if (value is IFunctionSupportedValue<TNode> fsv)
+                            rule.Results[res.Name] = fsv;
+                    }
+                }
+
+                config.Rules.Add(rule);
+            }
+        }
+
+        if (element.TryGetProperty("strategy", out var strategy) &&
+            strategy.ValueKind == JsonValueKind.Object)
+        {
+            var s = new DecisionTableExecutionStrategy();
+            if (strategy.TryGetProperty("mode", out var mode) &&
+                mode.ValueKind == JsonValueKind.String)
+                s.Mode = mode.GetString() ?? "firstMatch";
+            if (strategy.TryGetProperty("conflictResolution", out var cr) &&
+                cr.ValueKind == JsonValueKind.String)
+                s.ConflictResolution = cr.GetString() ?? "priority";
+            config.Strategy = s;
+        }
+
+        if (element.TryGetProperty("defaultResults", out var defaults) &&
+            defaults.ValueKind == JsonValueKind.Object)
+        {
+            config.DefaultResults = new Dictionary<string, IFunctionSupportedValue<TNode>>();
+            foreach (var def in defaults.EnumerateObject())
+            {
+                var value = ConvertJsonValue(def.Value, typeof(IFunctionSupportedValue<TNode>));
+                if (value is IFunctionSupportedValue<TNode> fsv)
+                    config.DefaultResults[def.Name] = fsv;
+            }
+        }
+
+        return config;
     }
 
     private static string ToPascalCase(string camelCase)

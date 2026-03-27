@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("TLio Client: the scripting engine that parses and executes TLio scripts. Format-n" +
     "eutral — format support is registered through the provider pattern."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a72bf5cb25c8d77feea06aa3f10c6b81ab302bb7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b9f8b77504f96f815e5f098f8687233aec79ae4a")]
 [assembly: System.Reflection.AssemblyProductAttribute("TLio.Client")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TLio.Client")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -24,11 +24,20 @@ public class Promote<TNode> : FunctionBase<TNode>
             return FunctionResult<TNode>.Failed(currentNode);
         }
 
-        var nodeResult = Arguments[0].GetValue(currentNode, dataContext, context);
-        if (!nodeResult.Success || nodeResult.Data.First == null)
+        // Treat the first argument as a path expression and resolve the target node
+        var pathResult = Arguments[0].GetValue(currentNode, dataContext, context);
+        if (!pathResult.Success || pathResult.Data.First == null)
             return FunctionResult<TNode>.Failed(currentNode);
 
-        var node = nodeResult.Data.First;
+        var pathStr = context.NodeAdapter.TryGetString(pathResult.Data.First);
+        if (pathStr == null)
+            return FunctionResult<TNode>.Failed(currentNode);
+
+        var resolved = context.ItemsFetcher.SelectNodes(pathStr, dataContext);
+        if (resolved.Count == 0)
+            return FunctionResult<TNode>.Failed(currentNode);
+
+        var node = resolved[0];
         var propertyName = context.NodeAdapter.GetParentPropertyName(node);
 
         if (propertyName == null)

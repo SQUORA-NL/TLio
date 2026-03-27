@@ -65,7 +65,7 @@ public class Compare<TNode> : CommandBase<TNode>
 
         // Write result to ResultPath
         var (parentPath, leafName) = context.ItemsFetcher.SplitParentAndLeaf(ResultPath!);
-        context.ItemsFetcher.EnsurePath(parentPath, dataContext, context.NodeAdapter);
+        context.ItemsFetcher.EnsurePath(ResultPath!, dataContext, context.NodeAdapter);
         var parents = context.ItemsFetcher.SelectNodes(parentPath, dataContext);
 
         foreach (var parent in parents)

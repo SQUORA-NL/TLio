@@ -21,8 +21,17 @@ public class Partial<TNode> : FunctionBase<TNode>
             return FunctionResult<TNode>.Failed(currentNode);
         }
 
-        var nodesResult = Arguments[0].GetValue(currentNode, dataContext, context);
-        if (!nodesResult.Success || nodesResult.Data.Count == 0)
+        // Treat the first argument as a path expression and select all matching nodes
+        var pathResult = Arguments[0].GetValue(currentNode, dataContext, context);
+        if (!pathResult.Success || pathResult.Data.First == null)
+            return FunctionResult<TNode>.Failed(currentNode);
+
+        var pathStr = context.NodeAdapter.TryGetString(pathResult.Data.First);
+        if (pathStr == null)
+            return FunctionResult<TNode>.Failed(currentNode);
+
+        var nodes = context.ItemsFetcher.SelectNodes(pathStr, dataContext);
+        if (nodes.Count == 0)
             return FunctionResult<TNode>.Failed(currentNode);
 
         var index = 0;
@@ -36,12 +45,12 @@ public class Partial<TNode> : FunctionBase<TNode>
             }
         }
 
-        if (index < 0 || index >= nodesResult.Data.Count)
+        if (index < 0 || index >= nodes.Count)
         {
-            context.LogWarning(FunctionName, $"partial() index {index} out of range (count={nodesResult.Data.Count}).");
+            context.LogWarning(FunctionName, $"partial() index {index} out of range (count={nodes.Count}).");
             return FunctionResult<TNode>.Failed(currentNode);
         }
 
-        return FunctionResult<TNode>.Successful(nodesResult.Data[index]);
+        return FunctionResult<TNode>.Successful(nodes[index]);
     }
 }

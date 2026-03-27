@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TLio.UnitTests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a72bf5cb25c8d77feea06aa3f10c6b81ab302bb7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b9f8b77504f96f815e5f098f8687233aec79ae4a")]
 [assembly: System.Reflection.AssemblyProductAttribute("TLio.UnitTests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TLio.UnitTests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

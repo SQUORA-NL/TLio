@@ -30,8 +30,21 @@
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*Source: `specs/constitution.md` and `.specify/memory/constitution.md`.*
 
-[Gates determined based on constitution file]
+Answer each gate explicitly. "Yes/No + one sentence" is enough.
+
+| Gate | Article | Question | Answer |
+|---|---|---|---|
+| Format Neutrality | I | Do any Core/Commands/Functions changes risk importing a format-specific type (JToken, XElement, …)? | |
+| Dependency Inversion | II | Is every new adapter/fetcher dependency injected via `IExecutionContext<TNode>`? No `new ConcreteAdapter()` in commands or functions? | |
+| Generic-First | III | Does every new public API carry `<TNode>` as a generic parameter? No `object` in signatures? | |
+| Process/Execution separation | IV | Do all node reads, type-checks, and mutations go through `context.NodeAdapter` or `context.ItemsFetcher`? No direct method calls on `TNode` variables? | |
+| Swappable Selection | V | Are all path expressions supplied by callers? No path strings hard-coded inside commands or functions? | |
+| Test-First + Fixture Triplets | VI | Will every full-script-execution test use file-based fixture triplets (`input.json / script.json / result.json`)? Inline `[TestCase]` only for validation edge cases? | |
+| Simplicity Gate | VII | Could this be done with fewer projects/layers and still satisfy Articles I–V? (If yes, explain why the simpler option was rejected.) | |
+| No Leaking Internals | IX | Do `TLio.Core` public APIs expose only `TNode`-parameterised types? No format types in `Contracts/` or `Models/`? | |
+| Logging as Observability | X | Does every `Execute()` path call `LogInfo` on success and `LogWarning` on graceful skips? No exceptions thrown for expected conditions? | |
 
 ## Project Structure
 

@@ -55,7 +55,8 @@ public class ParseOptions<TNode>
         options.CommandsProvider.Register("move",    () => new Move<TNode>());
         options.CommandsProvider.Register("ifElse",  () => new IfElse<TNode>());
         options.CommandsProvider.Register("compare", () => new Compare<TNode>());
-        options.CommandsProvider.Register("merge",   () => new Merge<TNode>());
+        options.CommandsProvider.Register("merge",         () => new Merge<TNode>());
+        options.CommandsProvider.Register("decisionTable", () => new DecisionTable<TNode>());
 
         // Built-in functions
         options.FunctionsProvider.Register("fetch",      () => new Fetch<TNode>());

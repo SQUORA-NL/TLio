@@ -46,7 +46,7 @@ public class Remove<TNode> : CommandBase<TNode>
     {
         var result = new ValidationResult();
         if (string.IsNullOrWhiteSpace(Path))
-            result.AddError($"{CommandName}: Path is required.");
+            result.AddError($"Path property for {CommandName} command is missing");
         return result;
     }
 }

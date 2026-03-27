@@ -192,19 +192,20 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
     {
         if (anchor is not JObject currentObj) return;
 
-        // Walk all segments except the last (the leaf property is created by the command itself)
-        foreach (var element in constructionPath.Take(constructionPath.Count - 1))
+        // Walk all segments including the leaf so that SelectNodes can find the destination.
+        // Commands that write to new paths rely on finding an existing node to Replace().
+        foreach (var element in constructionPath)
         {
-            if (currentObj.ContainsKey(element.ElementName))
+            if (!currentObj.ContainsKey(element.ElementName))
             {
-                // Property exists — ensure it is an object before descending
-                if (currentObj[element.ElementName]?.Type != JTokenType.Object)
-                    return; // can't traverse a non-object
-            }
-            else
-            {
-                // Property missing — create an empty JObject
+                // Property missing — create an empty JObject placeholder
                 currentObj.Add(element.ElementName, new JObject());
+            }
+            else if (currentObj[element.ElementName]?.Type != JTokenType.Object)
+            {
+                // Property exists but is not an object — leaf already has a value;
+                // SelectNodes will find it and Replace() will overwrite it.
+                return;
             }
 
             currentObj = (JObject)currentObj[element.ElementName]!;
@@ -277,6 +278,14 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
         {
             return null;
         }
+    }
+
+    // ── Recursive-descent leaf detection ─────────────────────────────────────
+
+    public bool IsLeafRecursiveDescentSearch(string path)
+    {
+        var split = new JsonSplittedPath(path);
+        return split.IsSearchingForObjectsByName;
     }
 
     // ── Intellisense ──────────────────────────────────────────────────────────

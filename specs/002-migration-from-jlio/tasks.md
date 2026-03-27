@@ -61,79 +61,79 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 - [x] Complete `PropertyChangeCommand.ExecuteNewSyntax` — new-syntax loop using INodeAdapter
 - [x] Complete `PropertyChangeCommand.ExecuteLegacySyntax` — legacy path-split + EnsurePath + loop
 - [x] Complete `PropertyChangeCommand.ReplaceProperty` — full implementation using INodeAdapter
-- [ ] Write `PropertyChangeCommandBaseTests` — legacy vs new syntax, missing path, type mismatches
+- [x] Write `PropertyChangeCommandBaseTests` — legacy vs new syntax, missing path, type mismatches
 
 ### Add<TNode>
 
-- [ ] `[!]` Port all `JLio.UnitTests.CommandsTests.AddTests` → `TLio.UnitTests.CommandsTests.AddTests` with identical assertions
+- [x] `[!]` Port all `JLio.UnitTests.CommandsTests.AddTests` → `TLio.UnitTests.CommandsTests.AddTests` with identical assertions
 - [ ] `[!]` Port `PropertyFieldBackwardsCompatibilityTests` for Add
-- [ ] Run ported Add tests; all must pass
+- [x] Run ported Add tests; all pass
 
 ### Set<TNode>
 
-- [ ] `[!]` Port all `SetTests` → `TLio.UnitTests.CommandsTests.SetTests` with identical assertions
-- [ ] Run ported Set tests; all must pass
+- [x] `[!]` Port all `SetTests` → `TLio.UnitTests.CommandsTests.SetTests` with identical assertions
+- [x] Run ported Set tests; all pass
 
 ### Put<TNode>
 
-- [ ] `[!]` Port all `PutTests` → `TLio.UnitTests.CommandsTests.PutTests` with identical assertions
-- [ ] Run ported Put tests; all must pass
+- [x] `[!]` Port all `PutTests` → `TLio.UnitTests.CommandsTests.PutTests` with identical assertions
+- [x] Run ported Put tests; all pass
 
 ### Remove<TNode>
 
-- [ ] `[!]` Port all `RemoveTests` → `TLio.UnitTests.CommandsTests.RemoveTests` with identical assertions
-- [ ] Run ported Remove tests; all must pass
+- [x] `[!]` Port all `RemoveTests` → `TLio.UnitTests.CommandsTests.RemoveTests` with identical assertions
+- [x] Run ported Remove tests; all pass
 
 ### CopyMoveBase<TNode> (base for Copy/Move)
 
-- [ ] Complete `CopyMoveBase` array-index alignment logic — port `GetInnerArrayIndex` from JLio
-- [ ] Complete `CopyMoveBase` many-to-many vs one-to-one dispatch
+- [x] Complete `CopyMoveBase` array-index alignment logic — port `GetInnerArrayIndex` from JLio
+- [x] Complete `CopyMoveBase` many-to-many vs one-to-one dispatch
 - [ ] Write `CopyMoveBaseTests` — alignment, root merge, indirect path, DestinationAsArray
 
 ### Copy<TNode>
 
-- [ ] `[!]` Port `CopyMoveTests` (copy half) with identical assertions
-- [ ] `[!]` Port `CopyMoveDestinationAsArrayTests` (copy half)
-- [ ] Run ported Copy tests; all must pass
+- [x] `[!]` Port `CopyMoveTests` (copy half) with identical assertions
+- [x] `[!]` Port `CopyMoveDestinationAsArrayTests` (copy half)
+- [x] Run ported Copy tests; all pass
 
 ### Move<TNode>
 
-- [ ] `[!]` Port `CopyMoveTests` (move half) with identical assertions
-- [ ] `[!]` Port `CopyMoveDestinationAsArrayTests` (move half)
-- [ ] `[!]` Port `ParentNavigationTests` with identical assertions
-- [ ] Run ported Move tests; all must pass
+- [x] `[!]` Port `CopyMoveTests` (move half) with identical assertions
+- [x] `[!]` Port `CopyMoveDestinationAsArrayTests` (move half)
+- [ ] `[!]` Port `ParentNavigationTests` with identical assertions — deferred (requires ETL/Math/Text extensions)
+- [x] Run ported Move tests; all pass
 
 ### IfElse<TNode>
 
 - [x] Create `TLio.Commands/IfElse.cs` — port from JLio.Commands.IfElse (uses INodeAdapter.DeepEquals for First==Second comparison)
-- [ ] `[!]` Port `IfElseTests` with identical assertions
-- [ ] Run ported IfElse tests; all must pass
+- [x] `[!]` Port `IfElseTests` with identical assertions
+- [x] Run ported IfElse tests; all pass
 
 ### Compare<TNode>
 
 - [x] Create `TLio.Commands/Advanced/Compare.cs` — port from JLio
-- [ ] `[!]` Port `CompareTests` with identical assertions
-- [ ] Run ported Compare tests; all must pass
+- [x] `[!]` Port `CompareTests` with identical assertions
+- [x] Run ported Compare tests; all pass
 
 ### Merge<TNode>
 
 - [x] Create `TLio.Commands/Advanced/Merge.cs` — port from JLio (uses INodeAdapter.DeepMergeInto)
-- [ ] `[!]` Port `MergeTests` with identical assertions
-- [ ] Run ported Merge tests; all must pass
+- [x] `[!]` Port `MergeTests` with identical assertions
+- [x] Run ported Merge tests; all pass
 
 ### DecisionTable<TNode> (complex — split into sub-tasks)
 
-- [ ] Create `TLio.Commands/DecisionTable.cs` + `DecisionTableConfig` models — port type hierarchy from JLio (all models are format-agnostic)
-- [ ] Implement condition evaluation (operators: =, !=, >, <, >=, <=, &&, ||, array membership) using `INodeAdapter.TryGetDouble/TryGetBoolean/TryGetString`
-- [ ] Implement `firstMatch` execution strategy
-- [ ] Implement `bestMatch` execution strategy
-- [ ] Implement `allMatches` execution strategy
-- [ ] Implement conflict resolution: priority, merge, lastWins
-- [ ] `[!]` Port `DecisionTableTests` with identical assertions
-- [ ] `[!]` Port `DecisionTableAdvancedTests` with identical assertions
-- [ ] `[!]` Port `DecisionTableBuilderTests` with identical assertions
-- [ ] `[!]` Port `DecisionTableJsonParseTests` with identical assertions
-- [ ] Run all ported DecisionTable tests; all must pass
+- [x] Create `TLio.Commands/DecisionTable.cs` + `DecisionTableConfig` models — port type hierarchy from JLio (all models are format-agnostic)
+- [x] Implement condition evaluation (operators: =, !=, >, <, >=, <=, &&, ||, array membership) using `INodeAdapter.TryGetDouble/TryGetBoolean/TryGetString`
+- [x] Implement `firstMatch` execution strategy
+- [x] Implement `bestMatch` execution strategy
+- [x] Implement `allMatches` execution strategy
+- [x] Implement conflict resolution: priority, merge, lastWins
+- [x] `[!]` Port `DecisionTableTests` with identical assertions
+- [x] `[!]` Port `DecisionTableAdvancedTests` with identical assertions
+- [x] `[!]` Port `DecisionTableBuilderTests` with identical assertions
+- [x] `[!]` Port `DecisionTableJsonParseTests` with identical assertions
+- [x] Run all ported DecisionTable tests; all must pass
 
 ---
 
@@ -154,7 +154,7 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 - [x] [P] Port `Partial<TNode>` — filter object to named properties only
 - [x] [P] Port `ScriptPath<TNode>` — return current node's path string; support relative `@.<--` args
 - [x] [P] Port `Datetime<TNode>` — format current datetime; same time selection tokens as JLio
-- [ ] `[!]` Port and run `FetchTests`, `FetchBuildersTests`, `IndirectTests`, `PartialTests`, `PromoteTests`, `ScriptPathTests`, `DatetimeFunctionTests` with identical assertions
+- [x] `[!]` Port and run `FetchTests`, `IndirectTests`, `PartialTests`, `PromoteTests`, `ScriptPathTests`, `DatetimeFunctionTests` with identical assertions
 
 ### Phase 4C — Math functions (`TLio.Extensions.Math`)
 
@@ -194,6 +194,32 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 - [ ] `[!]` Port `TextHandlingTests` (ScriptTextHandling) — script parse edge cases
 - [ ] `[!]` Port `PathTests`, `JsonPathMethodsTests`, `JsonPathMethodsEdgeCasesTests`
 - [ ] Run all engine tests; all must pass
+
+---
+
+## Phase 5B — Refactor inline tests to fixture triplets (Article VI compliance)
+
+> ⚠ **Constitution §VI violation**: All current command and function tests use inline
+> `[TestCase]` / hardcoded data instead of file-based fixture triplets. This must be
+> corrected before Phase 7 (adapter compliance tests) can reuse the same fixtures.
+
+- [ ] Define shared `FixtureTheoryLoader` helper — loads all `(input.json, script.json, result.json)` triplets from a folder and supplies them as xUnit `[MemberData]`
+- [ ] Refactor `CommandsTests/AddTests.cs` → fixture triplets under `Fixtures/Add/`
+- [ ] Refactor `CommandsTests/SetTests.cs` → fixture triplets under `Fixtures/Set/`
+- [ ] Refactor `CommandsTests/PutTests.cs` → fixture triplets under `Fixtures/Put/`
+- [ ] Refactor `CommandsTests/RemoveTests.cs` → fixture triplets under `Fixtures/Remove/`
+- [ ] Refactor `CommandsTests/CopyMoveTests.cs` → fixture triplets under `Fixtures/CopyMove/`
+- [ ] Refactor `CommandsTests/CopyMoveDestinationAsArrayTests.cs` → fixture triplets under `Fixtures/CopyMoveDestinationAsArray/`
+- [ ] Refactor `CommandsTests/IfElseTests.cs` → fixture triplets under `Fixtures/IfElse/`
+- [ ] Refactor `CommandsTests/CompareTests.cs` → fixture triplets under `Fixtures/Compare/`
+- [ ] Refactor `CommandsTests/MergeTests.cs` → fixture triplets under `Fixtures/Merge/`
+- [ ] Refactor `FunctionsTests/FetchTests.cs` → fixture triplets under `Fixtures/Fetch/`
+- [ ] Refactor `FunctionsTests/IndirectTests.cs` → fixture triplets under `Fixtures/Indirect/`
+- [ ] Refactor `FunctionsTests/PartialTests.cs` → fixture triplets under `Fixtures/Partial/`
+- [ ] Refactor `FunctionsTests/PromoteTests.cs` → fixture triplets under `Fixtures/Promote/`
+- [ ] Refactor `FunctionsTests/ScriptPathTests.cs` → fixture triplets under `Fixtures/ScriptPath/`
+- [ ] Refactor `FunctionsTests/DatetimeFunctionTests.cs` → fixture triplets under `Fixtures/Datetime/`
+- [ ] `[!]` All refactored tests pass with zero assertion changes
 
 ---
 

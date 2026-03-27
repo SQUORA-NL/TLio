@@ -13,10 +13,20 @@ public abstract class CommandBase<TNode> : ICommand<TNode>
     private bool _executionFailed;
 
     /// <summary>
-    /// Derived from the class name by default (e.g. "Set", "Add").
+    /// Derived from the class name by default (e.g. "set", "add").
+    /// Strips generic arity suffix (`1, `2 …) and camelCases the first letter.
     /// Override in subclasses to provide a custom script token.
     /// </summary>
-    public virtual string CommandName => GetType().Name;
+    public virtual string CommandName
+    {
+        get
+        {
+            var name = GetType().Name;
+            var backtickIdx = name.IndexOf('`');
+            var baseName = backtickIdx >= 0 ? name.Substring(0, backtickIdx) : name;
+            return char.ToLowerInvariant(baseName[0]) + baseName.Substring(1);
+        }
+    }
 
     public abstract TLioExecutionResult<TNode> Execute(TNode dataContext, IExecutionContext<TNode> context);
 
