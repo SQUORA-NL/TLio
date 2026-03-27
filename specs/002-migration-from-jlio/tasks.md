@@ -203,23 +203,23 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 > `[TestCase]` / hardcoded data instead of file-based fixture triplets. This must be
 > corrected before Phase 7 (adapter compliance tests) can reuse the same fixtures.
 
-- [ ] Define shared `FixtureTheoryLoader` helper — loads all `(input.json, script.json, result.json)` triplets from a folder and supplies them as xUnit `[MemberData]`
-- [ ] Refactor `CommandsTests/AddTests.cs` → fixture triplets under `Fixtures/Add/`
-- [ ] Refactor `CommandsTests/SetTests.cs` → fixture triplets under `Fixtures/Set/`
-- [ ] Refactor `CommandsTests/PutTests.cs` → fixture triplets under `Fixtures/Put/`
-- [ ] Refactor `CommandsTests/RemoveTests.cs` → fixture triplets under `Fixtures/Remove/`
-- [ ] Refactor `CommandsTests/CopyMoveTests.cs` → fixture triplets under `Fixtures/CopyMove/`
-- [ ] Refactor `CommandsTests/CopyMoveDestinationAsArrayTests.cs` → fixture triplets under `Fixtures/CopyMoveDestinationAsArray/`
-- [ ] Refactor `CommandsTests/IfElseTests.cs` → fixture triplets under `Fixtures/IfElse/`
-- [ ] Refactor `CommandsTests/CompareTests.cs` → fixture triplets under `Fixtures/Compare/`
-- [ ] Refactor `CommandsTests/MergeTests.cs` → fixture triplets under `Fixtures/Merge/`
-- [ ] Refactor `FunctionsTests/FetchTests.cs` → fixture triplets under `Fixtures/Fetch/`
-- [ ] Refactor `FunctionsTests/IndirectTests.cs` → fixture triplets under `Fixtures/Indirect/`
-- [ ] Refactor `FunctionsTests/PartialTests.cs` → fixture triplets under `Fixtures/Partial/`
-- [ ] Refactor `FunctionsTests/PromoteTests.cs` → fixture triplets under `Fixtures/Promote/`
-- [ ] Refactor `FunctionsTests/ScriptPathTests.cs` → fixture triplets under `Fixtures/ScriptPath/`
-- [ ] Refactor `FunctionsTests/DatetimeFunctionTests.cs` → fixture triplets under `Fixtures/Datetime/`
-- [ ] `[!]` All refactored tests pass with zero assertion changes
+- [x] Define shared `FixtureTheoryLoader` helper — loads all `(input.json, script.json, result.json)` triplets from a folder and supplies them as NUnit `[TestCaseSource]`
+- [x] Refactor `CommandsTests/AddTests.cs` → fixture triplets under `Fixtures/Add/`
+- [x] Refactor `CommandsTests/SetTests.cs` → fixture triplets under `Fixtures/Set/`
+- [x] Refactor `CommandsTests/PutTests.cs` → fixture triplets under `Fixtures/Put/`
+- [x] Refactor `CommandsTests/RemoveTests.cs` → fixture triplets under `Fixtures/Remove/`
+- [x] Refactor `CommandsTests/CopyMoveTests.cs` → fixture triplets under `Fixtures/Copy/` and `Fixtures/Move/`
+- [x] Refactor `CommandsTests/CopyMoveDestinationAsArrayTests.cs` → covered by Copy/Move fixtures
+- [x] Refactor `CommandsTests/IfElseTests.cs` → fixture triplets under `Fixtures/IfElse/`
+- [x] Refactor `CommandsTests/CompareTests.cs` → fixture triplets under `Fixtures/Compare/`
+- [x] Refactor `CommandsTests/MergeTests.cs` → fixture triplets under `Fixtures/Merge/`
+- [x] Refactor `FunctionsTests/FetchTests.cs` → fixture triplets under `Fixtures/Fetch/`
+- [x] Refactor `FunctionsTests/IndirectTests.cs` → fixture triplets under `Fixtures/Indirect/`
+- [x] Refactor `FunctionsTests/PartialTests.cs` → fixture triplets under `Fixtures/Partial/`
+- [x] Refactor `FunctionsTests/PromoteTests.cs` → fixture triplets under `Fixtures/Promote/`
+- [x] Refactor `FunctionsTests/ScriptPathTests.cs` → fixture triplets under `Fixtures/ScriptPath/`
+- [ ] Refactor `FunctionsTests/DatetimeFunctionTests.cs` → fixture triplets under `Fixtures/Datetime/` (skipped: datetime output is non-deterministic)
+- [x] `[!]` All refactored tests pass with zero assertion changes
 
 ---
 
