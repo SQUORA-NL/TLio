@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using TLio.Core;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
@@ -13,9 +14,12 @@ namespace TLio.Commands.Logic;
 /// Key behaviours ported from JLio:
 /// - =indirect() expressions in ToPath are resolved via IItemsFetcher.ProcessIndirectPath
 /// - Root path ($) as destination triggers a DeepMerge instead of property assignment
-/// - DestinationAsArray: wraps the destination value in an array before assigning
-/// - Array-index alignment: when FromPath and ToPath reference the same array index,
-///   operations are paired (one source → one target)
+/// - DestinationAsArray: when destination is not yet an array, wraps it with the source
+///   into a new [old, new] array; when destination is already an array, just appends
+/// - Array destination (without flag): always appends rather than replaces
+/// - Array-index alignment: groups sources and destinations by the first array index
+///   found in their path, then processes each group independently (mirrors JLio's
+///   GetInnerArrayIndex logic so that e.g. firstArray[0].subs all go to firstArray[0].target)
 /// - Move variant removes the source node after copying
 /// </summary>
 public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
@@ -25,6 +29,19 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
     public bool DestinationAsArray { get; set; } = false;
 
     protected abstract bool IsMove { get; }
+
+    private static readonly Regex ArrayIndexPattern = new(@"\[(\d+)\]", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Returns the first numeric array index found in <paramref name="nodePath"/>,
+    /// or -1 when the path contains no array subscript.
+    /// Mirrors JLio's GetInnerArrayIndex.
+    /// </summary>
+    private static int GetFirstArrayIndex(string nodePath)
+    {
+        var match = ArrayIndexPattern.Match(nodePath);
+        return match.Success && int.TryParse(match.Groups[1].Value, out var idx) ? idx : -1;
+    }
 
     public override TLioExecutionResult<TNode> Execute(TNode dataContext, IExecutionContext<TNode> context)
     {
@@ -46,15 +63,27 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
-        // Special case: destination is root → deep merge all sources into root
+        // Special case: destination is root
         if (resolvedToPath == context.ItemsFetcher.RootPathIndicator)
         {
-            foreach (var source in sources)
-                context.NodeAdapter.DeepMergeInto(context.NodeAdapter.DeepClone(source), dataContext);
-
             if (IsMove)
+            {
+                // Move-to-root: replace the entire root content with the source node's content.
+                // Clear all existing root properties first, then merge the clone in.
                 foreach (var source in sources)
-                    context.NodeAdapter.RemoveFromParent(source);
+                {
+                    var cloned = context.NodeAdapter.DeepClone(source);
+                    foreach (var propName in context.NodeAdapter.GetPropertyNames(dataContext).ToList())
+                        context.NodeAdapter.RemoveProperty(dataContext, propName);
+                    context.NodeAdapter.DeepMergeInto(cloned, dataContext);
+                }
+            }
+            else
+            {
+                // Copy-to-root: merge source content into root (additive, keeps existing properties).
+                foreach (var source in sources)
+                    context.NodeAdapter.DeepMergeInto(context.NodeAdapter.DeepClone(source), dataContext);
+            }
 
             context.LogInfo(CoreConstants.CommandExecution, $"{CommandName}: merged {sources.Count} node(s) into root");
             return TLioExecutionResult<TNode>.Successful(dataContext);
@@ -70,19 +99,31 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
-        // Determine alignment: one-to-one (aligned array indices) vs many-to-many
-        bool aligned = sources.Count == destinations.Count && sources.Count > 1;
+        // Group sources and destinations by their first array index (JLio GetInnerArrayIndex logic).
+        // When both sides have the same set of indices, process each index-group independently
+        // so that array-structured data is aligned correctly (e.g. sources in firstArray[0] go
+        // only to destinations also in firstArray[0]).
+        var sourceGroups = sources
+            .GroupBy(s => GetFirstArrayIndex(context.ItemsFetcher.GetPath(s)))
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var destGroups = destinations
+            .GroupBy(d => GetFirstArrayIndex(context.ItemsFetcher.GetPath(d)))
+            .ToDictionary(g => g.Key, g => g.ToList());
 
-        if (aligned)
+        if (sourceGroups.Keys.OrderBy(k => k).SequenceEqual(destGroups.Keys.OrderBy(k => k)))
         {
-            for (int i = 0; i < sources.Count; i++)
-                ApplyCopy(sources[i], destinations[i], resolvedToPath, dataContext, context);
+            // Index-aligned: process each group independently
+            foreach (var idx in sourceGroups.Keys)
+                foreach (var src in sourceGroups[idx])
+                    foreach (var dst in destGroups[idx])
+                        ApplyCopy(src, dst, context);
         }
         else
         {
-            foreach (var source in sources)
-                foreach (var destination in destinations)
-                    ApplyCopy(source, destination, resolvedToPath, dataContext, context);
+            // Fall back to many-to-many
+            foreach (var src in sources)
+                foreach (var dst in destinations)
+                    ApplyCopy(src, dst, context);
         }
 
         if (IsMove)
@@ -92,35 +133,40 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }
 
-    private void ApplyCopy(TNode source, TNode destination, string resolvedToPath, TNode dataContext, IExecutionContext<TNode> context)
+    private void ApplyCopy(TNode source, TNode destination, IExecutionContext<TNode> context)
     {
+        var srcPath = context.ItemsFetcher.GetPath(source);
+        var dstPath = context.ItemsFetcher.GetPath(destination);
         var cloned = context.NodeAdapter.DeepClone(source);
 
-        if (DestinationAsArray && !context.NodeAdapter.IsArray(destination))
+        if (context.NodeAdapter.IsArray(destination))
         {
-            // Wrap in array
+            // Always append to an array destination (with or without DestinationAsArray flag)
+            context.NodeAdapter.AppendToArray(destination, cloned);
+        }
+        else if (DestinationAsArray)
+        {
+            // Promote scalar/object destination to [old_value, new_value]
             var arr = context.NodeAdapter.CreateArray();
+            context.NodeAdapter.AppendToArray(arr, context.NodeAdapter.DeepClone(destination));
             context.NodeAdapter.AppendToArray(arr, cloned);
             context.NodeAdapter.Replace(destination, arr);
         }
-        else if (DestinationAsArray && context.NodeAdapter.IsArray(destination))
-        {
-            context.NodeAdapter.AppendToArray(destination, cloned);
-        }
         else
         {
+            // Normal scalar/object destination: replace with clone of source
             context.NodeAdapter.Replace(destination, cloned);
         }
 
         context.LogInfo(CoreConstants.CommandExecution,
-            $"{CommandName}: copied from '{context.ItemsFetcher.GetPath(source)}' to '{context.ItemsFetcher.GetPath(destination)}'");
+            $"{CommandName}: copied from '{srcPath}' to '{dstPath}'");
     }
 
     public override ValidationResult ValidateCommandInstance()
     {
         var result = new ValidationResult();
-        if (string.IsNullOrWhiteSpace(FromPath)) result.AddError($"{CommandName}: FromPath is required.");
-        if (string.IsNullOrWhiteSpace(ToPath)) result.AddError($"{CommandName}: ToPath is required.");
+        if (string.IsNullOrWhiteSpace(FromPath)) result.AddError($"FromPath property for {CommandName} command is missing");
+        if (string.IsNullOrWhiteSpace(ToPath)) result.AddError($"ToPath property for {CommandName} command is missing");
         return result;
     }
 }

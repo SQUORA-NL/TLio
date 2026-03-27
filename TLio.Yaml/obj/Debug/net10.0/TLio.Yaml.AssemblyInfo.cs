@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("TLio YAML adapter: INodeAdapter and IItemsFetcher implementations. Depends on Yam" +
     "lDotNet."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f7f46c2407ba7a0049c3805e60d67a658f238164")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+55436c32f383f22e489d7de71d34c25f1793a287")]
 [assembly: System.Reflection.AssemblyProductAttribute("TLio.Yaml")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TLio.Yaml")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

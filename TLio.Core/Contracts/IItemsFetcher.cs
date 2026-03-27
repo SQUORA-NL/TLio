@@ -70,6 +70,15 @@ public interface IItemsFetcher<TNode>
     string? ProcessIndirectPath(string path, TNode data);
 
     /// <summary>
+    /// Returns true when the leaf of the path is selected directly via a recursive
+    /// descent (..) operator — e.g. "$..myArray". In this case the full path should
+    /// be used for node selection and each matched node should be replaced in-place.
+    /// Ported from JLio's JsonSplittedPath.IsSearchingForObjectsByName.
+    /// Default implementation returns false (override in format-specific fetchers).
+    /// </summary>
+    bool IsLeafRecursiveDescentSearch(string path) => false;
+
+    /// <summary>
     /// Return intellisense / autocomplete suggestions for an incomplete path
     /// expression against the given data root.
     /// Used by tooling; return empty enumerable if not supported.

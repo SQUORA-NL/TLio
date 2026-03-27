@@ -78,14 +78,31 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     {
         var (parentPath, propertyName) = context.ItemsFetcher.SplitParentAndLeaf(Path!);
 
+        // When the leaf is reached directly via recursive descent (e.g. "$..myArray"),
+        // select the leaf nodes by the full path and replace each one in-place.
+        // Mirrors JLio's PropertyChangeCommand.AddToObjectItems IsSearchingForObjectsByName branch.
+        if (context.ItemsFetcher.IsLeafRecursiveDescentSearch(Path!))
+        {
+            var targets = context.ItemsFetcher.SelectNodes(Path!, dataContext);
+            foreach (var target in targets)
+            {
+                var valueResult = Value!.GetValue(target, dataContext, context);
+                if (!valueResult.Success) { MarkFailed(); continue; }
+                var computedValue = valueResult.Data.First ?? context.NodeAdapter.CreateNull();
+                context.NodeAdapter.Replace(target, computedValue);
+            }
+            return;
+        }
+
         // Resolve any =indirect() in parentPath
         var resolvedParentPath = context.ItemsFetcher.ProcessIndirectPath(parentPath, dataContext) ?? parentPath;
 
         var parents = context.ItemsFetcher.SelectNodes(resolvedParentPath, dataContext);
         if (parents.Count == 0)
         {
-            // Try to create the parent path if missing
-            context.ItemsFetcher.EnsurePath(resolvedParentPath, dataContext, context.NodeAdapter);
+            // Pass the full path so EnsurePath creates the entire chain up to (but not
+            // including) the leaf — mirrors JLio's CheckOrCreateParentPath(dataContext, targetPath, ...)
+            context.ItemsFetcher.EnsurePath(Path!, dataContext, context.NodeAdapter);
             parents = context.ItemsFetcher.SelectNodes(resolvedParentPath, dataContext);
         }
 
@@ -166,9 +183,9 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     {
         var result = new ValidationResult();
         if (string.IsNullOrWhiteSpace(Path))
-            result.AddError($"{CommandName}: Path is required.");
+            result.AddError($"Path property for {CommandName} command is missing");
         if (Value is null)
-            result.AddError($"{CommandName}: Value is required.");
+            result.AddError($"Value property for {CommandName} command is missing");
         return result;
     }
 }

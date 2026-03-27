@@ -242,10 +242,56 @@ With multiple developers:
 
 ## Notes
 
-- [P] tasks = different files, no dependencies
-- [Story] label maps task to specific user story for traceability
+- `[P]` tasks = different files, no dependencies — can run in parallel
+- `[Story]` label maps task to specific user story for traceability
 - Each user story should be independently completable and testable
-- Verify tests fail before implementing
+- Verify tests FAIL before implementing (Red → Green → Refactor)
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+
+---
+
+## TLio-Specific Rules (Constitution §VI, §IV, §X)
+
+### Test tasks MUST use file-based fixture triplets
+
+Every test task for a command or function MUST produce fixture files, not inline data:
+
+```
+TLio.UnitTests/<Category>Tests/Fixtures/<ScenarioName>/
+  input.json    ← starting document
+  script.json   ← TLioScript (serialised command or function)
+  result.json   ← expected document after execution
+```
+
+The test class drives them via xUnit `Theory` + `[MemberData]` / `[ClassData]`.
+Inline `[TestCase]` is only acceptable for validation edge cases (null paths, etc.).
+
+```
+- [ ] [P] Write fixture triplets for <Scenario> in TLio.UnitTests/<Category>Tests/Fixtures/
+- [ ]     Implement <Command/Function>.Execute — fixture Theory passes (Green)
+```
+
+### No format-specific types in Core/Commands task descriptions
+
+Task descriptions for `TLio.Core/`, `TLio.Commands/`, or `TLio.Functions/` work
+MUST NOT reference `JToken`, `XElement`, `YamlNode`, or any concrete format type.
+Use `TNode` or adapter/fetcher method names instead.
+
+### Constitutional compliance check before marking done
+
+Before checking off any implementation task, run:
+
+```sh
+# Article I / IX: no format types in Core/Commands/Functions
+grep -rn "Newtonsoft\|JToken\|JObject\|JArray\|JValue\|XElement\|YamlNode" \
+  TLio.Core/ TLio.Commands/ TLio.Functions/
+
+# Article II: no direct adapter construction
+grep -rn "new.*Adapter\|new.*Fetcher\|new.*ExecutionContext" \
+  TLio.Commands/ TLio.Functions/
+```
+
+Both commands MUST return zero results before the task is marked `[x]`.
+Full checklist: `.specify/templates/speckit.implement.md`.

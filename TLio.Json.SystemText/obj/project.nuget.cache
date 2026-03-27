@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "c2d8Y6flqzE=",
+  "dgSpecHash": "9BakK01QCWI=",
   "success": true,
-  "projectFilePath": "C:\\Users\\frans\\source\\tests-claude\\Tlio.claude\\.claude\\worktrees\\quirky-meninsky\\TLio.Json.SystemText\\TLio.Json.SystemText.csproj",
+  "projectFilePath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Json.SystemText\\TLio.Json.SystemText.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\frans\\.nuget\\packages\\jsoncons.jsonpath\\1.1.0\\jsoncons.jsonpath.1.1.0.nupkg.sha512",
     "C:\\Users\\frans\\.nuget\\packages\\jsoncons.utilities\\1.0.0\\jsoncons.utilities.1.0.0.nupkg.sha512",
