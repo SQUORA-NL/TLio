@@ -87,7 +87,13 @@ public class FunctionConverter<TNode>
         {
             var trimmed = arg.Trim();
             if (string.IsNullOrEmpty(trimmed)) continue;
-            var argValue = ParseValue(trimmed, adapter);
+            // Path expressions inside function calls are treated as string literals
+            // so that functions like fetch() and partial() can evaluate the path themselves.
+            IFunctionSupportedValue<TNode>? argValue;
+            if (trimmed.StartsWith("$") || trimmed.StartsWith("@"))
+                argValue = new FixedValue<TNode>(adapter.CreateString(trimmed));
+            else
+                argValue = ParseValue(trimmed, adapter);
             if (argValue != null)
                 arguments.Add(argValue);
         }

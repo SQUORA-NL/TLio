@@ -190,10 +190,10 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 - [x] Create `CommandConverter<TNode>` — JSON discriminator deserialization using `ICommandsProvider<TNode>`
 - [x] Create `ParseOptions<TNode>` — register all built-in commands and functions; `CreateDefault()` factory; fluent `RegisterCommand/RegisterFunction`
 - [x] Implement `ScriptEngine<TNode>.Execute(string scriptJson, TNode data, IExecutionContext<TNode>)` — parse + execute
-- [ ] `[!]` Port `JLioEngineTests`, `JLioEngineIntegrationTests`, `JLioEngineConfigurationTests` with identical assertions
-- [ ] `[!]` Port `TextHandlingTests` (ScriptTextHandling) — script parse edge cases
-- [ ] `[!]` Port `PathTests`, `JsonPathMethodsTests`, `JsonPathMethodsEdgeCasesTests`
-- [ ] Run all engine tests; all must pass
+- [x] `[!]` Port `JLioEngineTests`, `JLioEngineIntegrationTests`, `JLioEngineConfigurationTests` with identical assertions
+- [x] `[!]` Port `TextHandlingTests` (ScriptTextHandling) — script parse edge cases
+- [x] `[!]` Port `PathTests`, `JsonPathMethodsTests`, `JsonPathMethodsEdgeCasesTests`
+- [x] Run all engine tests; all must pass
 
 ---
 
