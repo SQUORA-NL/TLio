@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("TLio built-in commands (Set, Add, Remove, Copy, Move, Put). Format-agnostic — all" +
     " format-specific work is delegated through IExecutionContext."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2cd99b3b9c3d4610d76ee62fa4a3dfc686c0055b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7a04cf663947530bcd444f0721577624bbd816d0")]
 [assembly: System.Reflection.AssemblyProductAttribute("TLio.Commands")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TLio.Commands")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

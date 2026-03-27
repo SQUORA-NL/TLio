@@ -970,11 +970,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.UnitTests\\TLio.UnitTests.csproj",
+      "projectUniqueName": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.UnitTests\\TLio.UnitTests.csproj",
       "projectName": "TLio.UnitTests",
-      "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.UnitTests\\TLio.UnitTests.csproj",
+      "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.UnitTests\\TLio.UnitTests.csproj",
       "packagesPath": "C:\\Users\\frans\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.UnitTests\\obj\\",
+      "outputPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.UnitTests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -997,29 +997,29 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Client\\TLio.Client.csproj": {
-              "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Client\\TLio.Client.csproj"
+            "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Client\\TLio.Client.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Client\\TLio.Client.csproj"
             },
-            "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Commands\\TLio.Commands.csproj": {
-              "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Commands\\TLio.Commands.csproj"
+            "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Commands\\TLio.Commands.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Commands\\TLio.Commands.csproj"
             },
-            "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Core\\TLio.Core.csproj": {
-              "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Core\\TLio.Core.csproj"
+            "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Core\\TLio.Core.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Core\\TLio.Core.csproj"
             },
-            "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Extensions.Math\\TLio.Extensions.Math.csproj": {
-              "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Extensions.Math\\TLio.Extensions.Math.csproj"
+            "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Extensions.Math\\TLio.Extensions.Math.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Extensions.Math\\TLio.Extensions.Math.csproj"
             },
-            "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Extensions.Text\\TLio.Extensions.Text.csproj": {
-              "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Extensions.Text\\TLio.Extensions.Text.csproj"
+            "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Extensions.Text\\TLio.Extensions.Text.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Extensions.Text\\TLio.Extensions.Text.csproj"
             },
-            "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Extensions.TimeDate\\TLio.Extensions.TimeDate.csproj": {
-              "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Extensions.TimeDate\\TLio.Extensions.TimeDate.csproj"
+            "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Extensions.TimeDate\\TLio.Extensions.TimeDate.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Extensions.TimeDate\\TLio.Extensions.TimeDate.csproj"
             },
-            "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Functions\\TLio.Functions.csproj": {
-              "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Functions\\TLio.Functions.csproj"
+            "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Functions\\TLio.Functions.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Functions\\TLio.Functions.csproj"
             },
-            "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Json\\TLio.Json.csproj": {
-              "projectPath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Json\\TLio.Json.csproj"
+            "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Json\\TLio.Json.csproj": {
+              "projectPath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Json\\TLio.Json.csproj"
             }
           }
         }

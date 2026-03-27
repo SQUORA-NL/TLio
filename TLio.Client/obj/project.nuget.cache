@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "aFnTWAsnJbY=",
+  "dgSpecHash": "SGZ0BxVo4+w=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Frans\\source\\repos\\TLio\\TLio.Client\\TLio.Client.csproj",
+  "projectFilePath": "C:\\Users\\frans\\source\\repos\\TLio\\TLio.Client\\TLio.Client.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\frans\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\9.0.0\\microsoft.extensions.dependencyinjection.abstractions.9.0.0.nupkg.sha512",
     "C:\\Users\\frans\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\9.0.0\\microsoft.extensions.logging.abstractions.9.0.0.nupkg.sha512"
