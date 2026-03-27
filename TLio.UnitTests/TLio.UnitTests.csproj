@@ -13,6 +13,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Fixtures/**/*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
     <ProjectReference Include="..\TLio.Commands\TLio.Commands.csproj" />
     <ProjectReference Include="..\TLio.Functions\TLio.Functions.csproj" />

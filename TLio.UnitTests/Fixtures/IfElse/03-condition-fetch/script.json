@@ -1,0 +1,6 @@
+[{
+  "command": "ifElse",
+  "condition": "=fetch($.flag)",
+  "ifScript":   [{ "command": "put", "path": "$.result", "value": "yes" }],
+  "elseScript": [{ "command": "put", "path": "$.result", "value": "no" }]
+}]

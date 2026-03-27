@@ -1,0 +1,1 @@
+[{ "command": "set", "path": "$.name", "value": "new" }]

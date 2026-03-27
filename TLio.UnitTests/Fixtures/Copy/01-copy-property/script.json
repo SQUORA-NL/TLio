@@ -1,0 +1,1 @@
+[{ "command": "copy", "fromPath": "$.src", "toPath": "$.dst" }]
