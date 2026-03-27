@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("TLio built-in functions. Format-agnostic — all format-specific work is delegated " +
     "through IExecutionContext."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6232b5aad4259f1c718feb6f2cdf8f2e2428bab7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2cd99b3b9c3d4610d76ee62fa4a3dfc686c0055b")]
 [assembly: System.Reflection.AssemblyProductAttribute("TLio.Functions")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TLio.Functions")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

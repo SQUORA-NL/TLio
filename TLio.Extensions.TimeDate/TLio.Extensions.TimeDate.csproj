@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>TimeDate extension functions for TLio. Format-agnostic — all format-specific work is delegated through IExecutionContext.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
+  </ItemGroup>
+
+</Project>

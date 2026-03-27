@@ -172,9 +172,9 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 ### Phase 4E — TimeDate functions (`TLio.Extensions.TimeDate`)
 
-- [ ] Create `TLio.Extensions.TimeDate` project referencing only TLio.Core
-- [ ] [P] Port DateCompare, IsDateBetween, MinDate, MaxDate, AvgDate
-- [ ] `[!]` Port and run `TimeDateFunctionTests` with identical assertions
+- [x] Create `TLio.Extensions.TimeDate` project referencing only TLio.Core
+- [x] [P] Port DateCompare, IsDateBetween, MinDate, MaxDate, AvgDate
+- [x] `[!]` Port and run `TimeDateFunctionTests` with identical assertions
 
 ### Phase 4F — ETL commands (`TLio.Extensions.ETL`)
 
