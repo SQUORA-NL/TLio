@@ -1,3 +1,4 @@
+using System.Globalization;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 using YamlDotNet.RepresentationModel;
@@ -6,31 +7,56 @@ namespace TLio.Yaml;
 
 /// <summary>
 /// INodeAdapter implementation for YamlDotNet's YamlNode model.
-/// Stub — all members throw NotImplementedException until the YAML adapter is built.
-/// See specs/001-tlio-core-architecture/tasks.md for the implementation backlog.
+///
+/// YAML representation conventions used by TLio:
+///   Object    = YamlMappingNode  (key-value pairs)
+///   Array     = YamlSequenceNode (ordered list)
+///   Primitive = YamlScalarNode   (string, number, boolean, null)
+///   Null      = YamlScalarNode whose Value is null, "null", or "~"
+///
+/// Parent tracking: YamlDotNet nodes have no built-in Parent property.
+/// Operations that navigate upward (Replace, RemoveFromParent, GetParentNode,
+/// GetParentPropertyName) use a shared <see cref="YamlParentTracker"/>.
 /// </summary>
 public class YamlNodeAdapter : INodeAdapter<YamlNode>
 {
+    private readonly YamlParentTracker _tracker;
+
+    public YamlNodeAdapter(YamlParentTracker tracker) => _tracker = tracker;
+
+    // ── Type queries ──────────────────────────────────────────────────────────
+
     public bool IsObject(YamlNode node) => node is YamlMappingNode;
     public bool IsArray(YamlNode node) => node is YamlSequenceNode;
     public bool IsPrimitive(YamlNode node) => node is YamlScalarNode;
     public bool IsNull(YamlNode node) =>
-        node is YamlScalarNode scalar && (scalar.Value == null || scalar.Value == "null" || scalar.Value == "~");
+        node is YamlScalarNode scalar &&
+        (scalar.Value == null || scalar.Value == "null" || scalar.Value == "~");
+
+    // ── Object operations ─────────────────────────────────────────────────────
 
     public bool HasProperty(YamlNode node, string propertyName) =>
-        node is YamlMappingNode map && map.Children.ContainsKey(new YamlScalarNode(propertyName));
+        node is YamlMappingNode map &&
+        map.Children.ContainsKey(new YamlScalarNode(propertyName));
 
     public YamlNode? GetProperty(YamlNode node, string propertyName)
     {
-        if (node is YamlMappingNode map && map.Children.TryGetValue(new YamlScalarNode(propertyName), out var val))
+        if (node is YamlMappingNode map &&
+            map.Children.TryGetValue(new YamlScalarNode(propertyName), out var val))
+        {
+            _tracker.Track(val, map, propertyName);
             return val;
+        }
         return null;
     }
 
     public void SetProperty(YamlNode node, string propertyName, YamlNode value)
     {
         if (node is YamlMappingNode map)
+        {
             map.Children[new YamlScalarNode(propertyName)] = value;
+            _tracker.Track(value, map, propertyName);
+        }
     }
 
     public void RemoveProperty(YamlNode node, string propertyName)
@@ -46,16 +72,47 @@ public class YamlNodeAdapter : INodeAdapter<YamlNode>
         return Enumerable.Empty<string>();
     }
 
+    // ── Array operations ──────────────────────────────────────────────────────
+
     public void AppendToArray(YamlNode array, YamlNode value)
     {
-        if (array is YamlSequenceNode seq) seq.Add(value);
+        if (array is YamlSequenceNode seq)
+        {
+            _tracker.Track(value, seq, seq.Children.Count);
+            seq.Add(value);
+        }
     }
 
-    public void InsertIntoArray(YamlNode array, int index, YamlNode value) =>
-        throw new NotImplementedException();
+    public void InsertIntoArray(YamlNode array, int index, YamlNode value)
+    {
+        if (array is YamlSequenceNode seq)
+        {
+            if (index >= seq.Children.Count)
+            {
+                _tracker.Track(value, seq, seq.Children.Count);
+                seq.Add(value);
+            }
+            else
+            {
+                seq.Children.Insert(index, value);
+                // Re-register indices for shifted elements
+                for (int i = index; i < seq.Children.Count; i++)
+                    _tracker.Track(seq.Children[i], seq, i);
+            }
+        }
+    }
 
-    public void RemoveFromArray(YamlNode array, int index) =>
-        throw new NotImplementedException();
+    public void RemoveFromArray(YamlNode array, int index)
+    {
+        if (array is YamlSequenceNode seq &&
+            index >= 0 && index < seq.Children.Count)
+        {
+            seq.Children.RemoveAt(index);
+            // Re-register indices for shifted elements
+            for (int i = index; i < seq.Children.Count; i++)
+                _tracker.Track(seq.Children[i], seq, i);
+        }
+    }
 
     public int GetArrayLength(YamlNode array) =>
         array is YamlSequenceNode seq ? seq.Children.Count : 0;
@@ -66,36 +123,208 @@ public class YamlNodeAdapter : INodeAdapter<YamlNode>
     public IEnumerable<YamlNode> GetArrayElements(YamlNode array) =>
         array is YamlSequenceNode seq ? seq.Children : Enumerable.Empty<YamlNode>();
 
+    // ── Node creation ─────────────────────────────────────────────────────────
+
     public YamlNode CreateNull() => new YamlScalarNode("null");
     public YamlNode CreateObject() => new YamlMappingNode();
     public YamlNode CreateArray() => new YamlSequenceNode();
     public YamlNode CreateString(string value) => new YamlScalarNode(value);
-    public YamlNode CreateNumber(double value) => new YamlScalarNode(value.ToString());
-    public YamlNode CreateBoolean(bool value) => new YamlScalarNode(value.ToString().ToLower());
+
+    public YamlNode CreateNumber(double value) =>
+        new YamlScalarNode(value.ToString(CultureInfo.InvariantCulture));
+
+    public YamlNode CreateBoolean(bool value) =>
+        new YamlScalarNode(value.ToString().ToLowerInvariant());
+
     public YamlNode CreateValue(object? value) =>
         value == null ? CreateNull() : new YamlScalarNode(value.ToString());
+
+    // ── Value access ──────────────────────────────────────────────────────────
 
     public object? GetValue(YamlNode node) =>
         node is YamlScalarNode scalar ? scalar.Value : null;
 
-    public T? GetValue<T>(YamlNode node) => throw new NotImplementedException();
+    public T? GetValue<T>(YamlNode node)
+    {
+        try
+        {
+            if (node is YamlScalarNode scalar && scalar.Value != null)
+                return (T)Convert.ChangeType(scalar.Value, typeof(T), CultureInfo.InvariantCulture);
+        }
+        catch { /* fall through */ }
+        return default;
+    }
 
-    public bool? TryGetBoolean(YamlNode node) => throw new NotImplementedException();
-    public double? TryGetDouble(YamlNode node) => throw new NotImplementedException();
-    public string? TryGetString(YamlNode node) => throw new NotImplementedException();
+    public bool? TryGetBoolean(YamlNode node)
+    {
+        if (IsNull(node)) return null;
+        if (node is YamlScalarNode scalar)
+        {
+            if (bool.TryParse(scalar.Value, out var b)) return b;
+            if (scalar.Value == "yes" || scalar.Value == "on") return true;
+            if (scalar.Value == "no" || scalar.Value == "off") return false;
+        }
+        return null;
+    }
 
-    public YamlNode DeepClone(YamlNode node) =>
-        // TODO: proper deep-clone; YamlDotNet nodes don't expose a built-in clone
-        throw new NotImplementedException();
+    public double? TryGetDouble(YamlNode node)
+    {
+        if (IsNull(node)) return null;
+        if (node is YamlScalarNode scalar &&
+            double.TryParse(scalar.Value, NumberStyles.Any,
+                CultureInfo.InvariantCulture, out var d))
+            return d;
+        return null;
+    }
 
-    public void Replace(YamlNode target, YamlNode replacement) =>
-        throw new NotImplementedException();
-    public bool RemoveFromParent(YamlNode node) => throw new NotImplementedException();
-    public void DeepMergeInto(YamlNode source, YamlNode target, ArrayMergeMode arrayMergeMode = ArrayMergeMode.Concat) =>
-        throw new NotImplementedException();
-    public YamlNode? GetParentNode(YamlNode node) => throw new NotImplementedException();
-    public string? GetParentPropertyName(YamlNode node) => throw new NotImplementedException();
-    public bool DeepEquals(YamlNode a, YamlNode b) => throw new NotImplementedException();
+    public string? TryGetString(YamlNode node)
+    {
+        if (IsNull(node)) return null;
+        return node is YamlScalarNode scalar ? scalar.Value : null;
+    }
+
+    // ── Cloning & replacement ─────────────────────────────────────────────────
+
+    public YamlNode DeepClone(YamlNode node) => CloneNode(node);
+
+    public void Replace(YamlNode target, YamlNode replacement)
+    {
+        if (!_tracker.TryGetParent(target, out var info))
+            return;
+
+        if (info.Parent is YamlMappingNode map && info.Key != null)
+        {
+            map.Children[new YamlScalarNode(info.Key)] = replacement;
+            _tracker.Track(replacement, map, info.Key);
+        }
+        else if (info.Parent is YamlSequenceNode seq && info.Index.HasValue)
+        {
+            seq.Children[info.Index.Value] = replacement;
+            _tracker.Track(replacement, seq, info.Index.Value);
+        }
+    }
+
+    public bool RemoveFromParent(YamlNode node)
+    {
+        if (!_tracker.TryGetParent(node, out var info))
+            return false;
+
+        if (info.Parent is YamlMappingNode map && info.Key != null)
+        {
+            map.Children.Remove(new YamlScalarNode(info.Key));
+            return true;
+        }
+        if (info.Parent is YamlSequenceNode seq && info.Index.HasValue)
+        {
+            seq.Children.RemoveAt(info.Index.Value);
+            // Re-register shifted indices
+            for (int i = info.Index.Value; i < seq.Children.Count; i++)
+                _tracker.Track(seq.Children[i], seq, i);
+            return true;
+        }
+        return false;
+    }
+
+    // ── Deep merge ────────────────────────────────────────────────────────────
+
+    public void DeepMergeInto(YamlNode source, YamlNode target,
+        ArrayMergeMode arrayMergeMode = ArrayMergeMode.Concat)
+    {
+        if (source is YamlScalarNode scalar)
+        {
+            if (target is YamlScalarNode targetScalar)
+                targetScalar.Value = scalar.Value;
+            return;
+        }
+
+        if (source is YamlMappingNode sourceMap && target is YamlMappingNode targetMap)
+        {
+            foreach (var (key, value) in sourceMap.Children)
+            {
+                if (targetMap.Children.TryGetValue(key, out var existing))
+                {
+                    if (IsArray(existing) && IsArray(value))
+                    {
+                        var srcSeq = (YamlSequenceNode)value;
+                        var tgtSeq = (YamlSequenceNode)existing;
+                        if (arrayMergeMode == ArrayMergeMode.Replace)
+                        {
+                            tgtSeq.Children.Clear();
+                            foreach (var item in srcSeq.Children)
+                                tgtSeq.Add(CloneNode(item));
+                        }
+                        else
+                        {
+                            foreach (var item in srcSeq.Children)
+                                tgtSeq.Add(CloneNode(item));
+                        }
+                    }
+                    else
+                    {
+                        DeepMergeInto(value, existing, arrayMergeMode);
+                    }
+                }
+                else
+                {
+                    var cloned = CloneNode(value);
+                    var keyStr = (key as YamlScalarNode)?.Value ?? key.ToString();
+                    targetMap.Children[key] = cloned;
+                    _tracker.Track(cloned, targetMap, keyStr!);
+                }
+            }
+        }
+        else if (source is YamlSequenceNode srcSeq2 && target is YamlSequenceNode tgtSeq2)
+        {
+            if (arrayMergeMode == ArrayMergeMode.Replace)
+            {
+                tgtSeq2.Children.Clear();
+                foreach (var item in srcSeq2.Children)
+                    tgtSeq2.Add(CloneNode(item));
+            }
+            else
+            {
+                foreach (var item in srcSeq2.Children)
+                    tgtSeq2.Add(CloneNode(item));
+            }
+        }
+    }
+
+    // ── Parent access ─────────────────────────────────────────────────────────
+
+    public YamlNode? GetParentNode(YamlNode node) => _tracker.GetParentNode(node);
+
+    public string? GetParentPropertyName(YamlNode node) => _tracker.GetParentKey(node);
+
+    // ── Equality ─────────────────────────────────────────────────────────────
+
+    public bool DeepEquals(YamlNode a, YamlNode b)
+    {
+        if (a is YamlScalarNode sa && b is YamlScalarNode sb)
+            return sa.Value == sb.Value;
+
+        if (a is YamlMappingNode ma && b is YamlMappingNode mb)
+        {
+            if (ma.Children.Count != mb.Children.Count) return false;
+            foreach (var (key, val) in ma.Children)
+            {
+                if (!mb.Children.TryGetValue(key, out var bVal)) return false;
+                if (!DeepEquals(val, bVal)) return false;
+            }
+            return true;
+        }
+
+        if (a is YamlSequenceNode qa && b is YamlSequenceNode qb)
+        {
+            if (qa.Children.Count != qb.Children.Count) return false;
+            for (int i = 0; i < qa.Children.Count; i++)
+                if (!DeepEquals(qa.Children[i], qb.Children[i])) return false;
+            return true;
+        }
+
+        return false;
+    }
+
+    // ── Serialisation ─────────────────────────────────────────────────────────
 
     public YamlNode Parse(string content)
     {
@@ -110,5 +339,31 @@ public class YamlNodeAdapter : INodeAdapter<YamlNode>
         using var writer = new StringWriter();
         stream.Save(writer, assignAnchors: false);
         return writer.ToString();
+    }
+
+    // ── Internal helpers ──────────────────────────────────────────────────────
+
+    private static YamlNode CloneNode(YamlNode node)
+    {
+        switch (node)
+        {
+            case YamlScalarNode scalar:
+                return new YamlScalarNode(scalar.Value);
+
+            case YamlMappingNode mapping:
+                var newMap = new YamlMappingNode();
+                foreach (var (k, v) in mapping.Children)
+                    newMap.Children[CloneNode(k)] = CloneNode(v);
+                return newMap;
+
+            case YamlSequenceNode sequence:
+                var newSeq = new YamlSequenceNode();
+                foreach (var item in sequence.Children)
+                    newSeq.Add(CloneNode(item));
+                return newSeq;
+
+            default:
+                return new YamlScalarNode(node.ToString());
+        }
     }
 }
