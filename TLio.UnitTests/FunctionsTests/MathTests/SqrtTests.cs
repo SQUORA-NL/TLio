@@ -20,24 +20,6 @@ public class SqrtTests
         data = JToken.Parse(@"{ ""perfect"": 9, ""two"": 2, ""neg"": -1 }");
     }
 
-    [Test] public void Sqrt_PerfectSquare()
-    {
-        var fn = new Sqrt<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.perfect") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(3));
-    }
-
-    [Test] public void Sqrt_NonPerfectSquare()
-    {
-        var fn = new Sqrt<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.two") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(System.Math.Sqrt(2)).Within(1e-10));
-    }
-
     [Test] public void Sqrt_Negative_ReturnsFailed()
     {
         var fn = new Sqrt<JToken>();

@@ -1,0 +1,5 @@
+{
+  "input": { "str": "hello", "empty": "", "nul": null, "arr": [], "arrFull": [1] },
+  "script": [{ "command": "put", "path": "$.result", "value": "=isempty($.arr)" }],
+  "result": { "str": "hello", "empty": "", "nul": null, "arr": [], "arrFull": [1], "result": true }
+}

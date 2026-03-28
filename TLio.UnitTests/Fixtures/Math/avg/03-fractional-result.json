@@ -1,0 +1,5 @@
+{
+  "input": { "arr": [1, 2] },
+  "script": [{ "command": "put", "path": "$.result", "value": "=avg($.arr)" }],
+  "result": { "arr": [1, 2], "result": 1.5 }
+}

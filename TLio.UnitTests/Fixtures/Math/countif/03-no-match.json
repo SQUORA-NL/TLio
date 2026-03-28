@@ -1,0 +1,5 @@
+{
+  "input": { "cat": ["A", "B", "A", "C", "A"], "crit_Z": "Z" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=countif($.cat, $.crit_Z)" }],
+  "result": { "cat": ["A", "B", "A", "C", "A"], "crit_Z": "Z", "result": 0 }
+}

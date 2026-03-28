@@ -27,7 +27,7 @@ public class CountIfs<TNode> : MathFunctionBase<TNode>
                 context.LogError(FunctionName, $"{FunctionName}: range {i / 2 + 1} not found.");
                 return FunctionResult<TNode>.Failed(currentNode);
             }
-            var criteriaArg = Arguments[i + 1].GetValue(currentNode, dataContext, context);
+            var criteriaArg = ResolveArg(Arguments[i + 1], currentNode, dataContext, context);
             if (!criteriaArg.Success || criteriaArg.Data.Count == 0)
             {
                 context.LogError(FunctionName, $"{FunctionName}: criteria {i / 2 + 1} not found.");

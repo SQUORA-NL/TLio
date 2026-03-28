@@ -1,0 +1,5 @@
+{
+  "input": { "half": 4.5, "frac": 4.567, "decimals": 2 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=round($.frac, $.decimals)" }],
+  "result": { "half": 4.5, "frac": 4.567, "decimals": 2, "result": 4.57 }
+}

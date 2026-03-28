@@ -20,25 +20,6 @@ public class ParseTests
         data = JToken.Parse(@"{ ""num"": ""42"", ""arr"": ""[1,2,3]"", ""obj"": ""{\""\""a\""\"":\""1\""}"", ""plain"": ""hello"" }");
     }
 
-    [Test] public void Parse_Number()
-    {
-        var fn = new Parse<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.num") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(42));
-    }
-
-    [Test] public void Parse_Array()
-    {
-        var fn = new Parse<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.arr") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Type, Is.EqualTo(JTokenType.Array));
-        Assert.That(((JArray)result.Data.First!).Count, Is.EqualTo(3));
-    }
-
     [Test] public void Parse_PlainString_ReturnsString()
     {
         var fn = new Parse<JToken>();

@@ -27,33 +27,6 @@ public class AverageIfTests
         }");
     }
 
-    [Test] public void AverageIf_NumericCriteria()
-    {
-        var fn = new AverageIf<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_gt3")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(4.5)); // (4+5)/2
-    }
-
-    [Test] public void AverageIf_WithAverageRange()
-    {
-        var fn = new AverageIf<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.cat"),
-            new PathValue<JToken>("$.crit_A"),
-            new PathValue<JToken>("$.values")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(30)); // (10+30+50)/3
-    }
-
     [Test] public void AverageIf_NoMatch_ReturnsZero()
     {
         var fn = new AverageIf<JToken>();

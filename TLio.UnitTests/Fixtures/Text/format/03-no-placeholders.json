@@ -1,0 +1,5 @@
+{
+  "input": { "tmpl": "Static text" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=format($.tmpl)" }],
+  "result": { "tmpl": "Static text", "result": "Static text" }
+}

@@ -20,48 +20,6 @@ public class SubstringTests
         data = JToken.Parse(@"{ ""str"": ""Hello World"", ""start"": 6, ""len"": 5 }");
     }
 
-    [Test] public void Substring_FromStart()
-    {
-        var fn = new Substring<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.start")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("World"));
-    }
-
-    [Test] public void Substring_WithLength()
-    {
-        var fn = new Substring<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.start"),
-            new PathValue<JToken>("$.len")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("World"));
-    }
-
-    [Test] public void Substring_FromZero()
-    {
-        var data2 = JToken.Parse(@"{ ""str"": ""Hello World"", ""start"": 0, ""len"": 5 }");
-        var fn = new Substring<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.start"),
-            new PathValue<JToken>("$.len")
-        });
-        var result = fn.Execute(data2, data2, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("Hello"));
-    }
-
     [Test] public void Substring_TooFewArgs_ReturnsFailed()
     {
         var fn = new Substring<JToken>();

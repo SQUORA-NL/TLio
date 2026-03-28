@@ -20,33 +20,6 @@ public class FloorTests
         data = JToken.Parse(@"{ ""whole"": 4, ""down"": 4.9, ""neg"": -4.1 }");
     }
 
-    [Test] public void Floor_WholeNumber()
-    {
-        var fn = new Floor<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.whole") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(4));
-    }
-
-    [Test] public void Floor_Fractional()
-    {
-        var fn = new Floor<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.down") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(4));
-    }
-
-    [Test] public void Floor_Negative()
-    {
-        var fn = new Floor<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.neg") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(-5));
-    }
-
     [Test] public void Floor_PathNotFound_ReturnsFailed()
     {
         var fn = new Floor<JToken>();

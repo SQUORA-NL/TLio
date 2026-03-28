@@ -20,33 +20,6 @@ public class CalculateTests
         data = JToken.Parse(@"{ ""add"": ""2 + 3"", ""complex"": ""10 * (4 - 1)"", ""modulo"": ""7 % 3"" }");
     }
 
-    [Test] public void Calculate_Addition()
-    {
-        var fn = new Calculate<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.add") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(5));
-    }
-
-    [Test] public void Calculate_ComplexExpression()
-    {
-        var fn = new Calculate<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.complex") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(30));
-    }
-
-    [Test] public void Calculate_ModuloExpression()
-    {
-        var fn = new Calculate<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.modulo") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(1));
-    }
-
     [Test] public void Calculate_PathNotFound_ReturnsFailed()
     {
         var fn = new Calculate<JToken>();

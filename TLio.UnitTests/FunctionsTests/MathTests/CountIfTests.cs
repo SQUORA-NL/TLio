@@ -26,32 +26,6 @@ public class CountIfTests
         }");
     }
 
-    [Test] public void CountIf_NumericCriteria()
-    {
-        var fn = new CountIf<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_gt3")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(2)); // 4, 5
-    }
-
-    [Test] public void CountIf_StringCriteria()
-    {
-        var fn = new CountIf<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.cat"),
-            new PathValue<JToken>("$.crit_A")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(3)); // A, A, A
-    }
-
     [Test] public void CountIf_NoMatch_ReturnsZero()
     {
         var fn = new CountIf<JToken>();

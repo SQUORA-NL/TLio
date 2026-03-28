@@ -20,19 +20,6 @@ public class ModuloTests
         data = JToken.Parse(@"{ ""dividend"": 10, ""divisor"": 3, ""zero"": 0 }");
     }
 
-    [Test] public void Modulo_Basic()
-    {
-        var fn = new Modulo<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.dividend"),
-            new PathValue<JToken>("$.divisor")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(1));
-    }
-
     [Test] public void Modulo_DivideByZero_ReturnsFailed()
     {
         var fn = new Modulo<JToken>();

@@ -1,0 +1,5 @@
+{
+  "input": { "dividend": 10, "divisor": 3 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=modulo($.dividend, $.divisor)" }],
+  "result": { "dividend": 10, "divisor": 3, "result": 1 }
+}

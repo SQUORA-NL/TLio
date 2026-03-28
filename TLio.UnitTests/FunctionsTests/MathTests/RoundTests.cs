@@ -20,28 +20,6 @@ public class RoundTests
         data = JToken.Parse(@"{ ""half"": 4.5, ""frac"": 4.567, ""decimals"": 2 }");
     }
 
-    [Test] public void Round_HalfAwayFromZero()
-    {
-        var fn = new Round<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.half") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(5));
-    }
-
-    [Test] public void Round_WithDecimals()
-    {
-        var fn = new Round<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.frac"),
-            new PathValue<JToken>("$.decimals")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(4.57));
-    }
-
     [Test] public void Round_PathNotFound_ReturnsFailed()
     {
         var fn = new Round<JToken>();

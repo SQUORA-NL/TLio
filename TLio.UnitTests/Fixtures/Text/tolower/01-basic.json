@@ -1,0 +1,5 @@
+{
+  "input": { "mixed": "Hello World" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=tolower($.mixed)" }],
+  "result": { "mixed": "Hello World", "result": "hello world" }
+}

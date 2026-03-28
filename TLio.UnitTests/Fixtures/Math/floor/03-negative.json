@@ -1,0 +1,5 @@
+{
+  "input": { "whole": 4, "down": 4.9, "neg": -4.1 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=floor($.neg)" }],
+  "result": { "whole": 4, "down": 4.9, "neg": -4.1, "result": -5 }
+}

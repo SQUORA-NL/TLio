@@ -20,33 +20,6 @@ public class AbsTests
         data = JToken.Parse(@"{ ""pos"": 3, ""neg"": -5, ""frac"": -2.7 }");
     }
 
-    [Test] public void Abs_Positive()
-    {
-        var fn = new Abs<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.pos") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(3));
-    }
-
-    [Test] public void Abs_Negative()
-    {
-        var fn = new Abs<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.neg") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(5));
-    }
-
-    [Test] public void Abs_NegativeFractional()
-    {
-        var fn = new Abs<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.frac") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(2.7));
-    }
-
     [Test] public void Abs_PathNotFound_ReturnsFailed()
     {
         var fn = new Abs<JToken>();

@@ -1,0 +1,5 @@
+{
+  "input": { "pos": 3, "neg": -5, "frac": -2.7 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=abs($.frac)" }],
+  "result": { "pos": 3, "neg": -5, "frac": -2.7, "result": 2.7 }
+}
