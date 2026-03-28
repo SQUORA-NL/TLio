@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands.Advanced;
@@ -114,6 +115,27 @@ public class CompareTests
 
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.False);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Compare_Success_LogsInfoEntry()
+    {
+        var result = new Compare<JToken>("$.a", "$.c", "$.result").Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
+    }
+
+    [Test]
+    public void Compare_TypeMismatch_ReturnsResult()
+    {
+        // Comparing a number to a string — should produce a "different" result, not throw
+        var result = new Compare<JToken>("$.a", "$.d", "$.result").Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(data.SelectToken("$.result")?.Value<string>(), Is.Not.Null);
     }
 
     [Test]

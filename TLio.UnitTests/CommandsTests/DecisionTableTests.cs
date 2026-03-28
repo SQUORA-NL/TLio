@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -283,5 +284,29 @@ public class DecisionTableTests
 
         Assert.That(result.Success, Is.True);
         Assert.That(result.Data.SelectToken("$.category")?.Value<string>(), Is.EqualTo("A"));
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void DecisionTable_Success_LogsInfoEntry()
+    {
+        var data = JToken.Parse("{ \"status\": \"active\" }");
+        var result = new DecisionTable<JToken>("$", SimpleCategoryConfig()).Execute(data, context);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(context.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
+    }
+
+    [Test]
+    public void DecisionTable_FirstMatchStrategy_OnlyFirstRuleApplied()
+    {
+        // Both rules can match when strategy is firstMatch (default Priority ordering)
+        var data = JToken.Parse("{ \"status\": \"active\" }");
+        var result = new DecisionTable<JToken>("$", SimpleCategoryConfig()).Execute(data, context);
+
+        Assert.That(result.Success, Is.True);
+        // Only the first matching rule (priority 0 → "A") should be applied
+        Assert.That(data.SelectToken("$.category")?.Value<string>(), Is.EqualTo("A"));
     }
 }

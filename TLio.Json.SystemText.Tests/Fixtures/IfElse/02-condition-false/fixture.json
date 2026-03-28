@@ -1,0 +1,10 @@
+{
+  "input": {},
+  "script": [{
+    "command": "ifElse",
+    "condition": false,
+    "ifScript":   [{ "command": "put", "path": "$.branch", "value": "if" }],
+    "elseScript": [{ "command": "put", "path": "$.branch", "value": "else" }]
+  }],
+  "result": { "branch": "else" }
+}

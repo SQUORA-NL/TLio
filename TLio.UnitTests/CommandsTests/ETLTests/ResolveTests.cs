@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Core.Models;
@@ -171,5 +172,45 @@ public class ResolveTests
         // No reference collection found → logs warning but does not fail
         var result = cmd.Execute(data, context);
         Assert.That(result.Success, Is.True);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Resolve_Success_LogsInfoEntry()
+    {
+        var data = JToken.Parse(@"{
+            ""orders"":   [{ ""productId"": 1, ""qty"": 2 }],
+            ""products"": [{ ""id"": 1, ""name"": ""Widget"" }]
+        }");
+
+        var cmd = new Resolve<JToken>
+        {
+            Path = "$.orders[*]",
+            ResolveSettings = new List<ResolveSetting<JToken>>
+            {
+                new ResolveSetting<JToken>
+                {
+                    ReferencesCollectionPath = "$.products[*]",
+                    ResolveKeys = new List<ResolveKey>
+                    {
+                        new ResolveKey { KeyPath = "@.productId", ReferenceKeyPath = "@.id" }
+                    },
+                    Values = new List<ResolveValue<JToken>>
+                    {
+                        new ResolveValue<JToken>
+                        {
+                            TargetPath = "@.productName",
+                            Value = new FixedValue<JToken>(JToken.Parse(@"""Widget"""))
+                        }
+                    }
+                }
+            }
+        };
+
+        var result = cmd.Execute(data, context);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(context.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
     }
 }

@@ -1,0 +1,5 @@
+{
+  "input": { "a": 5, "b": 3 },
+  "script": [{ "command": "compare", "firstPath": "$.a", "secondPath": "$.b", "resultPath": "$.result" }],
+  "result": { "a": 5, "b": 3, "result": "greater" }
+}

@@ -1,0 +1,5 @@
+{
+  "input": {},
+  "script": [{ "command": "put", "path": "$.person.address.city", "value": "Amsterdam" }],
+  "result": { "person": { "address": { "city": "Amsterdam" } } }
+}

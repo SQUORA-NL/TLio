@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -88,6 +89,33 @@ public class SetTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.False);
         Assert.That(executeOptions.GetLogEntries().Any(l => l.Message == message), Is.True);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Set_Success_LogsInfoEntry()
+    {
+        var result = new Set<JToken>("$.myString", new FixedValue<JToken>(new JValue("updated"))).Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
+    }
+
+    [Test]
+    public void Set_PropertyNotFound_LogsWarning()
+    {
+        // New syntax: Property set but path selects nodes; property name not found on object → warning
+        var command = new Set<JToken>
+        {
+            Path = "$.myObject",
+            Property = "nonExistentProp",
+            Value = new FixedValue<JToken>(new JValue("x"))
+        };
+        var result = command.Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Warning && e.Message.Contains("not found")), Is.True);
     }
 
     [Test]

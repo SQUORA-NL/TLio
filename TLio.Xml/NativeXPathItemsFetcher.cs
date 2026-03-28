@@ -136,6 +136,16 @@ public class NativeXPathItemsFetcher : IItemsFetcher<XElement>
         return (string.IsNullOrEmpty(parent) ? RootPathIndicator : parent, leaf);
     }
 
+    /// <summary>
+    /// Returns true for pure recursive-descent leaf paths like <c>//city</c>,
+    /// where the XPath expression itself identifies the leaf node (nothing follows
+    /// the recursive-descent axis). The command layer will select matching nodes
+    /// directly and replace each one in-place rather than splitting parent/leaf.
+    /// </summary>
+    public bool IsLeafRecursiveDescentSearch(string path) =>
+        path.StartsWith("//", StringComparison.Ordinal) &&
+        !path.AsSpan(2).Contains('/');
+
     public string? ProcessIndirectPath(string path, XElement data) =>
         path.Contains("=indirect(") ? null : path;
 

@@ -24,10 +24,6 @@
     <ProjectReference Include="..\TLio.Functions\TLio.Functions.csproj" />
     <ProjectReference Include="..\TLio.Client\TLio.Client.csproj" />
     <ProjectReference Include="..\TLio.Json\TLio.Json.csproj" />
-    <ProjectReference Include="..\TLio.Json.SystemText\TLio.Json.SystemText.csproj" />
-    <ProjectReference Include="..\TLio.Extensions.Math\TLio.Extensions.Math.csproj" />
-    <ProjectReference Include="..\TLio.Extensions.Text\TLio.Extensions.Text.csproj" />
-    <ProjectReference Include="..\TLio.Extensions.TimeDate\TLio.Extensions.TimeDate.csproj" />
     <ProjectReference Include="..\TLio.Extensions.ETL\TLio.Extensions.ETL.csproj" />
 
   </ItemGroup>

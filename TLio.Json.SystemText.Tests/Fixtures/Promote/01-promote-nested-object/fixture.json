@@ -1,0 +1,5 @@
+{
+  "input": { "person": { "name": "Alice", "age": 30 }, "result": null },
+  "script": [{ "command": "set", "path": "$.result", "value": "=promote($.person)" }],
+  "result": { "person": { "name": "Alice", "age": 30 }, "result": { "person": { "name": "Alice", "age": 30 } } }
+}

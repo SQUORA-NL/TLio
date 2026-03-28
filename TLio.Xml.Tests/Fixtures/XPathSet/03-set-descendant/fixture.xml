@@ -1,0 +1,17 @@
+<fixture>
+  <input>
+    <root>
+      <address>
+        <city>London</city>
+      </address>
+    </root>
+  </input>
+  <script><set path="//city">Paris</set></script>
+  <result>
+    <root>
+      <address>
+        <city>Paris</city>
+      </address>
+    </root>
+  </result>
+</fixture>

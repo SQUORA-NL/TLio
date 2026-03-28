@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -122,5 +123,38 @@ public class IfElseTests
 
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.False);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void IfElse_LogsConditionEvaluationInfo()
+    {
+        var script = new TLioScript<JToken>
+        {
+            new IfElse<JToken>(
+                new FixedValue<JToken>(new JValue(true)),
+                new TLioScript<JToken> { new Set<JToken>("$.myString", new FixedValue<JToken>(new JValue("done"))) },
+                null)
+        };
+        var result = script.Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Information && e.Message.Contains("condition evaluated")), Is.True);
+    }
+
+    [Test]
+    public void IfElse_FalseCondition_NoElseScript_IsNoOp()
+    {
+        var originalValue = data.SelectToken("$.myString")?.Value<string>();
+        var command = new IfElse<JToken>(
+            new FixedValue<JToken>(new JValue(false)),
+            new TLioScript<JToken> { new Set<JToken>("$.myString", new FixedValue<JToken>(new JValue("changed"))) },
+            null);
+
+        var result = command.Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(data.SelectToken("$.myString")?.Value<string>(), Is.EqualTo(originalValue));
     }
 }

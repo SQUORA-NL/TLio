@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -276,5 +277,18 @@ public class CopyMoveBaseTests
         var arr = data["dest"] as JArray;
         Assert.That(arr!.Count, Is.EqualTo(2));
         Assert.That(data.SelectToken("$.src"), Is.Null);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Copy_Success_LogsInfoEntry()
+    {
+        var data = JToken.Parse("{ \"src\": 42, \"dest\": {} }");
+
+        var result = new Copy<JToken>("$.src", "$.dest").Execute(data, _context);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(_context.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
     }
 }

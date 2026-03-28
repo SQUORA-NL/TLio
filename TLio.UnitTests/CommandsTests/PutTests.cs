@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -101,6 +102,36 @@ public class PutTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.False);
         Assert.That(executeOptions.GetLogEntries().Any(l => l.Message == message), Is.True);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Put_Success_LogsInfoEntry()
+    {
+        var result = new Put<JToken>("$.myString", new FixedValue<JToken>(new JValue("updated"))).Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
+    }
+
+    [Test]
+    public void Put_ArrayTarget_NewSyntax_ReplacesArrayContents()
+    {
+        // New syntax: path selects the array node directly; Put replaces its contents
+        var command = new Put<JToken>
+        {
+            Path = "$.myArray",
+            Property = "0",
+            Value = new FixedValue<JToken>(new JValue("replaced"))
+        };
+        var result = command.Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        var arr = data.SelectToken("$.myArray") as JArray;
+        Assert.That(arr, Is.Not.Null);
+        Assert.That(arr!.Count, Is.EqualTo(1));
+        Assert.That(arr[0].Value<string>(), Is.EqualTo("replaced"));
     }
 
     [Test]

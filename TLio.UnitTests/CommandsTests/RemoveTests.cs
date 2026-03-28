@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -76,6 +77,36 @@ public class RemoveTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.False);
         Assert.That(executeOptions.GetLogEntries().Any(l => l.Message == message), Is.True);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Remove_Success_LogsInfoEntry()
+    {
+        var result = new Remove<JToken>("$.myString").Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
+    }
+
+    [Test]
+    public void Remove_NoMatchingPath_Succeeds_WithoutLogInfo()
+    {
+        var result = new Remove<JToken>("$.nonExistentProperty").Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.False);
+    }
+
+    [Test]
+    public void Remove_LastElementFromArray_Succeeds()
+    {
+        var singleElement = JToken.Parse("{ \"arr\": [42] }");
+        var result = new Remove<JToken>("$.arr[0]").Execute(singleElement, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(singleElement.SelectToken("$.arr") is JArray { Count: 0 }, Is.True);
     }
 
     [Test]

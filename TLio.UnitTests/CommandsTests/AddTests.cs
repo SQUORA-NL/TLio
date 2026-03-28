@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -117,6 +118,27 @@ public class AddTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.False);
         Assert.That(executeOptions.GetLogEntries().Any(l => l.Message == message), Is.True);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Add_Success_LogsInfoEntry()
+    {
+        var result = new Add<JToken>("$.newProp", new FixedValue<JToken>(new JValue("x"))).Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
+    }
+
+    [Test]
+    public void Add_DuplicateProperty_LogsWarning()
+    {
+        // "$.myString" already exists — Add should log a warning and skip
+        var result = new Add<JToken>("$.myString", new FixedValue<JToken>(new JValue("newValue"))).Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Warning && e.Message.Contains("already exists")), Is.True);
     }
 
     // CanAddCorrectValuesAsFunctions skipped:

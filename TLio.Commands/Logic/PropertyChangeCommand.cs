@@ -43,6 +43,9 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
         else
             ExecuteLegacySyntax(dataContext, context);
 
+        if (IsSuccessful)
+            context.LogInfo(CoreConstants.CommandExecution, $"{CommandName}: completed successfully on path '{Path}'");
+
         return new TLioExecutionResult<TNode>(IsSuccessful, dataContext);
     }
 
