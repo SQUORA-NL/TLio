@@ -29,6 +29,8 @@
     <ProjectReference Include="..\TLio.Extensions.Text\TLio.Extensions.Text.csproj" />
     <ProjectReference Include="..\TLio.Extensions.TimeDate\TLio.Extensions.TimeDate.csproj" />
     <ProjectReference Include="..\TLio.Extensions.ETL\TLio.Extensions.ETL.csproj" />
+    <ProjectReference Include="..\TLio.Xml\TLio.Xml.csproj" />
+    <ProjectReference Include="..\TLio.Yaml\TLio.Yaml.csproj" />
   </ItemGroup>
 
 </Project>
