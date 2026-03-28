@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\TLio.Json\TLio.Json.csproj" />
+    <ProjectReference Include="..\..\TLio.Xml\TLio.Xml.csproj" />
+    <ProjectReference Include="..\..\TLio.Yaml\TLio.Yaml.csproj" />
+    <ProjectReference Include="..\..\TLio.Client\TLio.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Scripts/**/*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SampleInput/**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
