@@ -1,0 +1,5 @@
+{
+  "input": { "padded": "  hello  " },
+  "script": [{ "command": "put", "path": "$.result", "value": "=trimstart($.padded)" }],
+  "result": { "padded": "  hello  ", "result": "hello  " }
+}

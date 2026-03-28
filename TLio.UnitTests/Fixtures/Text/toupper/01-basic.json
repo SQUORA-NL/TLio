@@ -1,0 +1,5 @@
+{
+  "input": { "mixed": "Hello World" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=toupper($.mixed)" }],
+  "result": { "mixed": "Hello World", "result": "HELLO WORLD" }
+}

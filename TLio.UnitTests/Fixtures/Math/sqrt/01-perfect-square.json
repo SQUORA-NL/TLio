@@ -1,0 +1,5 @@
+{
+  "input": { "perfect": 9, "two": 2 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=sqrt($.perfect)" }],
+  "result": { "perfect": 9, "two": 2, "result": 3 }
+}

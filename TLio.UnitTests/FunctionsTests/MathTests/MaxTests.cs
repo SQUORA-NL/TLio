@@ -20,28 +20,6 @@ public class MaxTests
         data = JToken.Parse(@"{ ""nums"": [3, 1, 4, 1, 5], ""a"": 10, ""b"": 3 }");
     }
 
-    [Test] public void Max_Array()
-    {
-        var fn = new Max<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.nums") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(5));
-    }
-
-    [Test] public void Max_TwoValues()
-    {
-        var fn = new Max<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.a"),
-            new PathValue<JToken>("$.b")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(10));
-    }
-
     [Test] public void Max_PathNotFound_ReturnsFailed()
     {
         var fn = new Max<JToken>();

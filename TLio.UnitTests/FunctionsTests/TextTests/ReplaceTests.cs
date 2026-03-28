@@ -20,20 +20,6 @@ public class ReplaceTests
         data = JToken.Parse(@"{ ""str"": ""Hello World"", ""old"": ""World"", ""new"": ""TLio"" }");
     }
 
-    [Test] public void Replace_Basic()
-    {
-        var fn = new Replace<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.old"),
-            new PathValue<JToken>("$.new")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("Hello TLio"));
-    }
-
     [Test] public void Replace_NoOccurrence()
     {
         var data2 = JToken.Parse(@"{ ""str"": ""Hello World"", ""old"": ""xyz"", ""new"": ""abc"" }");

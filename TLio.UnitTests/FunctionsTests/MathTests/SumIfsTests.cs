@@ -24,52 +24,6 @@ public class SumIfsTests
         }");
     }
 
-    [Test] public void SumIfs_SingleCriteria()
-    {
-        var fn = new SumIfs<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_gt3")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(9)); // 4 + 5
-    }
-
-    [Test] public void SumIfs_TwoCriteria()
-    {
-        var fn = new SumIfs<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_gt3"),
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_lte4")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(4)); // only 4 matches >3 AND <=4
-    }
-
-    [Test] public void SumIfs_NoMatch_ReturnsZero()
-    {
-        var fn = new SumIfs<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_gt3"),
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_lte4")
-        });
-        // Same as TwoCriteria but verify that no extra items slip in
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-    }
-
     [Test] public void SumIfs_TooFewArgs_ReturnsFailed()
     {
         var fn = new SumIfs<JToken>();

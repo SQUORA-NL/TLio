@@ -1,0 +1,5 @@
+{
+  "input": { "str": "Hello World", "old": "World", "new": "TLio" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=replace($.str, $.old, $.new)" }],
+  "result": { "str": "Hello World", "old": "World", "new": "TLio", "result": "Hello TLio" }
+}

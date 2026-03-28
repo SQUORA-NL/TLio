@@ -1,0 +1,5 @@
+{
+  "input": { "a": 5, "b": 3, "c": null, "nums": [1, 2, 3, 4], "str": "2.5" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=sum($.a, $.b)" }],
+  "result": { "a": 5, "b": 3, "c": null, "nums": [1, 2, 3, 4], "str": "2.5", "result": 8 }
+}

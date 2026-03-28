@@ -1,0 +1,5 @@
+{
+  "input": { "nul": null },
+  "script": [{ "command": "put", "path": "$.result", "value": "=count($.nul)" }],
+  "result": { "nul": null, "result": 1 }
+}

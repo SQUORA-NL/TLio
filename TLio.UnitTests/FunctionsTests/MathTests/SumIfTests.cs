@@ -26,33 +26,6 @@ public class SumIfTests
         }");
     }
 
-    [Test] public void SumIf_NumericCriteria()
-    {
-        var fn = new SumIf<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_gt3")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(9)); // 4 + 5
-    }
-
-    [Test] public void SumIf_WithSumRange()
-    {
-        var fn = new SumIf<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.cat"),
-            new PathValue<JToken>("$.crit_A"),
-            new PathValue<JToken>("$.values")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(90)); // 10 + 30 + 50
-    }
-
     [Test] public void SumIf_NoMatch_ReturnsZero()
     {
         var fn = new SumIf<JToken>();

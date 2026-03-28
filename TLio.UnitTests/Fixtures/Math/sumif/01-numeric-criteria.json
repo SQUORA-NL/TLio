@@ -1,0 +1,5 @@
+{
+  "input": { "nums": [1, 2, 3, 4, 5], "values": [10, 20, 30, 40, 50], "cat": ["A", "B", "A", "C", "A"], "crit_gt3": ">3", "crit_A": "A" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=sumif($.nums, $.crit_gt3)" }],
+  "result": { "nums": [1, 2, 3, 4, 5], "values": [10, 20, 30, 40, 50], "cat": ["A", "B", "A", "C", "A"], "crit_gt3": ">3", "crit_A": "A", "result": 9 }
+}

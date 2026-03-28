@@ -34,62 +34,6 @@ public class DateCompareTests
     }
 
     [Test]
-    public void DateCompare_Earlier_ReturnsMinusOne()
-    {
-        var fn = new DateCompare<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.earlier"),
-            new PathValue<JToken>("$.later")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(-1L));
-    }
-
-    [Test]
-    public void DateCompare_Later_ReturnsOne()
-    {
-        var fn = new DateCompare<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.later"),
-            new PathValue<JToken>("$.earlier")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(1L));
-    }
-
-    [Test]
-    public void DateCompare_Equal_ReturnsZero()
-    {
-        var fn = new DateCompare<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.earlier"),
-            new PathValue<JToken>("$.same")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(0L));
-    }
-
-    [Test]
-    public void DateCompare_WithTimestamps_Earlier()
-    {
-        var fn = new DateCompare<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.ts1"),
-            new PathValue<JToken>("$.ts2")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(-1L));
-    }
-
-    [Test]
     public void DateCompare_TooFewArgs_ReturnsFailed()
     {
         var fn = new DateCompare<JToken>();

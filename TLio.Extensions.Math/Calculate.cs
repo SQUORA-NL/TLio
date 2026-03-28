@@ -20,7 +20,7 @@ public class Calculate<TNode> : MathFunctionBase<TNode>
             return FunctionResult<TNode>.Failed(currentNode);
         }
 
-        var argResult = Arguments[0].GetValue(currentNode, dataContext, context);
+        var argResult = ResolveArg(Arguments[0], currentNode, dataContext, context);
         if (!argResult.Success || argResult.Data.Count == 0)
         {
             context.LogError(FunctionName, $"{FunctionName}: argument path not found.");

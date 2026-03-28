@@ -20,29 +20,6 @@ public class ConcatTests
         data = JToken.Parse(@"{ ""a"": ""Hello"", ""b"": "" "", ""c"": ""World"" }");
     }
 
-    [Test] public void Concat_TwoStrings()
-    {
-        var fn = new Concat<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.a"),
-            new PathValue<JToken>("$.b"),
-            new PathValue<JToken>("$.c")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("Hello World"));
-    }
-
-    [Test] public void Concat_SingleArg()
-    {
-        var fn = new Concat<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.a") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("Hello"));
-    }
-
     [Test] public void Concat_NoArgs_ReturnsFailed()
     {
         var fn = new Concat<JToken>();

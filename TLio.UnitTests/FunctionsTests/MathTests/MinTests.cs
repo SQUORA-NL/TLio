@@ -20,28 +20,6 @@ public class MinTests
         data = JToken.Parse(@"{ ""nums"": [3, 1, 4, 1, 5], ""a"": 10, ""b"": 3 }");
     }
 
-    [Test] public void Min_Array()
-    {
-        var fn = new Min<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.nums") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(1));
-    }
-
-    [Test] public void Min_TwoValues()
-    {
-        var fn = new Min<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.a"),
-            new PathValue<JToken>("$.b")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(3));
-    }
-
     [Test] public void Min_PathNotFound_ReturnsFailed()
     {
         var fn = new Min<JToken>();

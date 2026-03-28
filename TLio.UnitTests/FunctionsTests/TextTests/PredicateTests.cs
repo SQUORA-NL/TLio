@@ -20,19 +20,6 @@ public class PredicateTests
         data = JToken.Parse(@"{ ""str"": ""Hello World"", ""prefix"": ""Hello"", ""suffix"": ""World"", ""sub"": ""lo Wo"", ""no"": ""XYZ"" }");
     }
 
-    [Test] public void StartsWith_Match()
-    {
-        var fn = new StartsWith<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.prefix")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<bool>(), Is.True);
-    }
-
     [Test] public void StartsWith_NoMatch()
     {
         var fn = new StartsWith<JToken>();
@@ -46,19 +33,6 @@ public class PredicateTests
         Assert.That(result.Data.First!.Value<bool>(), Is.False);
     }
 
-    [Test] public void EndsWith_Match()
-    {
-        var fn = new EndsWith<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.suffix")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<bool>(), Is.True);
-    }
-
     [Test] public void EndsWith_NoMatch()
     {
         var fn = new EndsWith<JToken>();
@@ -70,19 +44,6 @@ public class PredicateTests
         var result = fn.Execute(data, data, context);
         Assert.That(result.Success, Is.True);
         Assert.That(result.Data.First!.Value<bool>(), Is.False);
-    }
-
-    [Test] public void Contains_Match()
-    {
-        var fn = new Contains<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.sub")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<bool>(), Is.True);
     }
 
     [Test] public void Contains_NoMatch()

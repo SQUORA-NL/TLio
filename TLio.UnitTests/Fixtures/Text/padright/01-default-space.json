@@ -1,0 +1,5 @@
+{
+  "input": { "str": "42", "width": 5, "pad": "0" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=padright($.str, $.width)" }],
+  "result": { "str": "42", "width": 5, "pad": "0", "result": "42   " }
+}

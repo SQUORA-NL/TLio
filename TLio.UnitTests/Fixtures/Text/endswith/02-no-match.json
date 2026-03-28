@@ -1,0 +1,5 @@
+{
+  "input": { "str": "Hello World", "suffix": "World", "no": "XYZ" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=endswith($.str, $.no)" }],
+  "result": { "str": "Hello World", "suffix": "World", "no": "XYZ", "result": false }
+}

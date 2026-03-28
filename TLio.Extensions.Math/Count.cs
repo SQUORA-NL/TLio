@@ -10,7 +10,7 @@ public class Count<TNode> : MathFunctionBase<TNode>
         long count = 0;
         foreach (var arg in Arguments)
         {
-            var result = arg.GetValue(currentNode, dataContext, context);
+            var result = ResolveArg(arg, currentNode, dataContext, context);
             if (!result.Success || result.Data.Count == 0) continue;
             foreach (var node in result.Data)
             {

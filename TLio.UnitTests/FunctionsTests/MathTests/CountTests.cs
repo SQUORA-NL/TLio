@@ -20,28 +20,6 @@ public class CountTests
         data = JToken.Parse(@"{ ""nums"": [1, 2, 3, 4], ""a"": 10, ""b"": 20 }");
     }
 
-    [Test] public void Count_Array()
-    {
-        var fn = new Count<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.nums") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(4));
-    }
-
-    [Test] public void Count_TwoScalars()
-    {
-        var fn = new Count<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.a"),
-            new PathValue<JToken>("$.b")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(2));
-    }
-
     [Test] public void Count_PathNotFound_ReturnsZero()
     {
         var fn = new Count<JToken>();

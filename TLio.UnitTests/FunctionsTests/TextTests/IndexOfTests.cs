@@ -20,19 +20,6 @@ public class IndexOfTests
         data = JToken.Parse(@"{ ""str"": ""Hello World"", ""sub"": ""World"", ""no"": ""XYZ"" }");
     }
 
-    [Test] public void IndexOf_Found()
-    {
-        var fn = new IndexOf<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.sub")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(6));
-    }
-
     [Test] public void IndexOf_NotFound()
     {
         var fn = new IndexOf<JToken>();
