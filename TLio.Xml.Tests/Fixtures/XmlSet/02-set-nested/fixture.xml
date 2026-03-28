@@ -1,0 +1,1 @@
+<fixture><input><root><address><city>old-city</city></address></root></input><script><set path="/address/city">new-city</set></script><result><root><address><city>new-city</city></address></root></result></fixture>

@@ -1,0 +1,8 @@
+existing: value
+---
+- command: put
+  path: $.newProp
+  value: upserted
+---
+existing: value
+newProp: upserted

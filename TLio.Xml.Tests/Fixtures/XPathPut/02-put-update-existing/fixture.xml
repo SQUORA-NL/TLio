@@ -1,0 +1,1 @@
+<fixture><input><root><name>Alice</name><age>25</age></root></input><script><put path="age">30</put></script><result><root><name>Alice</name><age>30</age></root></result></fixture>

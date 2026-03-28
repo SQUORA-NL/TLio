@@ -1,0 +1,7 @@
+source: Alice
+---
+- command: move
+  fromPath: $.source
+  toPath: $.destination
+---
+destination: Alice

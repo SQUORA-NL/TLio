@@ -1,0 +1,8 @@
+source: Alice
+---
+- command: copy
+  fromPath: $.source
+  toPath: $.destination
+---
+source: Alice
+destination: Alice

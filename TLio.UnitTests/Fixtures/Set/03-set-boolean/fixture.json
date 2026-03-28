@@ -1,0 +1,5 @@
+{
+  "input": { "active": false },
+  "script": [{ "command": "set", "path": "$.active", "value": true }],
+  "result": { "active": true }
+}

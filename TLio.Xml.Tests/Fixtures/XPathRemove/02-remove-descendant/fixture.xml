@@ -1,0 +1,1 @@
+<fixture><input><root><data><obsolete>x</obsolete><keep>y</keep></data></root></input><script><remove path="//obsolete"/></script><result><root><data><keep>y</keep></data></root></result></fixture>

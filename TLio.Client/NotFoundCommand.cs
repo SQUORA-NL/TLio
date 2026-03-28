@@ -7,7 +7,7 @@ namespace TLio.Client;
 /// Sentinel command produced when a script references a command name not in the registry.
 /// Logs a warning and succeeds — mirrors JLio's NotFoundCommand behaviour (no exception).
 /// </summary>
-internal class NotFoundCommand<TNode> : ICommand<TNode>
+public class NotFoundCommand<TNode> : ICommand<TNode>
 {
     private readonly string _commandName;
 

@@ -1,0 +1,5 @@
+{
+  "input": { "items": ["first", "second", "third"], "result": null },
+  "script": [{ "command": "set", "path": "$.result", "value": "=partial($.items[*], 2)" }],
+  "result": { "items": ["first", "second", "third"], "result": "third" }
+}

@@ -1,0 +1,7 @@
+keep: 1
+remove-me: 2
+---
+- command: remove
+  path: $.remove-me
+---
+keep: 1

@@ -1,1 +1,0 @@
-[{ "command": "move", "fromPath": "$.src", "toPath": "$.dst" }]

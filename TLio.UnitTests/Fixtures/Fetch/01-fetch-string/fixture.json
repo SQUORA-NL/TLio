@@ -1,0 +1,5 @@
+{
+  "input": { "source": "hello", "target": null },
+  "script": [{ "command": "set", "path": "$.target", "value": "=fetch($.source)" }],
+  "result": { "source": "hello", "target": "hello" }
+}

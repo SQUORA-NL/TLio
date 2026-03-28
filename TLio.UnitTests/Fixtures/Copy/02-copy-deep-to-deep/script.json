@@ -1,1 +1,0 @@
-[{ "command": "copy", "fromPath": "$.source.value", "toPath": "$.target.result" }]

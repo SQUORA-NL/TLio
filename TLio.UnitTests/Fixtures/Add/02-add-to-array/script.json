@@ -1,4 +1,0 @@
-[
-  { "command": "add", "path": "$.items.el", "value": "first" },
-  { "command": "add", "path": "$.items.el", "value": "second" }
-]

@@ -1,0 +1,8 @@
+existing: value
+---
+- command: add
+  path: $.newProp
+  value: added
+---
+existing: value
+newProp: added

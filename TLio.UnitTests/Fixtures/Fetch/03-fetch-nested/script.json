@@ -1,1 +1,0 @@
-[{ "command": "set", "path": "$.target", "value": "=fetch($.nested.value)" }]

@@ -1,0 +1,7 @@
+name: old
+---
+- command: put
+  path: $.name
+  value: new
+---
+name: new

@@ -1,0 +1,9 @@
+address:
+  city: Amsterdam
+  temp: to-delete
+---
+- command: remove
+  path: $.address.temp
+---
+address:
+  city: Amsterdam

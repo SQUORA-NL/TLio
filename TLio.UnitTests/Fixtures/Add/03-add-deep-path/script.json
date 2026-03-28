@@ -1,1 +1,0 @@
-[{ "command": "add", "path": "$.a.newProp", "value": "deep" }]

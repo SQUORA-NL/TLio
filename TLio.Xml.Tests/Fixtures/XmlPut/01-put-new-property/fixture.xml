@@ -1,0 +1,1 @@
+<fixture><input><root><existing>value</existing></root></input><script><put path="/newProp">upserted</put></script><result><root><existing>value</existing><newProp>upserted</newProp></root></result></fixture>

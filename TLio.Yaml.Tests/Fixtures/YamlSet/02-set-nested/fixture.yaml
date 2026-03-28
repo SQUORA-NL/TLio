@@ -1,0 +1,11 @@
+address:
+  city: old-city
+  country: NL
+---
+- command: set
+  path: $.address.city
+  value: new-city
+---
+address:
+  city: new-city
+  country: NL

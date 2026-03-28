@@ -1,0 +1,1 @@
+<fixture><input><root><address><city>Amsterdam</city></address></root></input><script><add path="/address/country">NL</add></script><result><root><address><city>Amsterdam</city><country>NL</country></address></root></result></fixture>

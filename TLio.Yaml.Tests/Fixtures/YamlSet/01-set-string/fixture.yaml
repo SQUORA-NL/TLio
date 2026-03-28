@@ -1,0 +1,9 @@
+name: old
+age: 30
+---
+- command: set
+  path: $.name
+  value: new
+---
+name: new
+age: 30
