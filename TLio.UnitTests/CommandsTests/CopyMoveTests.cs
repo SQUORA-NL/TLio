@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -221,5 +222,25 @@ public class CopyMoveTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.False);
         Assert.That(executeOptions.GetLogEntries().Any(), Is.True);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Copy_SourceNotFound_LogsWarning_ReturnsSuccess()
+    {
+        var result = new Copy<JToken>("$.nonExistent", "$.dest").Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Warning && e.Message.Contains("no nodes found")), Is.True);
+    }
+
+    [Test]
+    public void Copy_Success_LogsInfoEntry()
+    {
+        var result = new Copy<JToken>("$.myString", "$.myNewObject.copy").Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
     }
 }

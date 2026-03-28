@@ -1,0 +1,5 @@
+{
+  "input": { "nested": { "value": "world" }, "target": null },
+  "script": [{ "command": "set", "path": "$.target", "value": "=fetch($.nested.value)" }],
+  "result": { "nested": { "value": "world" }, "target": "world" }
+}

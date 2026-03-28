@@ -1,0 +1,5 @@
+{
+  "input": { "pathRef": "$.source", "source": "hello", "target": null },
+  "script": [{ "command": "set", "path": "$.target", "value": "=indirect($.pathRef)" }],
+  "result": { "pathRef": "$.source", "source": "hello", "target": "hello" }
+}

@@ -1,0 +1,5 @@
+{
+  "input": { "result": null },
+  "script": [{ "command": "set", "path": "$.result", "value": "=scriptpath()" }],
+  "result": { "result": "$" }
+}

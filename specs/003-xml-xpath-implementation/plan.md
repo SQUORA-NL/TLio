@@ -83,14 +83,15 @@ TLio.Xml.Tests/
 │   ├── XmlRemove/      ← moved
 │   ├── XmlCopy/        ← moved
 │   ├── XmlMove/        ← moved
-│   ├── XmlXPathSet/    ← NEW: NativeXPath fixture files (same commands, XPath-style paths)
-│   ├── XmlXPathAdd/    ← NEW
-│   └── ...
+│   ├── XPathSet/       ← NEW: NativeXPath fixture files (same commands, XPath-style paths)
+│   ├── XPathAdd/       ← NEW
+│   ├── XPathRemove/    ← NEW
+│   ├── XPathPut/       ← NEW
+│   ├── XPathCopy/      ← NEW
+│   └── XPathMove/      ← NEW
 ├── SlashPath/
 │   ├── XmlFixtureTests.cs         ← moved from TLio.UnitTests
-│   ├── XmlFixtureLoader.cs        ← moved from TLio.UnitTests
-│   ├── XmlNodeAdapterTests.cs     ← moved from TLio.UnitTests/AdapterTests
-│   └── XmlCommandIntegrationTests.cs
+│   └── XmlFixtureLoader.cs        ← moved from TLio.UnitTests
 └── NativeXPath/
     ├── XPathFixtureTests.cs       ← NEW: same structure, uses NativeXPathItemsFetcher
     ├── XPathFixtureLoader.cs      ← NEW (or reuse XmlFixtureLoader)

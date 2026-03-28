@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands.Advanced;
@@ -77,6 +78,27 @@ public class MergeTests
 
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.False);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Merge_Success_LogsInfoEntry()
+    {
+        var result = new Merge<JToken>("$.source", "$.target").Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
+    }
+
+    [Test]
+    public void Merge_SourceIsArray_TargetIsObject_DoesNotThrow()
+    {
+        // Merging an array into an object is an edge case — should complete without exception
+        var result = new Merge<JToken>("$.sourceArray", "$.target").Execute(data, executeOptions);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Success, Is.True);
     }
 
     [Test]

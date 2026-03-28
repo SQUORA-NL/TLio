@@ -1,0 +1,5 @@
+{
+  "input": { "existing": "value" },
+  "script": [{ "command": "add", "path": "$.newProp", "value": "added" }],
+  "result": { "existing": "value", "newProp": "added" }
+}

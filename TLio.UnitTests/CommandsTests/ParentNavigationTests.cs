@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Client;
@@ -243,5 +244,18 @@ public class ParentNavigationTests
         Assert.That(data.SelectToken("$.a.b.c.value")?.Value<int>(), Is.EqualTo(5));
         Assert.That(data.SelectToken("$.a.b.c"), Is.Not.Null);
         Assert.That(data.SelectToken("$.a.b"), Is.Not.Null);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Move_WithParentNavigation_LogsInfoEntry()
+    {
+        var data = JToken.Parse("{ \"items\": [{ \"val\": 1 }], \"target\": {} }");
+        var result = new Move<JToken>("$.items[0].val", "$.target")
+            .Execute(data, _context);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(_context.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
     }
 }

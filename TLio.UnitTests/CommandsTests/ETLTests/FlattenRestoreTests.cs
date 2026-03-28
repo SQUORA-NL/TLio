@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Extensions.ETL.Commands;
@@ -155,5 +156,32 @@ public class FlattenRestoreTests
         Assert.That(lines.Length, Is.EqualTo(2));
         Assert.That(lines[0], Is.EqualTo("city,country"));
         Assert.That(lines[1], Does.Contain("Paris").And.Contain("France"));
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Restore_NoMetadata_LogsInfoEntry()
+    {
+        // Restore without prior Flatten metadata triggers "best-effort" path which logs info
+        var data = JToken.Parse(@"{ ""item"": { ""name__tag__string"": ""test"" } }");
+        var restoreCmd = new Restore<JToken>
+        {
+            Path = "$.item",
+            RestoreSettings = new RestoreSettings { MetadataPath = "$", RemoveMetadata = false }
+        };
+        var result = restoreCmd.Execute(data, context);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(context.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
+    }
+
+    [Test]
+    public void Flatten_EmptyObject_Succeeds()
+    {
+        var data = JToken.Parse(@"{ ""item"": {} }");
+        var result = new Flatten<JToken> { Path = "$.item" }.Execute(data, context);
+
+        Assert.That(result.Success, Is.True);
     }
 }

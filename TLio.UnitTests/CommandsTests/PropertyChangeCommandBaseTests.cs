@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -201,5 +202,17 @@ public class PropertyChangeCommandBaseTests
 
         Assert.That(result.Success, Is.True);
         Assert.That(data.SelectToken("$.myObject.added")?.Value<bool>(), Is.True);
+    }
+
+    // ── Article X: logging assertions ────────────────────────────────────────
+
+    [Test]
+    public void Execute_Success_LogsInfoEntry()
+    {
+        var result = new Set<JToken>("$.myString", new FixedValue<JToken>(new JValue("updated")))
+            .Execute(data, context);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(context.GetLogEntries().Any(e => e.Level == LogLevel.Information), Is.True);
     }
 }

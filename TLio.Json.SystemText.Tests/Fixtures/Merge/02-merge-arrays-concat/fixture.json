@@ -1,0 +1,5 @@
+{
+  "input": { "target": [1, 2], "source": [3, 4] },
+  "script": [{ "command": "merge", "path": "$.source", "targetPath": "$.target", "arrayMergeMode": "concat" }],
+  "result": { "target": [1, 2, 3, 4], "source": [3, 4] }
+}
