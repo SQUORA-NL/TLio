@@ -1,0 +1,5 @@
+{
+  "input": { "str": "Hello World", "prefix": "Hello", "no": "XYZ" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=startswith($.str, $.no)" }],
+  "result": { "str": "Hello World", "prefix": "Hello", "no": "XYZ", "result": false }
+}

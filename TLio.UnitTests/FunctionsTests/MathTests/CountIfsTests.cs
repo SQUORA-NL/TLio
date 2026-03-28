@@ -24,34 +24,6 @@ public class CountIfsTests
         }");
     }
 
-    [Test] public void CountIfs_SingleCriteria()
-    {
-        var fn = new CountIfs<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_gt3")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(2)); // 4, 5
-    }
-
-    [Test] public void CountIfs_TwoCriteria()
-    {
-        var fn = new CountIfs<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_gt3"),
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.crit_lte4")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(1)); // only 4
-    }
-
     [Test] public void CountIfs_OddArgCount_ReturnsFailed()
     {
         var fn = new CountIfs<JToken>();

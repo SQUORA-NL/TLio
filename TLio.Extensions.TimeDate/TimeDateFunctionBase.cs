@@ -43,7 +43,7 @@ public abstract class TimeDateFunctionBase<TNode> : FunctionBase<TNode>
         IExecutionContext<TNode> context, string funcName)
     {
         value = default;
-        var result = arg.GetValue(currentNode, dataContext, context);
+        var result = ResolveArg(arg, currentNode, dataContext, context);
         if (!result.Success || result.Data.Count == 0)
         {
             context.LogError(funcName, $"{funcName}: argument path not found.");
@@ -69,7 +69,7 @@ public abstract class TimeDateFunctionBase<TNode> : FunctionBase<TNode>
         TNode currentNode, TNode dataContext,
         IExecutionContext<TNode> context, string funcName)
     {
-        var result = arg.GetValue(currentNode, dataContext, context);
+        var result = ResolveArg(arg, currentNode, dataContext, context);
         if (!result.Success || result.Data.Count == 0)
         {
             context.LogError(funcName, $"{funcName}: argument path not found.");

@@ -1,7 +1,7 @@
 # Tasks 001 — TLio Core Architecture
 
 **Plan:** [plan.md](./plan.md)
-**Status:** In Progress
+**Status:** Complete
 
 Legend: `[P]` = parallelisable with other `[P]` tasks in the same phase
 
@@ -70,9 +70,9 @@ Legend: `[P]` = parallelisable with other `[P]` tasks in the same phase
 - [x] [P] Implement `concat(a, b, ...)` function
 - [x] [P] Implement `toUpper(s)` function
 - [x] [P] Implement `toLower(s)` function
-- [x] [P] Implement `now()` function (returns ISO-8601 timestamp as string node)
+- [x] [P] Implement `now()` function — implemented as `datetime(format?)` in `TLio.Functions`
 - [x] [P] Implement `typeOf(node)` function (returns type name as string node)
-- [x] [P] Implement `count(path)` function (returns integer node)
+- [x] [P] Implement `count(path)` function (returns integer node) — implemented in `TLio.Extensions.Math`
 - [x] Write unit tests for all functions
 
 ---
@@ -127,7 +127,7 @@ Legend: `[P]` = parallelisable with other `[P]` tasks in the same phase
 - [x] Complete `YamlPathItemsFetcher.GetParent`
 - [x] Add `YamlExecutionContext.CreateDefault()` factory
 - [x] Implement `YamlScriptParser<TNode>` — parse YAML-format scripts (`- command: set\n  path: $.x\n  value: v`)
-- [x] Write YAML fixture tests (Set, Add, Put, Remove, Copy, Move) with `input.yaml`/`script.yaml`/`result.yaml` triplets
+- [x] Write YAML fixture tests (Set, Add, Put, Remove, Copy, Move) — now in `TLio.Yaml.Tests/Fixtures/YamlSet/` etc., single `fixture.yaml` format
 - [x] Write `YamlAdapterTests`
 - [x] Write `YamlCommandIntegrationTests` — Set + Add + Remove against a real YamlMappingNode
 

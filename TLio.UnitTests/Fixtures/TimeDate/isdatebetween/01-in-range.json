@@ -1,0 +1,5 @@
+{
+  "input": { "start": "2024-01-01", "end": "2024-12-31", "inside": "2024-06-15", "before": "2023-12-31", "after": "2025-01-01", "onStart": "2024-01-01", "onEnd": "2024-12-31" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=isdatebetween($.inside, $.start, $.end)" }],
+  "result": { "start": "2024-01-01", "end": "2024-12-31", "inside": "2024-06-15", "before": "2023-12-31", "after": "2025-01-01", "onStart": "2024-01-01", "onEnd": "2024-12-31", "result": true }
+}

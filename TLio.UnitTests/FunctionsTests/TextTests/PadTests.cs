@@ -20,60 +20,6 @@ public class PadTests
         data = JToken.Parse(@"{ ""str"": ""42"", ""width"": 5, ""pad"": ""0"" }");
     }
 
-    [Test] public void PadLeft_DefaultSpace()
-    {
-        var fn = new PadLeft<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.width")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("   42"));
-    }
-
-    [Test] public void PadLeft_WithChar()
-    {
-        var fn = new PadLeft<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.width"),
-            new PathValue<JToken>("$.pad")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("00042"));
-    }
-
-    [Test] public void PadRight_DefaultSpace()
-    {
-        var fn = new PadRight<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.width")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("42   "));
-    }
-
-    [Test] public void PadRight_WithChar()
-    {
-        var fn = new PadRight<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.str"),
-            new PathValue<JToken>("$.width"),
-            new PathValue<JToken>("$.pad")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("42000"));
-    }
-
     [Test] public void PadLeft_TooFewArgs_ReturnsFailed()
     {
         var fn = new PadLeft<JToken>();

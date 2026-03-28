@@ -34,6 +34,45 @@ public static class FixtureTheoryLoader
         }
     }
 
+    /// <summary>
+    /// Load single-file fixtures from Fixtures/&lt;subPath&gt;/.
+    /// Each .json file must be: { "input": {...}, "script": [...], "result": {...} }
+    /// Returns (JToken input, string script, JToken expected) for Newtonsoft tests.
+    /// Dates are parsed with DateParseHandling.None so date strings stay as strings.
+    /// </summary>
+    public static IEnumerable<TestCaseData> LoadSingle(string subPath)
+    {
+        var fixturesRoot = Path.Combine(
+            TestContext.CurrentContext.TestDirectory,
+            "Fixtures",
+            subPath.Replace('/', Path.DirectorySeparatorChar));
+
+        if (!Directory.Exists(fixturesRoot))
+            yield break;
+
+        foreach (var file in Directory.EnumerateFiles(fixturesRoot, "*.json").OrderBy(f => f))
+        {
+            JObject doc;
+            using (var reader = new JsonTextReader(new StringReader(File.ReadAllText(file)))
+                       { DateParseHandling = DateParseHandling.None })
+            {
+                doc = JObject.Load(reader);
+            }
+
+            // DeepClone to detach from the parent document — Newtonsoft.Json's SelectTokens
+            // navigates from the true document root when a token has a parent, so an uncloned
+            // "input" child would cause all $-paths to resolve against the fixture wrapper object.
+            var input    = (doc["input"]  ?? throw new InvalidOperationException($"Missing 'input' in {file}")).DeepClone();
+            var scriptTk =  doc["script"] ?? throw new InvalidOperationException($"Missing 'script' in {file}");
+            var expected = (doc["result"] ?? throw new InvalidOperationException($"Missing 'result' in {file}")).DeepClone();
+
+            string script = scriptTk.ToString(Formatting.None);
+
+            yield return new TestCaseData(input, script, expected)
+                .SetName(Path.GetFileNameWithoutExtension(file));
+        }
+    }
+
     public static IEnumerable<TestCaseData> LoadRaw(string commandName)
     {
         var fixturesRoot = Path.Combine(

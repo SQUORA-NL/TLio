@@ -10,7 +10,7 @@ public class IsEmpty<TNode> : TextFunctionBase<TNode>
             context.LogWarning(FunctionName, $"{FunctionName}: one argument required.");
             return FunctionResult<TNode>.Failed(currentNode);
         }
-        var result = Arguments[0].GetValue(currentNode, dataContext, context);
+        var result = ResolveArg(Arguments[0], currentNode, dataContext, context);
         if (!result.Success || result.Data.Count == 0)
         {
             context.LogError(FunctionName, $"{FunctionName}: argument path not found.");

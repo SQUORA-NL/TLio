@@ -1,0 +1,5 @@
+{
+  "input": { "str": "Hello World", "start": 6, "len": 5 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=substring($.str, $.start)" }],
+  "result": { "str": "Hello World", "start": 6, "len": 5, "result": "World" }
+}

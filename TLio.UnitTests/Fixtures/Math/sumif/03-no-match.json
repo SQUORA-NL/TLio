@@ -1,0 +1,5 @@
+{
+  "input": { "nums": [1, 2, 3, 4, 5], "crit_A": "A" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=sumif($.nums, $.crit_A)" }],
+  "result": { "nums": [1, 2, 3, 4, 5], "crit_A": "A", "result": 0 }
+}

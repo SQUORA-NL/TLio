@@ -20,24 +20,6 @@ public class CaseTests
         data = JToken.Parse(@"{ ""mixed"": ""Hello World"" }");
     }
 
-    [Test] public void ToUpper_Basic()
-    {
-        var fn = new ToUpper<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.mixed") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("HELLO WORLD"));
-    }
-
-    [Test] public void ToLower_Basic()
-    {
-        var fn = new ToLower<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.mixed") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("hello world"));
-    }
-
     [Test] public void ToUpper_PathNotFound_ReturnsFailed()
     {
         var fn = new ToUpper<JToken>();

@@ -20,33 +20,6 @@ public class SubtractTests
         data = JToken.Parse(@"{ ""a"": 10, ""b"": 3, ""nums"": [1, 2, 3] }");
     }
 
-    [Test] public void Subtract_TwoScalars()
-    {
-        var fn = new Subtract<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.a"),
-            new PathValue<JToken>("$.b")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(7));
-    }
-
-    [Test] public void Subtract_ArrayMinusScalar()
-    {
-        // sum($.nums) - $.b  = 6 - 3 = 3
-        var fn = new Subtract<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.nums"),
-            new PathValue<JToken>("$.b")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(3));
-    }
-
     [Test] public void Subtract_TooFewArgs_ReturnsFailed()
     {
         var fn = new Subtract<JToken>();

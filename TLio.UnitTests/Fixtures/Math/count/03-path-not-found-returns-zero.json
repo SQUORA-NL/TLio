@@ -1,0 +1,5 @@
+{
+  "input": { "nums": [1, 2, 3, 4] },
+  "script": [{ "command": "put", "path": "$.result", "value": "=count($.missing)" }],
+  "result": { "nums": [1, 2, 3, 4], "result": 0 }
+}

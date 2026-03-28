@@ -20,42 +20,6 @@ public class LengthTests
         data = JToken.Parse(@"{ ""str"": ""Hello"", ""arr"": [1, 2, 3], ""empty"": """", ""nul"": null }");
     }
 
-    [Test] public void Length_String()
-    {
-        var fn = new Length<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.str") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(5));
-    }
-
-    [Test] public void Length_Array()
-    {
-        var fn = new Length<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.arr") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(3));
-    }
-
-    [Test] public void Length_EmptyString()
-    {
-        var fn = new Length<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.empty") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(0));
-    }
-
-    [Test] public void Length_Null_ReturnsZero()
-    {
-        var fn = new Length<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.nul") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<long>(), Is.EqualTo(0));
-    }
-
     [Test] public void Length_PathNotFound_ReturnsFailed()
     {
         var fn = new Length<JToken>();

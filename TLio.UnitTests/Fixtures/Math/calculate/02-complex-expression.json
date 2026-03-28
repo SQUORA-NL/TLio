@@ -1,0 +1,5 @@
+{
+  "input": { "add": "2 + 3", "complex": "10 * (4 - 1)", "modulo": "7 % 3" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=calculate($.complex)" }],
+  "result": { "add": "2 + 3", "complex": "10 * (4 - 1)", "modulo": "7 % 3", "result": 30 }
+}

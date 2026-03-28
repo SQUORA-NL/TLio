@@ -1,0 +1,5 @@
+{
+  "input": { "whole": 4, "up": 4.1, "neg": -4.1 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=ceiling($.up)" }],
+  "result": { "whole": 4, "up": 4.1, "neg": -4.1, "result": 5 }
+}

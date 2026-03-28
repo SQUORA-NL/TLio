@@ -1,0 +1,5 @@
+{
+  "input": { "nums": [1, 2, 3, 4], "a": 10, "b": 20 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=count($.a, $.b)" }],
+  "result": { "nums": [1, 2, 3, 4], "a": 10, "b": 20, "result": 2 }
+}

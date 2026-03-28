@@ -1,0 +1,5 @@
+{
+  "input": { "arr": ["a", "b", "c"], "sep": "" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=join($.arr, $.sep)" }],
+  "result": { "arr": ["a", "b", "c"], "sep": "", "result": "abc" }
+}

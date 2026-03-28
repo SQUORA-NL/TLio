@@ -125,6 +125,21 @@ public class CommandConverter<TNode>
             if (element.ValueKind == JsonValueKind.String)
                 return _functionConverter.ParseValue(element.GetString() ?? string.Empty, _nodeAdapter);
 
+            // Object/array values may contain embedded "=func()" strings — use
+            // ExpandingFixedValue so those are evaluated lazily at GetValue time.
+            if (element.ValueKind == JsonValueKind.Object || element.ValueKind == JsonValueKind.Array)
+            {
+                try
+                {
+                    var node = _nodeAdapter.Parse(element.GetRawText());
+                    return new ExpandingFixedValue<TNode>(node, _functionConverter, _nodeAdapter);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
             return element.ValueKind switch
             {
                 JsonValueKind.True  => new FixedValue<TNode>(_nodeAdapter.CreateBoolean(true)),

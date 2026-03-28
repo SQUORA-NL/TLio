@@ -21,9 +21,26 @@ public class ScriptPath<TNode> : FunctionBase<TNode>
         if (Arguments.Count > 0)
         {
             var argResult = Arguments[0].GetValue(currentNode, dataContext, context);
-            targetNode = argResult.Success && argResult.Data.First != null
-                ? argResult.Data.First
-                : currentNode;
+            if (argResult.Success && argResult.Data.First != null)
+            {
+                // If the argument is a relative path string (@.<-- etc.), resolve it
+                // and navigate to that node before getting its path.
+                var argStr = context.NodeAdapter.TryGetString(argResult.Data.First);
+                if (argStr != null && argStr.StartsWith("@"))
+                {
+                    var resolvedPath = context.ItemsFetcher.ResolveRelativePath(argStr, currentNode, dataContext);
+                    var nodes = context.ItemsFetcher.SelectNodes(resolvedPath, dataContext);
+                    targetNode = nodes.Count > 0 ? nodes[0] : currentNode;
+                }
+                else
+                {
+                    targetNode = argResult.Data.First;
+                }
+            }
+            else
+            {
+                targetNode = currentNode;
+            }
         }
         else
         {

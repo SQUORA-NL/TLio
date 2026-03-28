@@ -1,0 +1,5 @@
+{
+  "input": { "a": 10, "b": 3, "nums": [1, 2, 3] },
+  "script": [{ "command": "put", "path": "$.result", "value": "=subtract($.a, $.b)" }],
+  "result": { "a": 10, "b": 3, "nums": [1, 2, 3], "result": 7 }
+}

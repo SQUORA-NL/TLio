@@ -24,7 +24,7 @@ public class AverageIf<TNode> : MathFunctionBase<TNode>
             return FunctionResult<TNode>.Failed(currentNode);
         }
 
-        var criteriaArg = Arguments[1].GetValue(currentNode, dataContext, context);
+        var criteriaArg = ResolveArg(Arguments[1], currentNode, dataContext, context);
         if (!criteriaArg.Success || criteriaArg.Data.Count == 0)
         {
             context.LogError(FunctionName, $"{FunctionName}: criteria not found.");

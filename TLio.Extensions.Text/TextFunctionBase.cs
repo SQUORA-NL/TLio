@@ -29,7 +29,7 @@ public abstract class TextFunctionBase<TNode> : FunctionBase<TNode>
         IExecutionContext<TNode> context, string funcName)
     {
         value = string.Empty;
-        var result = arg.GetValue(currentNode, dataContext, context);
+        var result = ResolveArg(arg, currentNode, dataContext, context);
         if (!result.Success || result.Data.Count == 0)
         {
             context.LogError(funcName, $"{funcName}: argument path not found.");
@@ -52,7 +52,7 @@ public abstract class TextFunctionBase<TNode> : FunctionBase<TNode>
         IExecutionContext<TNode> context, string funcName)
     {
         value = 0;
-        var result = arg.GetValue(currentNode, dataContext, context);
+        var result = ResolveArg(arg, currentNode, dataContext, context);
         if (!result.Success || result.Data.Count == 0)
         {
             context.LogError(funcName, $"{funcName}: argument path not found.");
@@ -79,7 +79,7 @@ public abstract class TextFunctionBase<TNode> : FunctionBase<TNode>
         IExecutionContext<TNode> context, string funcName)
     {
         value = ' ';
-        var result = arg.GetValue(currentNode, dataContext, context);
+        var result = ResolveArg(arg, currentNode, dataContext, context);
         if (!result.Success || result.Data.Count == 0)
         {
             context.LogError(funcName, $"{funcName}: argument path not found.");
@@ -106,7 +106,7 @@ public abstract class TextFunctionBase<TNode> : FunctionBase<TNode>
         TNode currentNode, TNode dataContext,
         IExecutionContext<TNode> context, string funcName)
     {
-        var result = arg.GetValue(currentNode, dataContext, context);
+        var result = ResolveArg(arg, currentNode, dataContext, context);
         if (!result.Success || result.Data.Count == 0)
         {
             context.LogError(funcName, $"{funcName}: argument path not found.");
@@ -137,7 +137,7 @@ public abstract class TextFunctionBase<TNode> : FunctionBase<TNode>
         TNode currentNode, TNode dataContext,
         IExecutionContext<TNode> context)
     {
-        var result = arg.GetValue(currentNode, dataContext, context);
+        var result = ResolveArg(arg, currentNode, dataContext, context);
         if (!result.Success || result.Data.Count == 0) return null;
 
         var list = new List<TNode>();

@@ -1,0 +1,5 @@
+{
+  "input": { "tmpl": "Hello {0}!", "name": "World", "tmpl2": "{0} and {1}", "a": "foo", "b": "bar" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=format($.tmpl, $.name)" }],
+  "result": { "tmpl": "Hello {0}!", "name": "World", "tmpl2": "{0} and {1}", "a": "foo", "b": "bar", "result": "Hello World!" }
+}

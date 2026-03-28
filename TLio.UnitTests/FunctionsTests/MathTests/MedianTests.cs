@@ -20,37 +20,6 @@ public class MedianTests
         data = JToken.Parse(@"{ ""odd"": [1, 3, 5], ""even"": [1, 2, 3, 4], ""a"": 2, ""b"": 6 }");
     }
 
-    [Test] public void Median_OddCount()
-    {
-        var fn = new Median<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.odd") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(3));
-    }
-
-    [Test] public void Median_EvenCount()
-    {
-        var fn = new Median<JToken>();
-        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.even") });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(2.5));
-    }
-
-    [Test] public void Median_TwoScalars()
-    {
-        var fn = new Median<JToken>();
-        fn.SetArguments(new Arguments<JToken>
-        {
-            new PathValue<JToken>("$.a"),
-            new PathValue<JToken>("$.b")
-        });
-        var result = fn.Execute(data, data, context);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.Data.First!.Value<double>(), Is.EqualTo(4));
-    }
-
     [Test] public void Median_PathNotFound_ReturnsFailed()
     {
         var fn = new Median<JToken>();

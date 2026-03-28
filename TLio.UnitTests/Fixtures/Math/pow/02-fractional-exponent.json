@@ -1,0 +1,5 @@
+{
+  "input": { "base": 2, "exp": 3, "half": 0.5, "four": 4 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=pow($.four, $.half)" }],
+  "result": { "base": 2, "exp": 3, "half": 0.5, "four": 4, "result": 2 }
+}
