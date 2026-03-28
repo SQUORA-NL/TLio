@@ -66,7 +66,7 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 ### Add<TNode>
 
 - [x] `[!]` Port all `JLio.UnitTests.CommandsTests.AddTests` → `TLio.UnitTests.CommandsTests.AddTests` with identical assertions
-- [ ] `[!]` Port `PropertyFieldBackwardsCompatibilityTests` for Add
+- [x] `[!]` Port `PropertyFieldBackwardsCompatibilityTests` for Add
 - [x] Run ported Add tests; all pass
 
 ### Set<TNode>
@@ -88,7 +88,7 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 - [x] Complete `CopyMoveBase` array-index alignment logic — port `GetInnerArrayIndex` from JLio
 - [x] Complete `CopyMoveBase` many-to-many vs one-to-one dispatch
-- [ ] Write `CopyMoveBaseTests` — alignment, root merge, indirect path, DestinationAsArray
+- [x] Write `CopyMoveBaseTests` — alignment, root merge, indirect path, DestinationAsArray
 
 ### Copy<TNode>
 
@@ -100,7 +100,7 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 - [x] `[!]` Port `CopyMoveTests` (move half) with identical assertions
 - [x] `[!]` Port `CopyMoveDestinationAsArrayTests` (move half)
-- [ ] `[!]` Port `ParentNavigationTests` with identical assertions — deferred (requires ETL/Math/Text extensions)
+- [x] `[!]` Port `ParentNavigationTests` with identical assertions — also fixed `ScriptPath` to resolve `@.<--` relative path arguments via `ResolveRelativePath`
 - [x] Run ported Move tests; all pass
 
 ### IfElse<TNode>
@@ -142,9 +142,10 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 ### Phase 4B — Value pipeline (prerequisite for all function tests)
 
 - [x] Create `TLio.Core/Models/FunctionSupportedValue.cs` — wraps `IFunction<TNode>`, handles logging, mirrors JLio's `FunctionSupportedValue`
-- [ ] Update `FixedValue<TNode>` — add support for nested `=func()` expansion via `FunctionConverter<TNode>` injection
+- [x] Create `TLio.Client/ExpandingFixedValue.cs` — handles object/array `value` fields with embedded `=func()` strings; expands at GetValue time (replaces planned FixedValue injection approach to avoid circular dependency)
+- [x] Update `CommandConverter.ConvertJsonValue` — handle `JsonValueKind.Object` and `JsonValueKind.Array` via `ExpandingFixedValue<TNode>`
 - [x] Create `TLio.Core/Models/PathValue.cs` — `IFunctionSupportedValue<TNode>` that evaluates a path expression (replaces JLio's path-as-value pattern)
-- [ ] Write `ValuePipelineTests` — FixedValue with literal, string, object, array; PathValue; nested FunctionSupportedValue
+- [x] Write `ValuePipelineTests` — FixedValue with literal, string, object, array; PathValue; nested FunctionSupportedValue; ExpandingFixedValue via ScriptEngine
 
 ### Phase 4A — Core functions (`TLio.Functions`)
 
@@ -251,6 +252,6 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 ## Continuous validation
 
 After each phase, run this checklist:
-- [ ] `grep -r "JToken\|XElement\|YamlNode\|Newtonsoft\|System\.Xml\|YamlDotNet" TLio.Core TLio.Commands TLio.Functions` returns no results (constitutional check)
-- [ ] All tests in `TLio.UnitTests` that are marked complete pass with no assertion changes
-- [ ] No test previously passing has been broken
+- [x] `grep -r "JToken\|XElement\|YamlNode\|Newtonsoft\|System\.Xml\|YamlDotNet" TLio.Core TLio.Commands TLio.Functions` returns no results (constitutional check) — only comments contain these terms
+- [x] All tests in `TLio.UnitTests` that are marked complete pass with no assertion changes — 764/764 pass
+- [x] No test previously passing has been broken
