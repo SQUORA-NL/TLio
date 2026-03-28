@@ -1,6 +1,6 @@
 # Tlio.claude Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-28 (updated by 004)
+Auto-generated from all feature plans. Last updated: 2026-03-28 (updated by 005)
 
 ## Active Technologies
 
@@ -25,6 +25,9 @@ TLio.Json.SystemText.Tests/ ← System.Text.Json adapter fixture tests
 TLio.Functions.Tests/       ← Built-in function tests + extension-pack fixture tests (Math, Text, TimeDate, ETL)
 TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtures
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
+samples/
+  TLio.Sample.Api/          ← Minimal API sample (JSON/XML/YAML endpoints, 005)
+  TLio.Sample.Cli/          ← CLI sample (file-in / transformed-out, 005)
 specs/
 ```
 
@@ -50,6 +53,7 @@ C# / .NET 10: Follow standard conventions
 
 ## Recent Changes
 
+- 005-samples-api-cli: Adding samples/TLio.Sample.Api (Minimal API, 3 format endpoints) + samples/TLio.Sample.Cli (file transform CLI), both under samples/
 - 004-core-test-reorganization: Completed — TLio.Json.Tests (114), TLio.Json.SystemText.Tests (33), TLio.Functions.Tests (248) all active; TLio.UnitTests now core/commands/engine only (403 tests)
 - 003-xml-xpath-implementation: Adding NativeXPathItemsFetcher + TLio.Xml.Tests + TLio.Yaml.Tests
 - 002-migration-from-jlio: Added C# / .NET 10 + Newtonsoft.Json, System.Text.Json, JsonPath.Net (json-everything), NUnit
