@@ -58,9 +58,20 @@ public class XmlNodeAdapter : INodeAdapter<XElement>
     public object? GetValue(XElement node) => node.Value;
     public T? GetValue<T>(XElement node) => throw new NotImplementedException();
 
+    public bool? TryGetBoolean(XElement node) => throw new NotImplementedException();
+    public double? TryGetDouble(XElement node) => throw new NotImplementedException();
+    public string? TryGetString(XElement node) => throw new NotImplementedException();
+
     public XElement DeepClone(XElement node) => new(node);
     public void Replace(XElement target, XElement replacement) =>
         target.ReplaceWith(replacement);
+    public bool RemoveFromParent(XElement node) => throw new NotImplementedException();
+    public void DeepMergeInto(XElement source, XElement target, ArrayMergeMode arrayMergeMode = ArrayMergeMode.Concat) =>
+        throw new NotImplementedException();
+
+    public XElement? GetParentNode(XElement node) => throw new NotImplementedException();
+    public string? GetParentPropertyName(XElement node) => throw new NotImplementedException();
+    public bool DeepEquals(XElement a, XElement b) => throw new NotImplementedException();
 
     public XElement Parse(string content) => XElement.Parse(content);
     public string Serialize(XElement node, bool pretty = false) =>

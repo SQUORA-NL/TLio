@@ -149,13 +149,19 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     {
         if (context.NodeAdapter.IsObject(targetNode))
         {
-            var existing = context.NodeAdapter.GetProperty(targetNode, propertyName);
-            if (existing == null)
+            // Use HasProperty to distinguish "property not found" from "property exists with null value".
+            // In System.Text.Json, GetProperty returns C# null for JSON-null-valued properties,
+            // so checking HasProperty first prevents false "not found" warnings.
+            if (!context.NodeAdapter.HasProperty(targetNode, propertyName))
             {
                 context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: property '{propertyName}' not found");
                 return;
             }
-            context.NodeAdapter.Replace(existing, value);
+            var existing = context.NodeAdapter.GetProperty(targetNode, propertyName);
+            if (existing == null)
+                context.NodeAdapter.SetProperty(targetNode, propertyName, value);
+            else
+                context.NodeAdapter.Replace(existing, value);
         }
         else if (context.NodeAdapter.IsArray(targetNode))
         {

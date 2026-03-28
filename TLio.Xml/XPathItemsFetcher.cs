@@ -43,4 +43,16 @@ public class XPathItemsFetcher : IItemsFetcher<XElement>
         // TODO: implement relative-path resolution
         return relativePath;
     }
+
+    public void EnsurePath(string path, XElement root, INodeAdapter<XElement> adapter) =>
+        throw new NotImplementedException();
+
+    public (string parentPath, string leafName) SplitParentAndLeaf(string path) =>
+        throw new NotImplementedException();
+
+    public string? ProcessIndirectPath(string path, XElement data) =>
+        path.Contains("=indirect(") ? throw new NotImplementedException() : path;
+
+    public IEnumerable<string> GetIntellisense(string partialPath, XElement data) =>
+        Enumerable.Empty<string>();
 }

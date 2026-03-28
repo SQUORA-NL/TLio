@@ -80,12 +80,22 @@ public class YamlNodeAdapter : INodeAdapter<YamlNode>
 
     public T? GetValue<T>(YamlNode node) => throw new NotImplementedException();
 
+    public bool? TryGetBoolean(YamlNode node) => throw new NotImplementedException();
+    public double? TryGetDouble(YamlNode node) => throw new NotImplementedException();
+    public string? TryGetString(YamlNode node) => throw new NotImplementedException();
+
     public YamlNode DeepClone(YamlNode node) =>
         // TODO: proper deep-clone; YamlDotNet nodes don't expose a built-in clone
         throw new NotImplementedException();
 
     public void Replace(YamlNode target, YamlNode replacement) =>
         throw new NotImplementedException();
+    public bool RemoveFromParent(YamlNode node) => throw new NotImplementedException();
+    public void DeepMergeInto(YamlNode source, YamlNode target, ArrayMergeMode arrayMergeMode = ArrayMergeMode.Concat) =>
+        throw new NotImplementedException();
+    public YamlNode? GetParentNode(YamlNode node) => throw new NotImplementedException();
+    public string? GetParentPropertyName(YamlNode node) => throw new NotImplementedException();
+    public bool DeepEquals(YamlNode a, YamlNode b) => throw new NotImplementedException();
 
     public YamlNode Parse(string content)
     {

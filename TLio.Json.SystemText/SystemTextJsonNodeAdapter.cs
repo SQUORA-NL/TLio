@@ -7,12 +7,8 @@ namespace TLio.Json.SystemText;
 /// <summary>
 /// INodeAdapter implementation for System.Text.Json's JsonNode model.
 ///
-/// Stub — all members throw NotImplementedException until the adapter is built.
-/// See specs/002-migration-from-jlio/tasks.md for the implementation backlog.
-///
 /// Behavioral contract: must produce identical transformation results to
-/// JsonNodeAdapter (Newtonsoft) for all operations. All JLio tests ported to
-/// use this adapter must pass with the same assertions.
+/// JsonNodeAdapter (Newtonsoft) for all operations.
 /// </summary>
 public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
 {
@@ -34,7 +30,10 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     public void SetProperty(JsonNode node, string propertyName, JsonNode value)
     {
         if (node is JsonObject obj)
-            obj[propertyName] = value;
+        {
+            // Clone if value already has a parent — JsonNode can only live in one parent at a time.
+            obj[propertyName] = value?.Parent != null ? value.DeepClone() : value;
+        }
     }
 
     public void RemoveProperty(JsonNode node, string propertyName)
@@ -50,12 +49,14 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
 
     public void AppendToArray(JsonNode array, JsonNode value)
     {
-        if (array is JsonArray arr) arr.Add(value);
+        if (array is JsonArray arr)
+            arr.Add(value?.Parent != null ? value.DeepClone() : value);
     }
 
     public void InsertIntoArray(JsonNode array, int index, JsonNode value)
     {
-        if (array is JsonArray arr) arr.Insert(index, value);
+        if (array is JsonArray arr)
+            arr.Insert(index, value?.Parent != null ? value.DeepClone() : value);
     }
 
     public void RemoveFromArray(JsonNode array, int index)
@@ -101,48 +102,202 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
 
     // ── Type coercion ─────────────────────────────────────────────────────────
 
-    public bool? TryGetBoolean(JsonNode node) =>
-        node is JsonValue v && v.TryGetValue<bool>(out var b) ? b : null;
+    /// <summary>
+    /// Coerce to bool?. Handles boolean JsonValue and "true"/"false" strings.
+    /// Mirrors JsonNodeAdapter (Newtonsoft) behavior.
+    /// </summary>
+    public bool? TryGetBoolean(JsonNode node)
+    {
+        if (node is not JsonValue v) return null;
+        if (v.TryGetValue<bool>(out var b)) return b;
+        if (v.TryGetValue<string>(out var s) && bool.TryParse(s, out var parsed)) return parsed;
+        return null;
+    }
 
-    public double? TryGetDouble(JsonNode node) =>
-        node is JsonValue v && v.TryGetValue<double>(out var d) ? d : null;
+    /// <summary>
+    /// Coerce to double?. Handles all numeric JsonValue types and numeric strings.
+    /// Returns null for null or non-numeric nodes.
+    /// </summary>
+    public double? TryGetDouble(JsonNode node)
+    {
+        if (node is not JsonValue v) return null;
+        if (v.TryGetValue<double>(out var d)) return d;
+        if (v.TryGetValue<decimal>(out var dec)) return (double)dec;
+        if (v.TryGetValue<string>(out var s) && double.TryParse(s, out var parsed)) return parsed;
+        return null;
+    }
 
-    public string? TryGetString(JsonNode node) =>
-        node is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
+    /// <summary>
+    /// Coerce to string?. Returns null only for null nodes.
+    /// For all other JsonValue types returns the runtime string representation —
+    /// booleans → "True"/"False" (capital T/F) to match Newtonsoft's JToken.ToString().
+    /// </summary>
+    public string? TryGetString(JsonNode node)
+    {
+        if (node is not JsonValue v) return null;
+        if (v.TryGetValue<string>(out var s)) return s;
+        if (v.TryGetValue<bool>(out var b)) return b.ToString();   // "True" / "False"
+        if (v.TryGetValue<double>(out var d)) return d.ToString();
+        if (v.TryGetValue<decimal>(out var dec)) return dec.ToString();
+        // Fallback for any other boxed type
+        try
+        {
+            var raw = v.GetValue<object>();
+            return raw?.ToString();
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     // ── Cloning & replacement ─────────────────────────────────────────────────
 
     public JsonNode DeepClone(JsonNode node) => node.DeepClone();
 
+    /// <summary>
+    /// Replace <paramref name="target"/> in-place with <paramref name="replacement"/>.
+    /// Finds the target in its parent JsonObject or JsonArray and swaps.
+    /// Always uses a deep clone of the replacement to avoid "node already has a parent"
+    /// exceptions when the same value node is used in multiple Replace calls
+    /// (e.g. recursive-descent paths like $..score).
+    /// </summary>
     public void Replace(JsonNode target, JsonNode replacement)
     {
-        // TODO: System.Text.Json nodes don't have a direct in-place Replace.
-        // Need parent traversal: find key in parent object/array, then swap.
-        throw new NotImplementedException("System.Text.Json Replace requires parent tracking — see tasks.md");
+        // Clone replacement (or null for JSON null) so the new node is always parentless.
+        // JsonNode can only live in one parent at a time; CreateNull() returns C# null
+        // in .NET 10+ because System.Text.Json represents JSON null as C# null.
+        JsonNode? value = replacement?.DeepClone();
+
+        var parent = target.Parent;
+        if (parent is JsonObject obj)
+        {
+            string? key = FindKeyInObject(obj, target);
+            if (key != null)
+            {
+                obj.Remove(key);
+                obj[key] = value;
+            }
+        }
+        else if (parent is JsonArray arr)
+        {
+            int idx = FindIndexInArray(arr, target);
+            if (idx >= 0)
+                arr[idx] = value;
+        }
     }
 
+    /// <summary>
+    /// Remove <paramref name="node"/> from its parent container.
+    /// Returns false when the node has no removable parent (e.g. root).
+    /// Ported from JLio's JsonMethods.RemoveItemFromTarget.
+    /// </summary>
     public bool RemoveFromParent(JsonNode node)
     {
-        // TODO: implement — find parent and remove self
-        throw new NotImplementedException("System.Text.Json RemoveFromParent requires parent tracking — see tasks.md");
+        var parent = node.Parent;
+        if (parent is JsonObject obj)
+        {
+            string? key = FindKeyInObject(obj, node);
+            if (key != null) { obj.Remove(key); return true; }
+        }
+        else if (parent is JsonArray arr)
+        {
+            int idx = FindIndexInArray(arr, node);
+            if (idx >= 0) { arr.RemoveAt(idx); return true; }
+        }
+        return false;
     }
 
     // ── Deep merge ────────────────────────────────────────────────────────────
 
-    public void DeepMergeInto(JsonNode source, JsonNode target, ArrayMergeMode arrayMergeMode = ArrayMergeMode.Concat)
+    /// <summary>
+    /// Recursively merge <paramref name="source"/> into <paramref name="target"/>.
+    /// Mirrors JsonNodeAdapter (Newtonsoft) DeepMergeInto behavior.
+    /// </summary>
+    public void DeepMergeInto(JsonNode source, JsonNode target,
+        ArrayMergeMode arrayMergeMode = ArrayMergeMode.Concat)
     {
-        // TODO: implement recursive merge
-        throw new NotImplementedException();
+        if (source is JsonObject sourceObj && target is JsonObject targetObj)
+        {
+            foreach (var kvp in sourceObj.ToList())
+            {
+                if (targetObj.ContainsKey(kvp.Key))
+                {
+                    var targetProp = targetObj[kvp.Key];
+                    if (kvp.Value is JsonObject && targetProp is JsonObject)
+                    {
+                        DeepMergeInto(kvp.Value!, targetProp!, arrayMergeMode);
+                    }
+                    else if (kvp.Value is JsonArray sourceArr
+                             && targetProp is JsonArray targetArr
+                             && arrayMergeMode == ArrayMergeMode.Concat)
+                    {
+                        foreach (var item in sourceArr)
+                            targetArr.Add(item?.DeepClone());
+                    }
+                    else
+                    {
+                        targetObj[kvp.Key] = kvp.Value?.DeepClone();
+                    }
+                }
+                else
+                {
+                    targetObj.Add(kvp.Key, kvp.Value?.DeepClone());
+                }
+            }
+        }
+        else if (source is JsonArray sourceArray && target is JsonArray targetArray)
+        {
+            switch (arrayMergeMode)
+            {
+                case ArrayMergeMode.Concat:
+                case ArrayMergeMode.MergeByKey:
+                    foreach (var item in sourceArray)
+                        targetArray.Add(item?.DeepClone());
+                    break;
+                case ArrayMergeMode.Replace:
+                    targetArray.Clear();
+                    foreach (var item in sourceArray)
+                        targetArray.Add(item?.DeepClone());
+                    break;
+            }
+        }
+        else
+        {
+            // Type mismatch or both primitives — replace target in parent
+            Replace(target, source.DeepClone());
+        }
     }
 
     // ── Parent access ─────────────────────────────────────────────────────────
 
-    public JsonNode? GetParentNode(JsonNode node) => node.Parent;
+    /// <summary>
+    /// Return the semantic parent of <paramref name="node"/>.
+    /// In System.Text.Json there are no JProperty wrappers, so:
+    /// • Array element whose parent array is itself a property value → return the JsonObject
+    /// • Otherwise → return the direct parent
+    /// </summary>
+    public JsonNode? GetParentNode(JsonNode node)
+    {
+        if (node?.Parent == null) return null;
+        var parent = node.Parent;
 
+        // Element in an array that is a property of an object → skip array, return object
+        if (parent is JsonArray && parent.Parent is JsonObject)
+            return parent.Parent;
+
+        return parent;
+    }
+
+    /// <summary>
+    /// Return the property name under which <paramref name="node"/> lives in its parent
+    /// JsonObject, or null when the node is an array element or has no parent.
+    /// </summary>
     public string? GetParentPropertyName(JsonNode node)
     {
-        // TODO: System.Text.Json doesn't expose the property name easily
-        throw new NotImplementedException();
+        if (node?.Parent is JsonObject parentObj)
+            return FindKeyInObject(parentObj, node);
+        return null;
     }
 
     // ── Equality ─────────────────────────────────────────────────────────────
@@ -156,4 +311,26 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
 
     public string Serialize(JsonNode node, bool pretty = false) =>
         node.ToJsonString(new JsonSerializerOptions { WriteIndented = pretty });
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    private static string? FindKeyInObject(JsonObject obj, JsonNode target)
+    {
+        foreach (var kvp in obj)
+        {
+            if (ReferenceEquals(kvp.Value, target))
+                return kvp.Key;
+        }
+        return null;
+    }
+
+    private static int FindIndexInArray(JsonArray arr, JsonNode target)
+    {
+        for (int i = 0; i < arr.Count; i++)
+        {
+            if (ReferenceEquals(arr[i], target))
+                return i;
+        }
+        return -1;
+    }
 }

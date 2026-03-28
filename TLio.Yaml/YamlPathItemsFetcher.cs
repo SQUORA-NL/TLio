@@ -42,4 +42,16 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
 
     public string ResolveRelativePath(string relativePath, YamlNode currentNode, YamlNode dataContext) =>
         relativePath;
+
+    public void EnsurePath(string path, YamlNode root, INodeAdapter<YamlNode> adapter) =>
+        throw new NotImplementedException();
+
+    public (string parentPath, string leafName) SplitParentAndLeaf(string path) =>
+        throw new NotImplementedException();
+
+    public string? ProcessIndirectPath(string path, YamlNode data) =>
+        path.Contains("=indirect(") ? throw new NotImplementedException() : path;
+
+    public IEnumerable<string> GetIntellisense(string partialPath, YamlNode data) =>
+        Enumerable.Empty<string>();
 }

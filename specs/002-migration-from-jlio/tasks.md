@@ -233,18 +233,18 @@ reference in the command body — all node operations via INodeAdapter/IItemsFet
 
 ## Phase 7 — System.Text.Json adapter (`TLio.Json.SystemText`)
 
-- [ ] Implement `SystemTextJsonNodeAdapter.Replace` — find key in parent JsonObject/JsonArray and swap
-- [ ] Implement `SystemTextJsonNodeAdapter.RemoveFromParent` — remove self from parent
-- [ ] Implement `SystemTextJsonNodeAdapter.DeepMergeInto` — recursive merge
-- [ ] Implement `SystemTextJsonNodeAdapter.GetParentPropertyName`
-- [ ] Implement `SystemTextJsonPathItemsFetcher.GetPath` — build path string from node lineage
-- [ ] Implement `SystemTextJsonPathItemsFetcher.ResolveRelativePath`
-- [ ] Implement `SystemTextJsonPathItemsFetcher.EnsurePath`
-- [ ] Implement `SystemTextJsonPathItemsFetcher.SplitParentAndLeaf`
-- [ ] Implement `SystemTextJsonPathItemsFetcher.ProcessIndirectPath`
-- [ ] Create `JsonAdapterComplianceTestBase<TNode>` — shared abstract test class; concrete subclasses supply the execution context
-- [ ] `[!]` Run all ported command + function tests against `SystemTextJsonExecutionContext.CreateDefault()` — all must pass
-- [ ] Document any `JsonCons.JsonPath` vs Newtonsoft deviations in `specs/002-migration-from-jlio/jsonpath-compatibility.md`
+- [x] Implement `SystemTextJsonNodeAdapter.Replace` — find key in parent JsonObject/JsonArray and swap
+- [x] Implement `SystemTextJsonNodeAdapter.RemoveFromParent` — remove self from parent
+- [x] Implement `SystemTextJsonNodeAdapter.DeepMergeInto` — recursive merge
+- [x] Implement `SystemTextJsonNodeAdapter.GetParentPropertyName`
+- [x] Implement `SystemTextJsonPathItemsFetcher.GetPath` — build path string from node lineage
+- [x] Implement `SystemTextJsonPathItemsFetcher.ResolveRelativePath`
+- [x] Implement `SystemTextJsonPathItemsFetcher.EnsurePath`
+- [x] Implement `SystemTextJsonPathItemsFetcher.SplitParentAndLeaf`
+- [x] Implement `SystemTextJsonPathItemsFetcher.ProcessIndirectPath`
+- [x] Create `SystemTextFixtureTests` — fixture-based compliance test class for SystemText adapter
+- [x] `[!]` Run all ported command + function tests against `SystemTextJsonExecutionContext.CreateDefault()` — all 33 pass
+- [x] Document any `JsonCons.JsonPath` vs Newtonsoft deviations in `specs/002-migration-from-jlio/jsonpath-compatibility.md`
 
 ---
 
