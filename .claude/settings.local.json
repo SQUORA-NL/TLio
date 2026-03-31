@@ -1,19 +1,26 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "Bash(*)",
-      "Read(//c/Users/frans/source/tests-claude/Tlio.claude/**)",
-      "Bash(powershell.exe -File \".specify/scripts/powershell/setup-plan.ps1\" -Json)",
-      "Bash(powershell.exe -Version 5.1 -File \".specify/scripts/powershell/setup-plan.ps1\" -Json)",
-      "Bash(powershell.exe -Command \"& { . ''.specify/scripts/powershell/setup-plan.ps1'' -Json }\")",
-      "Bash(pwsh -File \"C:\\\\Users\\\\frans\\\\source\\\\tests-claude\\\\Tlio.claude\\\\.specify\\\\scripts\\\\powershell\\\\setup-plan.ps1\" -Json)",
-      "Read(//usr/**)",
-      "Read(//usr/local/**)",
-      "Read(//c//**)",
-      "Read(//c/Program Files/**)",
-      "Bash(git -C \"C:\\\\Users\\\\frans\\\\source\\\\tests-claude\\\\Tlio.claude\" log --oneline -10)",
-      "Bash(ls \"C:\\\\Users\\\\Frans\\\\source\\\\tests-claude\\\\Tlio.claude\\\\.claude\\\\worktrees\\\\quirky-meninsky\\\\specs\\\\002-migration-from-jlio\"\" 2>/dev/null && echo \"---\" && ls \"C:UsersFranssourcetests-claudeTlio.claude.claudeworktreesquirky-meninsky\"\")",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "Read(**)",
+      "Edit(**)",
+      "Write(**)",
+      "MultiEdit(**)",
+      "Glob(**)",
+      "Grep(**)",
+      "LS(**)",
+      "WebFetch(*)",
+      "TodoWrite",
+      "Task"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)"
     ]
+  },
+  "env": {
+    "BASH_DEFAULT_TIMEOUT_MS": "30000",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "16384"
   }
 }
