@@ -38,7 +38,25 @@ public class Promote<TNode> : FunctionBase<TNode>
             return FunctionResult<TNode>.Failed(currentNode);
 
         var node = resolved[0];
-        var propertyName = context.NodeAdapter.GetParentPropertyName(node);
+
+        // Optional second argument: explicit property name override
+        string? propertyName;
+        if (Arguments.Count >= 2)
+        {
+            var nameResult = Arguments[1].GetValue(currentNode, dataContext, context);
+            propertyName = nameResult.Success && nameResult.Data.First != null
+                ? context.NodeAdapter.TryGetString(nameResult.Data.First)
+                : null;
+            if (propertyName == null)
+            {
+                context.LogWarning(FunctionName, "promote() second argument did not resolve to a string.");
+                return FunctionResult<TNode>.Failed(currentNode);
+            }
+        }
+        else
+        {
+            propertyName = context.NodeAdapter.GetParentPropertyName(node);
+        }
 
         if (propertyName == null)
         {

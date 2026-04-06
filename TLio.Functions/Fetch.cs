@@ -31,7 +31,15 @@ public class Fetch<TNode> : FunctionBase<TNode>
 
         var nodes = context.ItemsFetcher.SelectNodes(pathStr, dataContext);
         if (nodes.Count == 0)
+        {
+            // Optional second argument: return as default value when path resolves to nothing
+            if (Arguments.Count >= 2)
+            {
+                var def = Arguments[1].GetValue(currentNode, dataContext, context);
+                if (def.Success) return def;
+            }
             return FunctionResult<TNode>.Failed(currentNode);
+        }
 
         return FunctionResult<TNode>.Successful(nodes);
     }

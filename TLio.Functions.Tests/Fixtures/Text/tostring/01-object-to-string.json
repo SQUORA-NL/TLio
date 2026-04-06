@@ -1,0 +1,7 @@
+{
+  "input": { "obj": { "a": 1, "b": 2 } },
+  "script": [
+    { "command": "add", "path": "$.str", "value": "=toString($.obj)" }
+  ],
+  "result": { "obj": { "a": 1, "b": 2 }, "str": "{\"a\":1,\"b\":2}" }
+}

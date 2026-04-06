@@ -1,0 +1,7 @@
+{
+  "input": { "src": { "name": "Alice" }, "dst": { "id": 1 } },
+  "script": [
+    { "command": "merge", "fromPath": "$.src", "toPath": "$.dst" }
+  ],
+  "result": { "src": { "name": "Alice" }, "dst": { "id": 1, "name": "Alice" } }
+}

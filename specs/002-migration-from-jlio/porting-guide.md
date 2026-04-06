@@ -231,3 +231,42 @@ public void CanSetStringValue()
 
 The assertion is **unchanged**. Only the types gained the `<JToken>` suffix and
 `ExecutionContext.CreateDefault()` became `JsonExecutionContext.CreateDefault()`.
+
+---
+
+## Property Name Aliases (008)
+
+Feature 008 added JLio-compatible property name aliases so JLio scripts run unchanged on TLio.
+
+### Compare
+
+| JLio name | TLio canonical name | Notes |
+|-----------|-------------------|-------|
+| `fromPath` | `FirstPath` | Write-only alias; both accepted in JSON scripts |
+| `toPath` | `SecondPath` | Write-only alias; both accepted in JSON scripts |
+
+### Merge
+
+| JLio name | TLio canonical name | Notes |
+|-----------|-------------------|-------|
+| `fromPath` | `Path` | Write-only alias; both accepted in JSON scripts |
+| `toPath` | `TargetPath` | Write-only alias; both accepted in JSON scripts |
+
+### DecisionTable
+
+| JLio key | TLio key | Notes |
+|----------|---------|-------|
+| `"decisionTable"` | `"config"` | Both accepted as the JSON property name for the config object |
+
+### ETL Commands
+
+ETL settings property names already match JLio (`flattenSettings`, `restoreSettings`, `csvSettings`, `resolveSettings`). No aliases required — these were always the correct property names; they were simply not deserialized due to a bug fixed in 008.
+
+### New Functions (008)
+
+| Function | Description |
+|----------|-------------|
+| `=newGuid()` | Generates a new UUID string |
+| `=fetch(path, default)` | Returns default value when path resolves to nothing |
+| `=path()` | Alias for `=scriptpath()` |
+| `=promote(path, name)` | Wraps node in object with explicit property name |
