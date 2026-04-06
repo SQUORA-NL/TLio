@@ -1,23 +1,22 @@
 <!--
   SYNC IMPACT REPORT
-  Version change: [PLACEHOLDER] → 1.0.0
-  Modified: all placeholder tokens replaced with TLio-specific content.
+  Version change: 1.0.0 → 1.0.1
+  Modified principles: none (wording clarifications only)
 
-  Added sections:
-  - Articles I–X (Format Neutrality through Logging is Observability)
-  - Per-article compliance grep commands
-  - Article VI: file-based fixture triplet requirement (xUnit Theory)
-  - Article VIII: porting-guide.md obligation for dropped JLio behaviour
-  - Governance section (amendment procedure, versioning policy, compliance review,
-    canonical source table)
+  Changes in this amendment:
+  - Article VI: fixture triplet path updated to reflect post-004 multi-project test
+    layout (TLio.UnitTests, TLio.Json.Tests, TLio.Functions.Tests, TLio.Xml.Tests,
+    TLio.Yaml.Tests, TLio.Json.SystemText.Tests). No new obligations introduced.
 
   Templates updated:
-  - .specify/templates/plan-template.md   ✅ Constitution Check section
-  - .specify/templates/tasks-template.md  ✅ test-discipline notes + fixture requirement
-  - .specify/templates/spec-template.md   — no TLio-specific changes needed
-  - .specify/templates/speckit.implement.md  — already TLio-specific (no change)
-  - .specify/templates/speckit.plan.md       — already TLio-specific (no change)
-  - .specify/templates/speckit.tasks.md      — already TLio-specific (no change)
+  - .specify/templates/plan-template.md        ✅ Article VIII gate added to Constitution
+                                                   Check table
+  - .specify/templates/speckit.implement.md    ✅ File locations table expanded to list
+                                                   all 6 test projects
+  - .specify/templates/tasks-template.md       ✅ Fixture path updated to <TestProject>/
+  - .specify/templates/spec-template.md        — no changes needed
+  - .specify/templates/speckit.plan.md         — no changes needed
+  - .specify/templates/speckit.tasks.md        — no changes needed
 
   Deferred TODOs: none
 -->
@@ -149,10 +148,22 @@ No implementation code is written before:
 
 **File-based fixture triplets (MANDATORY for all command and function tests):**
 
-Every test that exercises a full script execution MUST use file-based fixture triplets:
+Every test that exercises a full script execution MUST use file-based fixture triplets.
+Choose the test project that matches the layer under test:
+
+| Layer | Test project |
+|---|---|
+| Core / Commands / Engine | `TLio.UnitTests/` |
+| JSON adapter (Newtonsoft) | `TLio.Json.Tests/` |
+| JSON adapter (System.Text) | `TLio.Json.SystemText.Tests/` |
+| Built-in functions | `TLio.Functions.Tests/` |
+| XML adapter | `TLio.Xml.Tests/` |
+| YAML adapter | `TLio.Yaml.Tests/` |
+
+Fixture layout within the chosen test project:
 
 ```
-TLio.UnitTests/
+<TestProject>/
   <Category>Tests/
     Fixtures/
       <ScenarioName>/
@@ -281,4 +292,4 @@ Semantic versioning (`MAJOR.MINOR.PATCH`):
 
 ---
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-24 | **Last Amended**: 2026-03-26
+**Version**: 1.0.1 | **Ratified**: 2026-03-24 | **Last Amended**: 2026-04-06

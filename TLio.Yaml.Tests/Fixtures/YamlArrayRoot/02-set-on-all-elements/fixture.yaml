@@ -1,0 +1,14 @@
+- name: alice
+  active: false
+- name: bob
+  active: false
+---
+- command: set
+  path: $[*]
+  property: active
+  value: true
+---
+- name: alice
+  active: true
+- name: bob
+  active: true

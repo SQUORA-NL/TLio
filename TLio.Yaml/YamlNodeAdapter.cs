@@ -294,7 +294,14 @@ public class YamlNodeAdapter : INodeAdapter<YamlNode>
     {
         var yaml = new YamlStream();
         yaml.Load(new StringReader(content));
-        return yaml.Documents[0].RootNode;
+        if (yaml.Documents.Count == 0)
+            return new YamlSequenceNode();
+        if (yaml.Documents.Count == 1)
+            return yaml.Documents[0].RootNode;
+        var sequence = new YamlSequenceNode();
+        foreach (var doc in yaml.Documents)
+            sequence.Add(doc.RootNode);
+        return sequence;
     }
 
     public string Serialize(YamlNode node, bool pretty = false)

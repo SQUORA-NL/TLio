@@ -78,4 +78,9 @@ grep -rn "JToken\|JObject\|JArray\|JValue\|XElement\|YamlNode" TLio.Core/ TLio.C
 | JSON adapter | `TLio.Json/` |
 | XML adapter | `TLio.Xml/` |
 | YAML adapter | `TLio.Yaml/` |
-| Tests | `TLio.UnitTests/<Category>Tests/` |
+| Tests — core/commands/engine | `TLio.UnitTests/<Category>Tests/` |
+| Tests — JSON adapter (Newtonsoft) | `TLio.Json.Tests/` |
+| Tests — JSON adapter (System.Text) | `TLio.Json.SystemText.Tests/` |
+| Tests — functions | `TLio.Functions.Tests/` |
+| Tests — XML adapter | `TLio.Xml.Tests/` |
+| Tests — YAML adapter | `TLio.Yaml.Tests/` |

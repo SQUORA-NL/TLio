@@ -43,6 +43,7 @@ Answer each gate explicitly. "Yes/No + one sentence" is enough.
 | Swappable Selection | V | Are all path expressions supplied by callers? No path strings hard-coded inside commands or functions? | |
 | Test-First + Fixture Triplets | VI | Will every full-script-execution test use file-based fixture triplets (`input.json / script.json / result.json`)? Inline `[TestCase]` only for validation edge cases? | |
 | Simplicity Gate | VII | Could this be done with fewer projects/layers and still satisfy Articles I–V? (If yes, explain why the simpler option was rejected.) | |
+| Backward Migration Path | VIII | If any JLio-equivalent behaviour is changed or dropped, is it documented in `specs/002-migration-from-jlio/porting-guide.md` before merging? | |
 | No Leaking Internals | IX | Do `TLio.Core` public APIs expose only `TNode`-parameterised types? No format types in `Contracts/` or `Models/`? | |
 | Logging as Observability | X | Does every `Execute()` path call `LogInfo` on success and `LogWarning` on graceful skips? No exceptions thrown for expected conditions? | |
 
