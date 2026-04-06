@@ -1,0 +1,13 @@
+- name: old
+  age: 30
+- name: bob
+  age: 25
+---
+- command: set
+  path: $[0].name
+  value: new
+---
+- name: new
+  age: 30
+- name: bob
+  age: 25

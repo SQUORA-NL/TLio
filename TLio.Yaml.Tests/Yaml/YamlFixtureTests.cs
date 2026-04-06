@@ -47,6 +47,9 @@ public class YamlFixtureTests
     [TestCaseSource(typeof(YamlFixtureLoader), nameof(YamlFixtureLoader.Load), new object[] { "YamlMove" })]
     public void Move(YamlNode input, string script, YamlNode expected) => Run(input, script, expected);
 
+    [TestCaseSource(typeof(YamlFixtureLoader), nameof(YamlFixtureLoader.Load), new object[] { "YamlArrayRoot" })]
+    public void ArrayRoot(YamlNode input, string script, YamlNode expected) => Run(input, script, expected);
+
     private void Run(YamlNode input, string script, YamlNode expected)
     {
         var context = YamlExecutionContext.CreateDefault();
