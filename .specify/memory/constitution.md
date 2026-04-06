@@ -1,23 +1,23 @@
 <!--
   SYNC IMPACT REPORT
-  Version change: [PLACEHOLDER] → 1.0.0
-  Modified: all placeholder tokens replaced with TLio-specific content.
+  Version change: 1.0.0 → 1.1.0
 
   Added sections:
-  - Articles I–X (Format Neutrality through Logging is Observability)
-  - Per-article compliance grep commands
-  - Article VI: file-based fixture triplet requirement (xUnit Theory)
-  - Article VIII: porting-guide.md obligation for dropped JLio behaviour
-  - Governance section (amendment procedure, versioning policy, compliance review,
-    canonical source table)
+  - Article XI: AI-Consumable Component Reference (mandatory ai-ref.md per command,
+    function, and adapter; token-efficient format spec; JSONPath compatibility table
+    in overview; PowerShell compliance check)
+  - Canonical Sources: added docs/ai-ref/ row
+
+  Modified principles: none (Articles I–X unchanged)
+  Removed sections: none
 
   Templates updated:
-  - .specify/templates/plan-template.md   ✅ Constitution Check section
-  - .specify/templates/tasks-template.md  ✅ test-discipline notes + fixture requirement
-  - .specify/templates/spec-template.md   — no TLio-specific changes needed
-  - .specify/templates/speckit.implement.md  — already TLio-specific (no change)
-  - .specify/templates/speckit.plan.md       — already TLio-specific (no change)
-  - .specify/templates/speckit.tasks.md      — already TLio-specific (no change)
+  - .specify/templates/plan-template.md   ✅ Article XI gate added to Constitution Check
+  - .specify/templates/tasks-template.md  ✅ ai-ref.md task note added
+  - .specify/templates/speckit.implement.md ✅ ai-ref compliance check added
+  - .specify/templates/spec-template.md   — no changes needed
+  - .specify/templates/speckit.plan.md    — no changes needed
+  - .specify/templates/speckit.tasks.md   — no changes needed
 
   Deferred TODOs: none
 -->
@@ -235,6 +235,124 @@ conditions (missing path, wrong type, etc.).
 
 ---
 
+## Article XI — AI-Consumable Component Reference
+
+Every TLio component that script authors or AI agents may use MUST ship a companion
+`ai-ref.md` file. These files are the authoritative, token-efficient API reference
+for AI agents generating TLio scripts.
+
+**Scope:** Every command, function, and adapter variant MUST have an `ai-ref.md`.
+
+**File locations:**
+
+```
+docs/ai-ref/
+  overview.md                  ← format/adapter selection; JSONPath compatibility table
+  commands/
+    <CommandName>.md            ← one file per command (e.g., Set.md, Copy.md)
+  functions/
+    <FunctionName>.md           ← one file per function (e.g., Concat.md, FormatDate.md)
+  adapters/
+    json-newtonsoft.md          ← TLio.Json (Newtonsoft JSONPath semantics)
+    json-systemtext.md          ← TLio.Json.SystemText (RFC 9535 JSONPath)
+    xml-slashpath.md            ← TLio.Xml + SlashPathItemsFetcher
+    xml-xpath.md                ← TLio.Xml + NativeXPathItemsFetcher
+    yaml.md                     ← TLio.Yaml (dot-notation)
+```
+
+**Mandatory sections in every command/function `ai-ref.md`:**
+
+```markdown
+# <Name>
+
+> <One-sentence purpose.>
+
+## Syntax
+
+```json
+{ "command": "<name>", "path": "<path>", ... }
+```
+
+## Options
+
+| Option | Type     | Required | Default | Description |
+|--------|----------|----------|---------|-------------|
+| path   | string   | yes      | —       | Selection path (format-dependent, see adapters). |
+
+## Formats
+
+Works with all adapters unless noted. Path syntax differs per adapter —
+see `docs/ai-ref/adapters/` and `docs/ai-ref/overview.md`.
+
+## Example
+
+```json
+{ "command": "<name>", "path": "$.a.b", "value": "x" }
+```
+```
+
+**Mandatory content in `docs/ai-ref/overview.md`:**
+
+The overview MUST include an adapter selection table and a JSONPath compatibility table:
+
+**Adapter selection:**
+
+| Format | Adapter project | Execution context factory | Path style |
+|--------|----------------|--------------------------|-----------|
+| JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.Create()` | JSONPath `$.a.b` |
+| JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.Create()` | JSONPath `$.a.b` (RFC 9535) |
+| XML (slash) | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths()` | `/root/child` |
+| XML (XPath) | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `//child`, `item[@id='1']` |
+| YAML | `TLio.Yaml` | `YamlExecutionContext.Create()` | `root.child` (dot-notation) |
+
+**JSONPath: Newtonsoft vs System.Text.Json:**
+
+| Feature | Newtonsoft (`TLio.Json`) | System.Text.Json (`TLio.Json.SystemText`) |
+|---------|--------------------------|------------------------------------------|
+| Spec basis | Goessner (informal) | RFC 9535 |
+| Filter `?(@.x > 1)` | ✅ | ✅ |
+| Script expressions `()` | ✅ | ❌ not supported |
+| Recursive descent `..` | ✅ | ✅ |
+| Negative index `[-1]` | ✅ | ✅ |
+| Union `[a,b]` | ✅ | ✅ |
+| Slice `[0:2]` | ✅ | ✅ |
+| `@` self-reference in filters | ✅ | ✅ |
+| Multiple result nodes | ✅ | ✅ |
+
+Use `TLio.Json` (Newtonsoft) when scripts rely on filter expressions or advanced
+Goessner features. Use `TLio.Json.SystemText` when strict RFC 9535 compliance is
+required or when Newtonsoft is not an allowed dependency.
+
+**Style rules (token efficiency):**
+
+- Total length MUST NOT exceed 150 lines per file.
+- Prose MUST NOT exceed 2 sentences per section.
+- Every option row MUST state a concrete type (`string`, `integer`, `boolean`, `TLioValue`).
+- Examples MUST show a complete, valid JSON script snippet — no pseudocode.
+- Headings deeper than `###` are prohibited.
+- Command/function files MUST reference `docs/ai-ref/overview.md` for path syntax rather
+  than duplicating the JSONPath table.
+
+**Compliance check — run for every PR introducing a new command or function:**
+
+```pwsh
+# PowerShell: commands missing ai-ref.md
+Get-ChildItem TLio.Commands -Filter "*Command.cs" -Recurse | ForEach-Object {
+  $ref = "docs/ai-ref/commands/$($_.BaseName).md"
+  if (-not (Test-Path $ref)) { "MISSING: $ref" }
+}
+
+# PowerShell: functions missing ai-ref.md
+Get-ChildItem TLio.Functions -Filter "*Function.cs" -Recurse | ForEach-Object {
+  $ref = "docs/ai-ref/functions/$($_.BaseName).md"
+  if (-not (Test-Path $ref)) { "MISSING: $ref" }
+}
+```
+
+→ Must return **zero lines** before merging a PR that adds a new command or function.
+
+---
+
 ## Governance
 
 ### Amendment Procedure
@@ -275,10 +393,11 @@ Semantic versioning (`MAJOR.MINOR.PATCH`):
 |---|---|
 | Canonical constitution | `specs/constitution.md` |
 | AI-readable memory constitution | `.specify/memory/constitution.md` |
+| AI component reference files | `docs/ai-ref/` |
 | Runtime implementation guardrail | `.specify/templates/speckit.implement.md` |
 | Planning guardrail | `.specify/templates/speckit.plan.md` |
 | Task generation guardrail | `.specify/templates/speckit.tasks.md` |
 
 ---
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-24 | **Last Amended**: 2026-03-26
+**Version**: 1.1.0 | **Ratified**: 2026-03-24 | **Last Amended**: 2026-04-06

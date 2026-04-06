@@ -273,6 +273,20 @@ Inline `[TestCase]` is only acceptable for validation edge cases (null paths, et
 - [ ]     Implement <Command/Function>.Execute — fixture Theory passes (Green)
 ```
 
+### AI reference files (Constitution §XI)
+
+Every task that introduces a new command or function MUST include a sub-task for the
+companion `ai-ref.md` file:
+
+```
+- [ ] [P] Create docs/ai-ref/commands/<CommandName>.md  ← Article XI
+- [ ] [P] Create docs/ai-ref/functions/<FunctionName>.md  ← Article XI
+```
+
+If `docs/ai-ref/overview.md` does not yet exist, the first such task in the feature
+MUST also create it with the adapter selection table and JSONPath compatibility table
+(see constitution Article XI for the required table content).
+
 ### No format-specific types in Core/Commands task descriptions
 
 Task descriptions for `TLio.Core/`, `TLio.Commands/`, or `TLio.Functions/` work

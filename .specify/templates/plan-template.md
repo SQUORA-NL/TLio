@@ -45,6 +45,7 @@ Answer each gate explicitly. "Yes/No + one sentence" is enough.
 | Simplicity Gate | VII | Could this be done with fewer projects/layers and still satisfy Articles I–V? (If yes, explain why the simpler option was rejected.) | |
 | No Leaking Internals | IX | Do `TLio.Core` public APIs expose only `TNode`-parameterised types? No format types in `Contracts/` or `Models/`? | |
 | Logging as Observability | X | Does every `Execute()` path call `LogInfo` on success and `LogWarning` on graceful skips? No exceptions thrown for expected conditions? | |
+| AI Component Reference | XI | Does every new command, function, and adapter have a corresponding `ai-ref.md` under `docs/ai-ref/`? Does `docs/ai-ref/overview.md` exist with the adapter selection and JSONPath compatibility tables? | |
 
 ## Project Structure
 

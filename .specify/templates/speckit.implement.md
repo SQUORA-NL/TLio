@@ -54,6 +54,9 @@ grep -rn "JToken\|JObject\|JArray\|JValue\|XElement\|YamlNode" TLio.Core/ TLio.C
 - [ ] No `new ConcreteAdapter()` in command or function code
 - [ ] Every `Execute` method calls `ResetSuccess()` first
 - [ ] Every `Execute` method logs at least one entry
+- [ ] New commands have `docs/ai-ref/commands/<Name>.md` (Article XI)
+- [ ] New functions have `docs/ai-ref/functions/<Name>.md` (Article XI)
+- [ ] `docs/ai-ref/overview.md` exists with adapter table + JSONPath comparison (Article XI)
 
 ---
 
