@@ -2,19 +2,26 @@
   SYNC IMPACT REPORT
   Version change: 1.0.0 → 1.1.0
 
-  Added sections:
-  - Article XI: AI-Consumable Component Reference (mandatory ai-ref.md per command,
-    function, and adapter; token-efficient format spec; JSONPath compatibility table
-    in overview; PowerShell compliance check)
-  - Canonical Sources: added docs/ai-ref/ row
+  Changes in this amendment:
+  - Article VI: fixture triplet path updated to reflect post-004 multi-project test
+    layout (TLio.UnitTests, TLio.Json.Tests, TLio.Functions.Tests, TLio.Xml.Tests,
+    TLio.Yaml.Tests, TLio.Json.SystemText.Tests). No new obligations introduced.
+  - Article XI (new): AI-Consumable Component Reference — mandatory ai-ref.md per
+    command, function, and adapter; token-efficient format spec; adapter selection
+    table; JSONPath compatibility table (Newtonsoft vs System.Text.Json); PowerShell
+    compliance check.
+  - Canonical Sources: added docs/ai-ref/ row.
 
-  Modified principles: none (Articles I–X unchanged)
+  Modified principles: none (Articles I–X text unchanged)
   Removed sections: none
 
   Templates updated:
-  - .specify/templates/plan-template.md   ✅ Article XI gate added to Constitution Check
-  - .specify/templates/tasks-template.md  ✅ ai-ref.md task note added
-  - .specify/templates/speckit.implement.md ✅ ai-ref compliance check added
+  - .specify/templates/plan-template.md   ✅ Article VIII + XI gates added to
+                                             Constitution Check table
+  - .specify/templates/tasks-template.md  ✅ Fixture path updated to <TestProject>/;
+                                             ai-ref.md task note added (§XI)
+  - .specify/templates/speckit.implement.md ✅ File locations expanded (6 test projects);
+                                              ai-ref compliance checks added (§XI)
   - .specify/templates/spec-template.md   — no changes needed
   - .specify/templates/speckit.plan.md    — no changes needed
   - .specify/templates/speckit.tasks.md   — no changes needed
@@ -149,10 +156,22 @@ No implementation code is written before:
 
 **File-based fixture triplets (MANDATORY for all command and function tests):**
 
-Every test that exercises a full script execution MUST use file-based fixture triplets:
+Every test that exercises a full script execution MUST use file-based fixture triplets.
+Choose the test project that matches the layer under test:
+
+| Layer | Test project |
+|---|---|
+| Core / Commands / Engine | `TLio.UnitTests/` |
+| JSON adapter (Newtonsoft) | `TLio.Json.Tests/` |
+| JSON adapter (System.Text) | `TLio.Json.SystemText.Tests/` |
+| Built-in functions | `TLio.Functions.Tests/` |
+| XML adapter | `TLio.Xml.Tests/` |
+| YAML adapter | `TLio.Yaml.Tests/` |
+
+Fixture layout within the chosen test project:
 
 ```
-TLio.UnitTests/
+<TestProject>/
   <Category>Tests/
     Fixtures/
       <ScenarioName>/

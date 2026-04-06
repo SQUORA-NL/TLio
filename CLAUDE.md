@@ -1,6 +1,6 @@
 # Tlio.claude Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-28 (updated by 005)
+Auto-generated from all feature plans. Last updated: 2026-04-06 (updated by 006)
 
 ## Active Technologies
 
@@ -53,10 +53,10 @@ C# / .NET 10: Follow standard conventions
 
 ## Recent Changes
 
+- 006-yaml-multidoc-array: Updating YamlNodeAdapter.Parse() to treat multi-document YAML inputs as array roots (parity with JSON array root)
 - 005-samples-api-cli: Adding samples/TLio.Sample.Api (Minimal API, 3 format endpoints) + samples/TLio.Sample.Cli (file transform CLI), both under samples/
 - 004-core-test-reorganization: Completed — TLio.Json.Tests (114), TLio.Json.SystemText.Tests (33), TLio.Functions.Tests (248) all active; TLio.UnitTests now core/commands/engine only (403 tests)
 - 003-xml-xpath-implementation: Adding NativeXPathItemsFetcher + TLio.Xml.Tests + TLio.Yaml.Tests
-- 002-migration-from-jlio: Added C# / .NET 10 + Newtonsoft.Json, System.Text.Json, JsonPath.Net (json-everything), NUnit
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

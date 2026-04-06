@@ -259,11 +259,15 @@ With multiple developers:
 Every test task for a command or function MUST produce fixture files, not inline data:
 
 ```
-TLio.UnitTests/<Category>Tests/Fixtures/<ScenarioName>/
+<TestProject>/<Category>Tests/Fixtures/<ScenarioName>/
   input.json    ← starting document
   script.json   ← TLioScript (serialised command or function)
   result.json   ← expected document after execution
 ```
+
+Where `<TestProject>` matches the layer under test: `TLio.UnitTests` (core/commands/engine),
+`TLio.Json.Tests`, `TLio.Json.SystemText.Tests`, `TLio.Functions.Tests`,
+`TLio.Xml.Tests`, or `TLio.Yaml.Tests`.
 
 The test class drives them via xUnit `Theory` + `[MemberData]` / `[ClassData]`.
 Inline `[TestCase]` is only acceptable for validation edge cases (null paths, etc.).
