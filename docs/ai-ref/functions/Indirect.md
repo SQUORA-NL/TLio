@@ -31,3 +31,15 @@ Given `{ "pathRef": "$.source", "source": "hello" }`:
 ```
 
 Result: `$.target` = `"hello"` (resolved via `$.pathRef` → `"$.source"` → `"hello"`).
+
+## C# Usage
+
+```csharp
+// Already registered via ParseOptions.CreateDefault()
+var options = ParseOptions<JToken>.CreateDefault();
+var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result = engine.Execute(
+    "[{\"command\":\"set\",\"path\":\"$.target\",\"value\":\"=indirect($.pathRef)\"}]",
+    JObject.Parse("{\"pathRef\":\"$.source\",\"source\":\"hello\"}"),
+    JsonExecutionContext.CreateDefault());
+```

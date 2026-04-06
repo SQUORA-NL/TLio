@@ -23,6 +23,8 @@ Two-argument form (add child to matched parent):
 | property | string | no | — | Name of the child key to create on each matched parent. |
 | value | TLioValue | yes | — | Literal value or `=function()` expression to assign. |
 
+**Supports functions**: ✅
+
 ## Formats
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
@@ -34,4 +36,11 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
   { "command": "add", "path": "$.newField", "value": "created" },
   { "command": "add", "path": "$.items", "value": ["first"] }
 ]
+```
+
+## C# Fluent API
+
+```csharp
+var script = new TLioScript<JToken>()
+    .Add(JValue.CreateString("created")).OnPath("$.newField");
 ```

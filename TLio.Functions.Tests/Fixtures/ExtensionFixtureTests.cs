@@ -164,6 +164,9 @@ public class ExtensionFixtureTests
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Text/trimend" })]
     public void Text_TrimEnd(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Text/tostring" })]
+    public void Text_ToString(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
     // ── TimeDate ──────────────────────────────────────────────────────────────
 
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "TimeDate/avgdate" })]

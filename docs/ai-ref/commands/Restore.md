@@ -15,7 +15,7 @@
 With settings:
 
 ```json
-{ "command": "restore", "path": "$", "settings": { "metadataPath": "$.meta", "removeMetadata": true } }
+{ "command": "restore", "path": "$", "restoreSettings": { "metadataPath": "$.meta", "removeMetadata": true } }
 ```
 
 ## Options
@@ -23,7 +23,7 @@ With settings:
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | path | string | yes | — | Selects the flattened object node(s) to restore. |
-| settings | object | no | — | Restoration configuration (see Settings below). |
+| restoreSettings | object | no | — | Restoration configuration (see Settings below). |
 
 ### Settings object
 
@@ -35,6 +35,8 @@ With settings:
 | strictMode | boolean | false | Fail if metadata is absent; otherwise use best-effort inference. |
 | removeMetadata | boolean | false | Delete the metadata node after restoration. |
 
+**Supports functions**: ❌
+
 ## Formats
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
@@ -42,5 +44,5 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 ## Example
 
 ```json
-{ "command": "restore", "path": "$", "settings": { "metadataPath": "$.meta", "removeMetadata": true } }
+{ "command": "restore", "path": "$", "restoreSettings": { "metadataPath": "$.meta", "removeMetadata": true } }
 ```

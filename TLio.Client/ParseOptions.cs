@@ -65,6 +65,8 @@ public class ParseOptions<TNode>
         options.FunctionsProvider.Register("partial",    () => new Partial<TNode>());
         options.FunctionsProvider.Register("scriptpath", () => new ScriptPath<TNode>());
         options.FunctionsProvider.Register("datetime",   () => new Datetime<TNode>());
+        options.FunctionsProvider.Register("newGuid",    () => new NewGuid<TNode>());
+        options.FunctionsProvider.Register("path",       () => new ScriptPath<TNode>());
 
         return options;
     }

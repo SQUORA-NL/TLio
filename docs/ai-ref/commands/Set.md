@@ -23,6 +23,8 @@ Two-argument form (select parent, name child property):
 | property | string | no | — | Name of the child key to set on each matched parent. |
 | value | TLioValue | yes | — | Literal value or `=function()` expression to assign. |
 
+**Supports functions**: ✅
+
 ## Formats
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
@@ -34,4 +36,11 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
   { "command": "set", "path": "$.address.city", "value": "Amsterdam" },
   { "command": "set", "path": "$.items[*]", "property": "active", "value": true }
 ]
+```
+
+## C# Fluent API
+
+```csharp
+var script = new TLioScript<JToken>()
+    .Set(JValue.CreateString("Amsterdam")).OnPath("$.address.city");
 ```

@@ -1,12 +1,13 @@
 # =promote()
 
-> Wraps the matched node in a new object using the node's own **property name** as the
-> key. Use when you need to lift a nested value into a named wrapper object.
+> Wraps the matched node in a new object using either the node's own **property name**
+> or an **explicit name** as the key.
 
 ## Syntax
 
 ```
 =promote(path)
+=promote(path, propertyName)
 ```
 
 Used as a value in any command: `"value": "=promote($.person)"`
@@ -15,18 +16,34 @@ Used as a value in any command: `"value": "=promote($.person)"`
 
 | # | Type | Required | Description |
 |---|------|----------|-------------|
-| 1 | string (path) | yes | Path to the node to promote. The node's parent property name becomes the wrapper key. |
+| 1 | string (path) | yes | Path to the node to promote. |
+| 2 | string | no | Explicit key name for the wrapper object. When omitted, uses the node's parent property name. |
 
 ## Returns
 
-An object with one key (the matched node's property name) whose value is the matched node.
+An object with one key whose value is the matched node.
 
 ## Example
 
-Given `{ "person": { "name": "Alice", "age": 30 } }`:
+Using parent property name (1-arg):
 
 ```json
 { "command": "set", "path": "$.result", "value": "=promote($.person)" }
 ```
 
-Result: `$.result` = `{ "person": { "name": "Alice", "age": 30 } }`
+Given `{ "person": { "name": "Alice" } }` → `$.result` = `{ "person": { "name": "Alice" } }`
+
+Using explicit name (2-arg):
+
+```json
+{ "command": "add", "path": "$.wrapped", "value": "=promote($.rawValue,'data')" }
+```
+
+Given `{ "rawValue": 42 }` → `$.wrapped` = `{ "data": 42 }`
+
+## C# Usage
+
+```csharp
+var options = ParseOptions<JToken>.CreateDefault();
+// Use in script JSON: "=promote($.path,'wrapperKey')"
+```

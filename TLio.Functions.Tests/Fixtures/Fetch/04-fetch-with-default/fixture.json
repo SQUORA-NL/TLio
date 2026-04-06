@@ -1,0 +1,7 @@
+{
+  "input": {},
+  "script": [
+    { "command": "add", "path": "$.name", "value": "=fetch($.missing,'Unknown')" }
+  ],
+  "result": { "name": "Unknown" }
+}

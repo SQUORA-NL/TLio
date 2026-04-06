@@ -41,3 +41,15 @@ execution.
 ```json
 { "command": "put", "path": "$.date", "value": "=datetime(yyyy-MM-dd)" }
 ```
+
+## C# Usage
+
+```csharp
+// Already registered via ParseOptions.CreateDefault()
+var options = ParseOptions<JToken>.CreateDefault();
+var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result = engine.Execute(
+    "[{\"command\":\"put\",\"path\":\"$.createdAt\",\"value\":\"=datetime()\"}]",
+    JObject.Parse("{}"),
+    JsonExecutionContext.CreateDefault());
+```

@@ -15,6 +15,8 @@
 |--------|------|----------|---------|-------------|
 | path | string | yes | — | Selects the node(s) to remove. Wildcards remove multiple nodes. |
 
+**Supports functions**: ❌
+
 ## Formats
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
@@ -26,4 +28,11 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
   { "command": "remove", "path": "$.tempId" },
   { "command": "remove", "path": "$.items[?(@.active == false)]" }
 ]
+```
+
+## C# Fluent API
+
+```csharp
+var script = new TLioScript<JToken>()
+    .Remove().OnPath("$.tempId");
 ```

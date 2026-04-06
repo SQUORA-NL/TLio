@@ -15,7 +15,7 @@
 With settings:
 
 ```json
-{ "command": "flatten", "path": "$.nested", "settings": { "delimiter": "_", "maxDepth": 3 } }
+{ "command": "flatten", "path": "$.nested", "flattenSettings": { "delimiter": "_", "maxDepth": 3 } }
 ```
 
 ## Options
@@ -23,7 +23,7 @@ With settings:
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | path | string | yes | — | Selects the object node(s) to flatten. |
-| settings | object | no | — | Flattening configuration (see Settings below). |
+| flattenSettings | object | no | — | Flattening configuration (see Settings below). |
 
 ### Settings object
 
@@ -36,6 +36,8 @@ With settings:
 | includeArrayIndices | boolean | false | Whether to include array indices in flattened keys. |
 | preserveTypes | boolean | false | Preserve type information alongside values. |
 
+**Supports functions**: ❌
+
 ## Formats
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
@@ -44,7 +46,7 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 
 ```json
 [
-  { "command": "flatten", "path": "$", "settings": { "delimiter": ".", "metadataPath": "$.meta" } },
-  { "command": "restore", "path": "$", "settings": { "metadataPath": "$.meta" } }
+  { "command": "flatten", "path": "$", "flattenSettings": { "delimiter": ".", "metadataPath": "$.meta" } },
+  { "command": "restore", "path": "$", "restoreSettings": { "metadataPath": "$.meta" } }
 ]
 ```

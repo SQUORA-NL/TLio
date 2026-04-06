@@ -39,3 +39,15 @@ Result: `$.pick` = `"first"`
 ```
 
 Result: `$.pick` = `"third"`
+
+## C# Usage
+
+```csharp
+// Already registered via ParseOptions.CreateDefault()
+var options = ParseOptions<JToken>.CreateDefault();
+var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result = engine.Execute(
+    "[{\"command\":\"set\",\"path\":\"$.pick\",\"value\":\"=partial($.items[*],1)\"}]",
+    JObject.Parse("{\"items\":[\"first\",\"second\",\"third\"]}"),
+    JsonExecutionContext.CreateDefault());
+```

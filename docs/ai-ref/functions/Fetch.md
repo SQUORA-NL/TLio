@@ -1,12 +1,13 @@
 # =fetch()
 
-> Evaluates a path expression and returns the **first matched node's value**. Logs a
-> warning and returns null if the path matches nothing.
+> Evaluates a path expression and returns the **first matched node's value**. Returns an
+> optional default value when the path matches nothing.
 
 ## Syntax
 
 ```
 =fetch(path)
+=fetch(path, defaultValue)
 ```
 
 Used as a value in any command: `"value": "=fetch($.source)"`
@@ -15,11 +16,13 @@ Used as a value in any command: `"value": "=fetch($.source)"`
 
 | # | Type | Required | Description |
 |---|------|----------|-------------|
-| 1 | string (path) | yes | Path expression selecting the source node. Uses the same path style as the active adapter. |
+| 1 | string (path) | yes | Path expression selecting the source node. |
+| 2 | any | no | Default value returned when the path resolves to nothing. |
 
 ## Returns
 
-The value of the first matched node (string, number, boolean, object, or array).
+The value of the first matched node, or the default value if no match and a default is provided.
+Logs a warning and returns failed when the path matches nothing and no default is given.
 
 ## Example
 
@@ -28,5 +31,13 @@ The value of the first matched node (string, number, boolean, object, or array).
 ```
 
 ```json
-{ "command": "set", "path": "$.summary.name", "value": "=fetch($.user.profile.displayName)" }
+{ "command": "add", "path": "$.name", "value": "=fetch($.user.name,'Anonymous')" }
+```
+
+## C# Usage
+
+```csharp
+// Register via ParseOptions (already included in CreateDefault)
+var options = ParseOptions<JToken>.CreateDefault();
+// Use in script JSON: "=fetch($.path,'default')"
 ```

@@ -15,7 +15,7 @@
 With settings:
 
 ```json
-{ "command": "tocsv", "path": "$.data", "settings": { "delimiter": ";", "includeHeaders": true } }
+{ "command": "tocsv", "path": "$.data", "csvSettings": { "delimiter": ";", "includeHeaders": true } }
 ```
 
 ## Options
@@ -23,7 +23,7 @@ With settings:
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | path | string | yes | — | Selects the node(s) to convert (object or array of objects). |
-| settings | object | no | — | CSV formatting configuration (see Settings below). |
+| csvSettings | object | no | — | CSV formatting configuration (see Settings below). |
 
 ### Settings object
 
@@ -36,6 +36,8 @@ With settings:
 | quoteAllFields | boolean | false | Force quoting of every field, not just fields with special characters. |
 | escapeQuoteChar | string | `"\""` | Character used to escape quotes within field values. |
 
+**Supports functions**: ❌
+
 ## Formats
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
@@ -43,5 +45,5 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 ## Example
 
 ```json
-{ "command": "tocsv", "path": "$.rows", "settings": { "delimiter": ",", "includeHeaders": true } }
+{ "command": "tocsv", "path": "$.rows", "csvSettings": { "delimiter": ",", "includeHeaders": true } }
 ```

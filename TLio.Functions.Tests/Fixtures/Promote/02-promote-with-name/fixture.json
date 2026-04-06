@@ -1,0 +1,7 @@
+{
+  "input": { "rawValue": 42 },
+  "script": [
+    { "command": "add", "path": "$.wrapped", "value": "=promote($.rawValue,'data')" }
+  ],
+  "result": { "rawValue": 42, "wrapped": { "data": 42 } }
+}

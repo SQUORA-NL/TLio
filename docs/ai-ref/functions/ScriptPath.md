@@ -36,3 +36,20 @@ Result: `$.result` = `"$"` (at document root)
 ```
 
 Result: `$.items[0].selfPath` = `"$.items[0]"`
+
+## Notes
+
+- Also registered as `"path"` (camelCase alias, 008+) for JLio compatibility — see [Path.md](Path.md).
+- `=path()` and `=scriptpath()` are identical at runtime.
+
+## C# Usage
+
+```csharp
+// Already registered via ParseOptions.CreateDefault() under both "scriptpath" and "path"
+var options = ParseOptions<JToken>.CreateDefault();
+var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result = engine.Execute(
+    "[{\"command\":\"add\",\"path\":\"$.items[*].loc\",\"value\":\"=scriptpath()\"}]",
+    JObject.Parse("{\"items\":[{\"id\":1},{\"id\":2}]}"),
+    JsonExecutionContext.CreateDefault());
+```

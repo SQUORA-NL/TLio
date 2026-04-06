@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using TLio.Commands;
 using TLio.Commands.Advanced;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
@@ -86,6 +87,9 @@ public class CommandConverter<TNode>
                 continue;
 
             var propName = ToPascalCase(jsonProp.Name);
+            // T003: JLio compatibility — "decisionTable" JSON key maps to the Config property
+            if (propName == "DecisionTable" && command is DecisionTable<TNode>)
+                propName = "Config";
             var csProp = commandType.GetProperty(propName, BindingFlags.Public | BindingFlags.Instance);
             if (csProp == null || !csProp.CanWrite)
                 continue;
@@ -173,7 +177,98 @@ public class CommandConverter<TNode>
             return ParseDecisionTableConfig(element);
         }
 
+        // T004: List<ResolveSetting<TNode>> — parsed reflectively (no direct reference to TLio.Extensions.ETL)
+        if (targetType.IsGenericType &&
+            targetType.GetGenericTypeDefinition() == typeof(List<>) &&
+            element.ValueKind == JsonValueKind.Array)
+        {
+            var elementType = targetType.GenericTypeArguments[0];
+            if (elementType.IsGenericType &&
+                elementType.GetGenericTypeDefinition().Name == "ResolveSetting`1")
+                return ParseResolveSettings(element, targetType, elementType);
+        }
+
+        // T002: Generic POCO fallback for non-generic, non-abstract class types
+        // (e.g., FlattenSettings, CsvSettings, RestoreSettings from TLio.Extensions.ETL)
+        if (targetType.IsClass && !targetType.IsAbstract && !targetType.IsGenericType)
+        {
+            try
+            {
+                return JsonSerializer.Deserialize(element.GetRawText(), targetType,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+            catch { return null; }
+        }
+
         return null;
+    }
+
+    // ── ResolveSetting list parsing (reflective — avoids hard ETL dependency) ─
+
+    private object ParseResolveSettings(JsonElement element, Type listType, Type settingType)
+    {
+        var list = (System.Collections.IList)Activator.CreateInstance(listType)!;
+        var resolveKeysProp = settingType.GetProperty("ResolveKeys");
+        var refCollPathProp = settingType.GetProperty("ReferencesCollectionPath");
+        var valuesProp      = settingType.GetProperty("Values");
+        var resolveKeyType  = resolveKeysProp?.PropertyType.GenericTypeArguments.FirstOrDefault();
+        var resolveValType  = valuesProp?.PropertyType.GenericTypeArguments.FirstOrDefault();
+
+        foreach (var itemEl in element.EnumerateArray())
+        {
+            var setting = Activator.CreateInstance(settingType)!;
+
+            if (itemEl.TryGetProperty("resolveKeys", out var keysEl) &&
+                keysEl.ValueKind == JsonValueKind.Array && resolveKeyType != null)
+            {
+                var keyList = (System.Collections.IList)Activator.CreateInstance(resolveKeysProp!.PropertyType)!;
+                var keyPathProp    = resolveKeyType.GetProperty("KeyPath");
+                var refKeyPathProp = resolveKeyType.GetProperty("ReferenceKeyPath");
+                foreach (var keyEl in keysEl.EnumerateArray())
+                {
+                    var key = Activator.CreateInstance(resolveKeyType)!;
+                    if (keyEl.TryGetProperty("keyPath", out var kp))
+                        keyPathProp?.SetValue(key, kp.GetString());
+                    if (keyEl.TryGetProperty("referenceKeyPath", out var rkp))
+                        refKeyPathProp?.SetValue(key, rkp.GetString());
+                    keyList.Add(key);
+                }
+                resolveKeysProp!.SetValue(setting, keyList);
+            }
+
+            if (itemEl.TryGetProperty("referencesCollectionPath", out var rcpEl))
+                refCollPathProp?.SetValue(setting, rcpEl.GetString() ?? string.Empty);
+
+            if (itemEl.TryGetProperty("values", out var valuesEl) &&
+                valuesEl.ValueKind == JsonValueKind.Array && resolveValType != null)
+            {
+                var valList    = (System.Collections.IList)Activator.CreateInstance(valuesProp!.PropertyType)!;
+                var tpProp     = resolveValType.GetProperty("TargetPath");
+                var valProp    = resolveValType.GetProperty("Value");
+                var behProp    = resolveValType.GetProperty("ResolveTypeBehavior");
+
+                foreach (var valEl in valuesEl.EnumerateArray())
+                {
+                    var rv = Activator.CreateInstance(resolveValType)!;
+                    if (valEl.TryGetProperty("targetPath", out var tp))
+                        tpProp?.SetValue(rv, tp.GetString());
+                    if (valEl.TryGetProperty("value", out var vEl))
+                        valProp?.SetValue(rv, ConvertJsonValue(vEl, typeof(IFunctionSupportedValue<TNode>)));
+                    if (valEl.TryGetProperty("resolveTypeBehavior", out var behEl) &&
+                        behEl.ValueKind == JsonValueKind.String && behProp != null)
+                    {
+                        if (Enum.TryParse(behProp.PropertyType, behEl.GetString(), ignoreCase: true, out var beh))
+                            behProp.SetValue(rv, beh);
+                    }
+                    valList.Add(rv);
+                }
+                valuesProp!.SetValue(setting, valList);
+            }
+
+            list.Add(setting);
+        }
+
+        return list;
     }
 
     // ── DecisionTable config parsing ──────────────────────────────────────────

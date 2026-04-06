@@ -17,6 +17,8 @@
 | toPath | string | yes | — | Destination path where nodes are written. |
 | destinationAsArray | boolean | no | false | When true, aligns multiple results by array index. |
 
+**Supports functions**: ❌
+
 ## Formats
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
@@ -28,4 +30,11 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
   { "command": "move", "fromPath": "$.draft.title", "toPath": "$.published.title" },
   { "command": "move", "fromPath": "$.temp", "toPath": "$.permanent" }
 ]
+```
+
+## C# Fluent API
+
+```csharp
+var script = new TLioScript<JToken>()
+    .Move().From("$.draft.title").To("$.published.title");
 ```

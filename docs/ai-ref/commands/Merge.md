@@ -1,21 +1,23 @@
 # merge
 
-> Deep-merges the node(s) at `path` (source) into the node(s) at `targetPath`
+> Deep-merges the node(s) at `fromPath` (source) into the node(s) at `toPath`
 > (destination). Objects are merged recursively; arrays follow `arrayMergeMode`.
 
 ## Syntax
 
 ```json
-{ "command": "merge", "path": "$.source", "targetPath": "$.target" }
+{ "command": "merge", "fromPath": "$.source", "toPath": "$.target" }
 ```
 
 ## Options
 
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
-| path | string | yes | — | Selects the source node(s) to merge from. |
-| targetPath | string | yes | — | Selects the destination node(s) to merge into. |
+| fromPath | string | yes | — | Selects the source node(s) to merge from. Alias: `path`. |
+| toPath | string | yes | — | Selects the destination node(s) to merge into. Alias: `targetPath`. |
 | arrayMergeMode | string | no | `"concat"` | How arrays are merged: `"concat"` appends source to target; `"replace"` overwrites target. |
+
+**Supports functions**: ❌
 
 ## Formats
 
@@ -25,7 +27,14 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 
 ```json
 [
-  { "command": "merge", "path": "$.patch", "targetPath": "$.document" },
-  { "command": "merge", "path": "$.newItems", "targetPath": "$.list", "arrayMergeMode": "replace" }
+  { "command": "merge", "fromPath": "$.patch", "toPath": "$.document" },
+  { "command": "merge", "fromPath": "$.newItems", "toPath": "$.list", "arrayMergeMode": "replace" }
 ]
+```
+
+## C# Fluent API
+
+```csharp
+var script = new TLioScript<JToken>()
+    .Merge().From("$.patch").To("$.document");
 ```

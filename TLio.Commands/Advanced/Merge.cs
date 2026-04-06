@@ -21,6 +21,10 @@ public class Merge<TNode> : CommandBase<TNode>
     public string? TargetPath { get; set; }
     public ArrayMergeMode ArrayMergeMode { get; set; } = ArrayMergeMode.Concat;
 
+    // JLio-compatible aliases (FR-003/FR-004)
+    public string? FromPath { set => Path = value; }
+    public string? ToPath   { set => TargetPath = value; }
+
     public Merge() { }
 
     public Merge(string path, string targetPath, ArrayMergeMode arrayMergeMode = ArrayMergeMode.Concat)

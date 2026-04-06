@@ -1,0 +1,7 @@
+{
+  "input": { "items": [{ "id": 1 }, { "id": 2 }] },
+  "script": [
+    { "command": "add", "path": "$.items[*].loc", "value": "=path()" }
+  ],
+  "result": { "items": [{ "id": 1, "loc": "$.items[0]" }, { "id": 2, "loc": "$.items[1]" }] }
+}

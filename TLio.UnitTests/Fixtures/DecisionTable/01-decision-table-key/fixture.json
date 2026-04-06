@@ -1,0 +1,21 @@
+{
+  "input": { "status": "active" },
+  "script": [
+    {
+      "command": "decisionTable",
+      "path": "$",
+      "decisionTable": {
+        "inputs": [{ "name": "status", "path": "$.status" }],
+        "outputs": [{ "name": "label", "path": "$.label" }],
+        "rules": [
+          {
+            "priority": 1,
+            "conditions": { "status": "active" },
+            "results": { "label": "Active" }
+          }
+        ]
+      }
+    }
+  ],
+  "result": { "status": "active", "label": "Active" }
+}

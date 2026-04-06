@@ -24,6 +24,10 @@ public class Compare<TNode> : CommandBase<TNode>
     public string? SecondPath { get; set; }
     public string? ResultPath { get; set; }
 
+    // JLio-compatible aliases (FR-001/FR-002)
+    public string? FromPath { set => FirstPath = value; }
+    public string? ToPath   { set => SecondPath = value; }
+
     public Compare() { }
 
     public Compare(string firstPath, string secondPath, string resultPath)

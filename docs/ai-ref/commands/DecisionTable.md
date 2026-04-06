@@ -55,6 +55,13 @@
 | mode | `"firstMatch"`, `"bestMatch"`, `"allMatches"` | `"firstMatch"` | How many matching rules to apply. |
 | conflictResolution | `"priority"`, `"lastWins"`, `"merge"` | `"priority"` | How to resolve multiple matches. |
 
+**Supports functions**: ✅ (rule result values only)
+
+## Notes
+
+- The JSON key `"decisionTable"` is accepted as an alias for `"config"` (JLio compatibility, 008+).
+- No C# fluent builder — construct the config object directly and serialize with `TLioConvert`.
+
 ## Formats
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).

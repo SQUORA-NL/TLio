@@ -62,6 +62,10 @@ public class FixtureTests
     public void Compare(JToken input, string script, JToken expected)
         => RunFixture(input, script, expected);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.Load), new object[] { "DecisionTable" })]
+    public void DecisionTable(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
     // ── Helper ────────────────────────────────────────────────────────────────
 
     private void RunFixture(JToken input, string script, JToken expected)

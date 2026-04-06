@@ -6,16 +6,18 @@
 ## Syntax
 
 ```json
-{ "command": "compare", "firstPath": "$.a", "secondPath": "$.b", "resultPath": "$.result" }
+{ "command": "compare", "fromPath": "$.a", "toPath": "$.b", "resultPath": "$.result" }
 ```
 
 ## Options
 
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
-| firstPath | string | yes | — | Path to the first node (left-hand side of comparison). |
-| secondPath | string | yes | — | Path to the second node (right-hand side). |
+| fromPath | string | yes | — | Path to the first node (left-hand side of comparison). Alias: `firstPath`. |
+| toPath | string | yes | — | Path to the second node (right-hand side). Alias: `secondPath`. |
 | resultPath | string | yes | — | Path where the result string is written (upsert). |
+
+**Supports functions**: ❌
 
 ## Result values
 
@@ -33,5 +35,12 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 ## Example
 
 ```json
-{ "command": "compare", "firstPath": "$.score", "secondPath": "$.threshold", "resultPath": "$.verdict" }
+{ "command": "compare", "fromPath": "$.score", "toPath": "$.threshold", "resultPath": "$.verdict" }
+```
+
+## C# Fluent API
+
+```csharp
+var script = new TLioScript<JToken>()
+    .Compare().From("$.score").To("$.threshold").Result("$.verdict");
 ```

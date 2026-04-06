@@ -45,6 +45,12 @@
 - `referenceKeyPath`: path in the reference entry (absolute or `$.property`)
 - `targetPath`: where to write the result — `@.property` writes relative to current node
 
+**Supports functions**: ❌
+
+## Notes
+
+- The JSON key for the settings array is `"resolveSettings"` (the `settings` field name in JSON).
+
 ## Formats
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).

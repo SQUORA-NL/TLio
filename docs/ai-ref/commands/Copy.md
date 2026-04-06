@@ -17,6 +17,8 @@
 | toPath | string | yes | — | Destination path where copies are written. |
 | destinationAsArray | boolean | no | false | When true, aligns multiple results by array index rather than broadcasting to all destinations. |
 
+**Supports functions**: ❌
+
 ## Formats
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
@@ -28,4 +30,11 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
   { "command": "copy", "fromPath": "$.original.name", "toPath": "$.copy.name" },
   { "command": "copy", "fromPath": "$.items[*].id", "toPath": "$.ids[*]", "destinationAsArray": true }
 ]
+```
+
+## C# Fluent API
+
+```csharp
+var script = new TLioScript<JToken>()
+    .Copy().From("$.original.name").To("$.copy.name");
 ```
