@@ -1,6 +1,6 @@
 # Tlio.claude Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-06 (updated by 006)
+Auto-generated from all feature plans. Last updated: 2026-04-06 (updated by 008)
 
 ## Active Technologies
 
@@ -22,7 +22,8 @@ TLio.Yaml/          ← YamlNodeAdapter, YamlPathItemsFetcher
 TLio.UnitTests/             ← Core / Commands / Engine tests only (no functions, no JSON adapter)
 TLio.Json.Tests/            ← JSON (Newtonsoft) adapter tests (JsonNodeAdapter, JsonPathItemsFetcher)
 TLio.Json.SystemText.Tests/ ← System.Text.Json adapter fixture tests
-TLio.Functions.Tests/       ← Built-in function tests + extension-pack fixture tests (Math, Text, TimeDate, ETL)
+TLio.Functions.Tests/       ← Built-in function tests + extension-pack fixture tests (Math, Text, TimeDate, ETL, TextPack)
+TLio.Extensions.Text/      ← Optional text function pack: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim (008)
 TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtures
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
 samples/
@@ -53,6 +54,7 @@ C# / .NET 10: Follow standard conventions
 
 ## Recent Changes
 
+- 008-jlio-api-parity: Adding TLio.Extensions.Text (12 text functions); fluent builder API + TLioConvert in TLio.Client; alias properties in Compare/Merge; ETL settings deserialization fix; newGuid function; fetch/promote optional args; path alias; ai-ref.md updates
 - 006-yaml-multidoc-array: Updating YamlNodeAdapter.Parse() to treat multi-document YAML inputs as array roots (parity with JSON array root)
 - 005-samples-api-cli: Adding samples/TLio.Sample.Api (Minimal API, 3 format endpoints) + samples/TLio.Sample.Cli (file transform CLI), both under samples/
 - 004-core-test-reorganization: Completed — TLio.Json.Tests (114), TLio.Json.SystemText.Tests (33), TLio.Functions.Tests (248) all active; TLio.UnitTests now core/commands/engine only (403 tests)
