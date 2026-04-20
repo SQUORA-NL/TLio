@@ -1,0 +1,5 @@
+{
+  "input": { "expr": "" },
+  "script": [{ "command": "set", "path": "$.expr", "value": "==formula" }],
+  "result": { "expr": "=formula" }
+}

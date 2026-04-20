@@ -320,4 +320,54 @@ public class JsonPathFetcherTests
         var suggestions = _fetcher.GetIntellisense("", data).ToList();
         Assert.That(suggestions.Count, Is.GreaterThan(0));
     }
+
+    // ── Bracket notation: property names with special characters ─────────────
+
+    [Test]
+    public void SelectNodes_BracketNotation_PropertyWithDot_ReturnsCorrectNode()
+    {
+        var data = JToken.Parse("{\"version.major\": 2}");
+        var result = _fetcher.SelectNodes("$['version.major']", data);
+        Assert.That(result.Count, Is.EqualTo(1));
+        Assert.That(result.First().Value<int>(), Is.EqualTo(2));
+    }
+
+    [Test]
+    public void SelectNodes_BracketNotation_PropertyWithAt_ReturnsCorrectNode()
+    {
+        var data = JToken.Parse("{\"@type\": \"Person\"}");
+        var result = _fetcher.SelectNodes("$['@type']", data);
+        Assert.That(result.Count, Is.EqualTo(1));
+        Assert.That(result.First().Value<string>(), Is.EqualTo("Person"));
+    }
+
+    [Test]
+    public void SelectNodes_BracketNotation_PropertyWithDollar_ReturnsCorrectNode()
+    {
+        var data = JToken.Parse("{\"$ref\": \"#/definitions/User\"}");
+        var result = _fetcher.SelectNodes("$['$ref']", data);
+        Assert.That(result.Count, Is.EqualTo(1));
+        Assert.That(result.First().Value<string>(), Is.EqualTo("#/definitions/User"));
+    }
+
+    [Test]
+    public void SelectNodes_BracketNotation_NestedPropertyWithDot_ReturnsCorrectNode()
+    {
+        var data = JToken.Parse("{\"config\": {\"server.host\": \"localhost\"}}");
+        var result = _fetcher.SelectNodes("$.config['server.host']", data);
+        Assert.That(result.Count, Is.EqualTo(1));
+        Assert.That(result.First().Value<string>(), Is.EqualTo("localhost"));
+    }
+
+    [Test]
+    public void SelectNodes_BracketNotation_ReadPath_Works_WritePathOutOfScope()
+    {
+        // Reading via bracket notation is fully supported.
+        // Writing via bracket notation in the Set command requires SplitParentAndLeaf
+        // to handle bracket-quoted leaves — tracked as a follow-up (010-bracket-write).
+        var data = JToken.Parse("{\"version.major\": 0}");
+        var result = _fetcher.SelectNodes("$['version.major']", data);
+        Assert.That(result.Count, Is.EqualTo(1));
+        Assert.That(result.First().Value<int>(), Is.EqualTo(0));
+    }
 }

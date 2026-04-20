@@ -270,3 +270,38 @@ ETL settings property names already match JLio (`flattenSettings`, `restoreSetti
 | `=fetch(path, default)` | Returns default value when path resolves to nothing |
 | `=path()` | Alias for `=scriptpath()` |
 | `=promote(path, name)` | Wraps node in object with explicit property name |
+
+---
+
+## 009 — Special Character Escaping (escape-special-chars)
+
+### Value escape sequences
+
+TLio 009 introduces escape sequences for script value strings that start with a
+trigger character (`@`, `$`, `=`).
+
+| Trigger | Escape | Result |
+|---------|--------|--------|
+| `@` (path) | `@@value` | Literal string `@value` |
+| `$` (path) | `$$value` | Literal string `$value` |
+| `=` (function) | `==value` | Literal string `=value` |
+
+**JLio behaviour**: JLio uses `@@` inside quoted strings to represent a literal `@`.
+TLio 009 extends this to:
+- unquoted values (e.g., `@@admin` as a top-level value, not just inside `'…'`)
+- `$$` and `==` as TLio-specific extensions for `$` and `=` respectively
+
+**Migration impact**: Scripts that pass `@@foo` as a value expecting a path `@foo`
+will now receive the literal string `@foo` instead. Audit any scripts that use `@@`
+in value fields before upgrading.
+
+Inside quoted strings, `@@`, `$$`, and `==` are decoded to `@`, `$`, and `=`
+respectively — consistent with the unquoted escape rules.
+
+### Path bracket notation
+
+All adapters now document and test bracket-quoted property names:
+`$['server.host']` selects the property literally named `server.host`.
+This was already supported in the underlying JSONPath libraries for JSON adapters;
+009 adds support to `YamlPathItemsFetcher` and documents the convention for XML.
+

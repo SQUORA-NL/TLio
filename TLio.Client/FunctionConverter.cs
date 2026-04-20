@@ -7,9 +7,12 @@ namespace TLio.Client;
 /// Parses "=funcName(arg1, arg2, ...)" string expressions into IFunctionSupportedValue instances.
 ///
 /// Value parsing rules (mirrors JLio):
+///   - Starts with "==" → FixedValue with literal "=" + remainder (escape sequence)
+///   - Starts with "$$" → FixedValue with literal "$" + remainder (escape sequence)
+///   - Starts with "@@" → FixedValue with literal "@" + remainder (escape sequence)
 ///   - Starts with "=" → function call expression
 ///   - Starts with "$" or "@" → path expression (PathValue)
-///   - Quoted string 'value' or "value" → FixedValue with string node
+///   - Quoted string 'value' or "value" → FixedValue with string node; @@ $$ == decoded inside
 ///   - Numeric literal → FixedValue with number node
 ///   - Boolean literal true/false → FixedValue with bool node
 ///   - Otherwise → FixedValue with string node
@@ -32,16 +35,31 @@ public class FunctionConverter<TNode>
         if (string.IsNullOrEmpty(rawValue))
             return new FixedValue<TNode>(adapter.CreateString(""));
 
+        // Escape sequences: double-prefix produces a literal string instead of triggering
+        if (rawValue.StartsWith("=="))
+            return new FixedValue<TNode>(adapter.CreateString("=" + rawValue.Substring(2)));
+        if (rawValue.StartsWith("$$"))
+            return new FixedValue<TNode>(adapter.CreateString("$" + rawValue.Substring(2)));
+        if (rawValue.StartsWith("@@"))
+            return new FixedValue<TNode>(adapter.CreateString("@" + rawValue.Substring(2)));
+
         if (rawValue.StartsWith("="))
             return ParseFunctionExpression(rawValue.Substring(1), adapter);
 
         if (rawValue.StartsWith("$") || rawValue.StartsWith("@"))
             return new PathValue<TNode>(rawValue);
 
-        // Quoted string
+        // Quoted string — @@, $$, == are escape sequences for literal @, $, = inside quotes
         if ((rawValue.StartsWith("'") && rawValue.EndsWith("'")) ||
             (rawValue.StartsWith("\"") && rawValue.EndsWith("\"")))
-            return new FixedValue<TNode>(adapter.CreateString(rawValue.Substring(1, rawValue.Length - 2)));
+        {
+            var content = rawValue.Substring(1, rawValue.Length - 2)
+                .Replace("@@", "@")
+                .Replace("$$", "$")
+                .Replace("==", "=");
+            return new FixedValue<TNode>(adapter.CreateString(content));
+        }
+
 
         // Boolean
         if (bool.TryParse(rawValue, out var boolVal))

@@ -1,0 +1,5 @@
+{
+  "input": { "label": "" },
+  "script": [{ "command": "set", "path": "$.label", "value": "$$total" }],
+  "result": { "label": "$total" }
+}
