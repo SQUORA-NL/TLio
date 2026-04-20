@@ -1,5 +1,10 @@
+using System.Text.Json;
 using TLio.Client;
 using TLio.Core.Models;
+using TLio.Extensions.ETL;
+using TLio.Extensions.Math;
+using TLio.Extensions.Text;
+using TLio.Extensions.TimeDate;
 using TLio.Json;
 using TLio.Xml;
 using TLio.Yaml;
@@ -9,6 +14,7 @@ using TLio.Yaml;
 string? inputPath  = null;
 string? scriptPath = null;
 string? outputPath = null;
+string? batchDir   = null;
 
 for (int i = 0; i < args.Length; i++)
 {
@@ -17,21 +23,29 @@ for (int i = 0; i < args.Length; i++)
         case "--input"  when i + 1 < args.Length: inputPath  = args[++i]; break;
         case "--script" when i + 1 < args.Length: scriptPath = args[++i]; break;
         case "--output" when i + 1 < args.Length: outputPath = args[++i]; break;
+        case "--batch"  when i + 1 < args.Length: batchDir   = args[++i]; break;
         case "--help":
             Console.WriteLine("""
                 TLio.Sample.Cli — transform a data file using a TLio script
 
                 Usage:
                   TLio.Sample.Cli --input <path> --script <path> [--output <path>]
+                  TLio.Sample.Cli --batch <fixture-dir>
 
                 Arguments:
                   --input  <path>   Path to the input data file (.json, .xml, .yaml, .yml)
                   --script <path>   Path to the TLio script file (.json)
                   --output <path>   (optional) Write transformed output to this file instead of stdout
+                  --batch  <path>   Process all fixture .json files in directory (fast, single process)
                   --help            Show this help and exit
 
+                Batch mode reads fixture files with {input, script, result} format,
+                runs each through the engine, and outputs JSON lines:
+                  {"file":"name.json","status":"OK","result":{...}}
+                  {"file":"name.json","status":"FAIL","error":"...","log":["..."]}
+
                 Exit codes:
-                  0  Transformation succeeded
+                  0  Transformation succeeded (or batch completed)
                   1  Input file not found
                   2  Script file not found
                   3  Input file could not be parsed
@@ -43,11 +57,104 @@ for (int i = 0; i < args.Length; i++)
     }
 }
 
-// ── Validation ───────────────────────────────────────────────────────────────
+// ── Batch mode ──────────────────────────────────────────────────────────────
+
+if (!string.IsNullOrEmpty(batchDir))
+{
+    if (!Directory.Exists(batchDir))
+    {
+        Console.Error.WriteLine($"Error: Batch directory not found: {batchDir}");
+        return 1;
+    }
+
+    // Pre-create the engine and options ONCE (the whole point of batch mode)
+    var jsonContext = JsonExecutionContext.CreateDefault();
+    var jsonAdapter = jsonContext.NodeAdapter;
+    var jsonOptions = ParseOptions<Newtonsoft.Json.Linq.JToken>.CreateDefault();
+    jsonOptions.FunctionsProvider.RegisterMath<Newtonsoft.Json.Linq.JToken>();
+    jsonOptions.FunctionsProvider.RegisterText<Newtonsoft.Json.Linq.JToken>();
+    jsonOptions.FunctionsProvider.RegisterTimeDate<Newtonsoft.Json.Linq.JToken>();
+    jsonOptions.CommandsProvider.RegisterETL<Newtonsoft.Json.Linq.JToken>();
+    var jsonEngine = new ScriptEngine<Newtonsoft.Json.Linq.JToken>(
+        jsonOptions.CommandsProvider, jsonOptions.FunctionsProvider);
+
+    var files = Directory.GetFiles(batchDir, "*.json").OrderBy(f => f).ToArray();
+
+    foreach (var file in files)
+    {
+        var fileName = Path.GetFileName(file);
+        try
+        {
+            var raw = File.ReadAllText(file);
+            var doc = Newtonsoft.Json.Linq.JObject.Parse(raw);
+
+            var inputNode = doc["input"];
+            var scriptNode = doc["script"];
+            if (inputNode == null || scriptNode == null)
+            {
+                WriteJsonLine(fileName, "ERR", error: "Missing input or script in fixture");
+                continue;
+            }
+
+            var inputText = inputNode.ToString();
+            var scriptText = scriptNode.ToString();
+
+            // Reset context for each fixture
+            var ctx = JsonExecutionContext.CreateDefault();
+            var input = jsonAdapter.Parse(inputText);
+            var result = jsonEngine.Execute(scriptText, input, ctx);
+
+            if (result.Success)
+            {
+                var resultJson = jsonAdapter.Serialize(result.Data);
+                WriteJsonLine(fileName, "OK", resultJson: resultJson);
+            }
+            else
+            {
+                var logEntries = ctx.GetLogEntries()
+                    .Select(e => $"[{e.Level}] {e.Message}").ToArray();
+                WriteJsonLine(fileName, "FAIL", error: "Transformation failed", log: logEntries);
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteJsonLine(fileName, "ERR", error: ex.Message);
+        }
+    }
+
+    return 0;
+}
+
+static void WriteJsonLine(string file, string status, string? resultJson = null,
+    string? error = null, string[]? log = null)
+{
+    using var stream = new MemoryStream();
+    using var writer = new Utf8JsonWriter(stream);
+    writer.WriteStartObject();
+    writer.WriteString("file", file);
+    writer.WriteString("status", status);
+    if (resultJson != null)
+        writer.WritePropertyName("result");
+    if (resultJson != null)
+        writer.WriteRawValue(resultJson);
+    if (error != null)
+        writer.WriteString("error", error);
+    if (log != null)
+    {
+        writer.WriteStartArray("log");
+        foreach (var l in log) writer.WriteStringValue(l);
+        writer.WriteEndArray();
+    }
+    writer.WriteEndObject();
+    writer.Flush();
+    Console.WriteLine(System.Text.Encoding.UTF8.GetString(stream.ToArray()));
+}
+
+// ── Single-file mode ────────────────────────────────────────────────────────
 
 if (string.IsNullOrEmpty(inputPath) || string.IsNullOrEmpty(scriptPath))
 {
-    Console.Error.WriteLine("Error: --input and --script are required. Use --help for usage.");
+    Console.Error.WriteLine("Error: --input and --script are required (or use --batch). Use --help for usage.");
     return 1;
 }
 
@@ -146,6 +253,10 @@ static string Execute<TNode>(ExecutionContext<TNode> context, string inputText, 
     catch (Exception ex) { throw new FormatException(ex.Message, ex); }
 
     var options = ParseOptions<TNode>.CreateDefault();
+    options.FunctionsProvider.RegisterMath<TNode>();
+    options.FunctionsProvider.RegisterText<TNode>();
+    options.FunctionsProvider.RegisterTimeDate<TNode>();
+    options.CommandsProvider.RegisterETL<TNode>();
     var engine  = new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider);
     var result  = engine.Execute(scriptText, input, context);
 
