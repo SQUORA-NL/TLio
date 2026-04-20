@@ -1,0 +1,5 @@
+{
+  "input": { "items": [{ "code": "A1" }, { "code": "B2" }] },
+  "script": [{ "command": "add", "path": "$.items[*].id", "value": "@.code" }],
+  "result": { "items": [{ "code": "A1", "id": "A1" }, { "code": "B2", "id": "B2" }] }
+}

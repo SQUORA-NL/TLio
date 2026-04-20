@@ -5,8 +5,10 @@
 ## Syntax
 
 ```
-=trimStart(str)
+=trimStart(<source>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 Registered as both `"trimStart"` (camelCase, 008+) and `"trimstart"` (legacy lowercase).
 

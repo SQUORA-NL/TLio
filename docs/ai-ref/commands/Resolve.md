@@ -41,9 +41,11 @@
 | resolveKeys | array | yes | Array of `{keyPath, referenceKeyPath}` join conditions. |
 | values | array | yes | Array of `{targetPath, value}` to write when a match is found. |
 
-- `keyPath`: path relative to the current node (`@.property`)
+- `keyPath`: path relative to the current node (`@.property`) — the dot after `@` is always required
 - `referenceKeyPath`: path in the reference entry (absolute or `$.property`)
 - `targetPath`: where to write the result — `@.property` writes relative to current node
+
+> See [Notation Reference](../notation-reference.md) for relative-path rules. Use `@.property` (with dot) in all JSON/YAML contexts.
 
 **Supports functions**: ❌
 

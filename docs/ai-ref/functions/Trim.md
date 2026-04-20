@@ -5,8 +5,10 @@
 ## Syntax
 
 ```
-=trim(str)
+=trim(<source>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 ## Arguments
 

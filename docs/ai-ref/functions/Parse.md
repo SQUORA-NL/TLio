@@ -5,8 +5,10 @@
 ## Syntax
 
 ```
-=parse(str)
+=parse(<source>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 ## Arguments
 

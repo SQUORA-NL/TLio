@@ -12,11 +12,14 @@
 
 Used as a value in any command: `"value": "=scriptpath()"`
 
+> See [Notation Reference](../notation-reference.md) for path and quoting rules.
+> The relative path argument uses `@.` (with dot) — `@child` without the dot is not valid in JSON/YAML context.
+
 ## Arguments
 
 | # | Type | Required | Description |
 |---|------|----------|-------------|
-| 1 | string (relative path) | no | Relative path starting with `@`. Resolved from the current node's absolute path. |
+| 1 | string (relative path) | no | Relative path starting with `@.`. Resolved from the current node's absolute path. |
 
 ## Returns
 

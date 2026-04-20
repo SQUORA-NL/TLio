@@ -5,9 +5,11 @@
 ## Syntax
 
 ```
-=substring(str, start)
-=substring(str, start, count)
+=substring(<source>, <start>)
+=substring(<source>, <start>, <count>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 ## Arguments
 

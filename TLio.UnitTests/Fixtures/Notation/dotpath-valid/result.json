@@ -1,0 +1,1 @@
+{ "items": [{ "name": "Alice", "selfPath": "$.items[0].name" }] }

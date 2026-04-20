@@ -16,6 +16,8 @@ Two-argument form (upsert child of matched parent):
 { "command": "put", "path": "$.address", "property": "country", "value": "NL" }
 ```
 
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
+
 ## Options
 
 | Option | Type | Required | Default | Description |

@@ -70,6 +70,10 @@ public class FixtureTests
     public void EscapeChars(JToken input, string script, JToken expected)
         => RunFixture(input, script, expected);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.Load), new object[] { "Notation" })]
+    public void Notation(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
     // ── Helper ────────────────────────────────────────────────────────────────
 
     private void RunFixture(JToken input, string script, JToken expected)

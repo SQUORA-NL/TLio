@@ -6,11 +6,14 @@
 ## Syntax
 
 ```
-=fetch(path)
-=fetch(path, defaultValue)
+=fetch(<path>)
+=fetch(<path>, <defaultValue>)
 ```
 
 Used as a value in any command: `"value": "=fetch($.source)"`
+
+> See [Notation Reference](../notation-reference.md) for quoting rules.
+> `<path>` is an unquoted path argument. `<defaultValue>` is a single-quoted literal or path, e.g. `'Unknown'`.
 
 ## Arguments
 

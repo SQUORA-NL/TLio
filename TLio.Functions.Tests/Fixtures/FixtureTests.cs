@@ -41,6 +41,10 @@ public class FixtureTests
     public void ScriptPath(JToken input, string script, JToken expected)
         => RunFixture(input, script, expected);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.Load), new object[] { "Notation" })]
+    public void Notation(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
     private void RunFixture(JToken input, string script, JToken expected)
     {
         var context = JsonExecutionContext.CreateDefault();

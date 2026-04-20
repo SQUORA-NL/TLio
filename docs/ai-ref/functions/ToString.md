@@ -6,8 +6,10 @@
 ## Syntax
 
 ```
-=toString(node)
+=toString(<source>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 ## Arguments
 

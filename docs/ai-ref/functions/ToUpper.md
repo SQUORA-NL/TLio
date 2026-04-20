@@ -5,8 +5,10 @@
 ## Syntax
 
 ```
-=toUpper(str)
+=toUpper(<source>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 Registered as both `"toUpper"` (camelCase, 008+) and `"toupper"` (legacy lowercase).
 

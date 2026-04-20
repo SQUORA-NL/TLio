@@ -18,6 +18,8 @@ With settings:
 { "command": "restore", "path": "$", "restoreSettings": { "metadataPath": "$.meta", "removeMetadata": true } }
 ```
 
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
+
 ## Options
 
 | Option | Type | Required | Default | Description |

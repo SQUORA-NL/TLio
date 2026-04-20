@@ -6,8 +6,10 @@
 ## Syntax
 
 ```
-=indirect(pathToPath)
+=indirect(<path>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 Used as a value in any command: `"value": "=indirect($.pathRef)"`
 

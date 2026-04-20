@@ -65,6 +65,8 @@ Function calls are string values prefixed with `=`:
 { "command": "set", "path": "$.target", "value": "=fetch($.source)" }
 ```
 
+See [Notation Reference](notation-reference.md) for complete quoting and escape rules.
+
 The script is executed by `ScriptEngine<TNode>.Execute(scriptJson, data, context)`.
 
 ### Default setup (built-in commands + functions)
@@ -118,5 +120,6 @@ use bracket-quoted notation instead of dot-notation.
 | XML slash-path | `/root/child` | URL-encode `/` in segment if needed |
 
 **Note**: Bracket-notation reading is fully supported across all adapters.
-Writing to a bracket-notation path via `set`/`add` requires `SplitParentAndLeaf`
-to handle quoted leaf names — tracked as follow-up issue 010-bracket-write.
+Writing to a bracket-notation path via `set`/`add` is tracked on branch `fix/bracket-write`.
+
+> Full escape-sequence rules: [Notation Reference §6](notation-reference.md#6-escape-sequences)

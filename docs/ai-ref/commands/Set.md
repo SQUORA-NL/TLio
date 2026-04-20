@@ -15,6 +15,8 @@ Two-argument form (select parent, name child property):
 { "command": "set", "path": "$.items[*]", "property": "active", "value": true }
 ```
 
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
+
 ## Options
 
 | Option | Type | Required | Default | Description |

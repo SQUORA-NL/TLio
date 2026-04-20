@@ -18,6 +18,8 @@ With settings:
 { "command": "tocsv", "path": "$.data", "csvSettings": { "delimiter": ";", "includeHeaders": true } }
 ```
 
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
+
 ## Options
 
 | Option | Type | Required | Default | Description |

@@ -8,6 +8,8 @@
 =newGuid()
 ```
 
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
+
 ## Options
 
 None. Takes no arguments.
