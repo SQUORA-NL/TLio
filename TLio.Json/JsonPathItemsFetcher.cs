@@ -226,10 +226,23 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
         var split = new JsonSplittedPath(path);
 
         if (split.Elements.Count <= 1)
-            return (RootPathIndicator, path);
+        {
+            // $['key'] or $["key"] — single-element bracket-notation root path
+            var singleLeaf = path;
+            if ((singleLeaf.StartsWith("$['") && singleLeaf.EndsWith("']")) ||
+                (singleLeaf.StartsWith("$[\"") && singleLeaf.EndsWith("\"]")))
+                singleLeaf = singleLeaf.Substring(3, singleLeaf.Length - 5);
+            return (RootPathIndicator, singleLeaf);
+        }
 
         var parentElements = split.ParentElements.ToPathString();
         var leafName = split.LastName;
+
+        // Strip bracket-quoted notation so the leaf is a plain property name:
+        // ['version.major'] → version.major,  ["version.major"] → version.major
+        if ((leafName.StartsWith("['") && leafName.EndsWith("']")) ||
+            (leafName.StartsWith("[\"") && leafName.EndsWith("\"]")))
+            leafName = leafName.Substring(2, leafName.Length - 4);
 
         return (parentElements, leafName);
     }

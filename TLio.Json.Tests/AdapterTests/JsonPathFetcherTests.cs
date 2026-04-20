@@ -359,15 +359,33 @@ public class JsonPathFetcherTests
         Assert.That(result.First().Value<string>(), Is.EqualTo("localhost"));
     }
 
+    // ── Bracket-notation write path (SplitParentAndLeaf) ─────────────────────
+
     [Test]
-    public void SelectNodes_BracketNotation_ReadPath_Works_WritePathOutOfScope()
+    public void SplitParentAndLeaf_BracketQuotedSingleQuote_ReturnsPlainKey()
     {
-        // Reading via bracket notation is fully supported.
-        // Writing via bracket notation in the Set command requires SplitParentAndLeaf
-        // to handle bracket-quoted leaves — tracked as a follow-up (010-bracket-write).
+        var (parent, leaf) = _fetcher.SplitParentAndLeaf("$['version.major']");
+        Assert.That(parent, Is.EqualTo("$"));
+        Assert.That(leaf, Is.EqualTo("version.major"));
+    }
+
+    [Test]
+    public void SplitParentAndLeaf_BracketQuotedDoubleQuote_ReturnsPlainKey()
+    {
+        var (parent, leaf) = _fetcher.SplitParentAndLeaf("$[\"version.major\"]");
+        Assert.That(parent, Is.EqualTo("$"));
+        Assert.That(leaf, Is.EqualTo("version.major"));
+    }
+
+    [Test]
+    public void Engine_BracketNotationPath_SetValue_WritesCorrectProperty()
+    {
+        var options = TLio.Client.ParseOptions<JToken>.CreateDefault();
+        var engine = new TLio.Client.ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
         var data = JToken.Parse("{\"version.major\": 0}");
-        var result = _fetcher.SelectNodes("$['version.major']", data);
-        Assert.That(result.Count, Is.EqualTo(1));
-        Assert.That(result.First().Value<int>(), Is.EqualTo(0));
+        const string script = "[{\"command\":\"set\",\"path\":\"$['version.major']\",\"value\":\"2\"}]";
+        var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.SelectToken("$['version.major']")?.Value<string>(), Is.EqualTo("2"));
     }
 }
