@@ -1,0 +1,5 @@
+{
+  "input": { "role": "" },
+  "script": [{ "command": "set", "path": "$.role", "value": "@@adminRole" }],
+  "result": { "role": "@adminRole" }
+}

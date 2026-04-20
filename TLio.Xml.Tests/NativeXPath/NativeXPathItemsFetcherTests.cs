@@ -124,4 +124,35 @@ public class NativeXPathItemsFetcherTests
         Assert.That(contacts[0].Element("email")!.Value, Is.EqualTo("existing@example.com"),
             "existing email value should be preserved");
     }
+
+    // ── XPath special characters: @ (attribute) and = (predicate) ────────────
+
+    [Test]
+    public void SelectNodes_AttributePredicate_WithAt_ReturnsMatchingElement()
+    {
+        var root = XElement.Parse("<root><item id='1'>first</item><item id='2'>second</item></root>");
+        var result = _fetcher.SelectNodes("item[@id='1']", root);
+        Assert.That(result.Count, Is.EqualTo(1));
+        Assert.That(result.First().Value, Is.EqualTo("first"));
+    }
+
+    [Test]
+    public void SelectNodes_AttributePredicate_EqualsInPredicate_ReturnsMatchingElement()
+    {
+        var root = XElement.Parse("<root><user type='admin'>Alice</user><user type='guest'>Bob</user></root>");
+        var result = _fetcher.SelectNodes("user[@type='admin']", root);
+        Assert.That(result.Count, Is.EqualTo(1));
+        Assert.That(result.First().Value, Is.EqualTo("Alice"));
+    }
+
+    [Test]
+    public void SelectNodes_AttributePredicate_MultipleConditions_ReturnsCorrectSubset()
+    {
+        // @ in XPath predicates works fine — the attribute axis (/@name) returns XAttribute
+        // nodes which are not XElement and therefore out of scope for IItemsFetcher<XElement>.
+        var root = XElement.Parse("<root><item id='1' active='true'>first</item><item id='2' active='false'>second</item></root>");
+        var result = _fetcher.SelectNodes("item[@active='true']", root);
+        Assert.That(result.Count, Is.EqualTo(1));
+        Assert.That(result.First().Value, Is.EqualTo("first"));
+    }
 }

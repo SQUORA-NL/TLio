@@ -176,6 +176,113 @@ public class TextHandlingTests
         Assert.That(node.Data.First?.Value<string>(), Is.EqualTo(""));
     }
 
+    // ── Escape sequences (unquoted) ───────────────────────────────────────────
+
+    [Test]
+    public void ParseValue_DoubleAt_ReturnsLiteralAtString()
+    {
+        var result = converter.ParseValue("@@admin", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("@admin"));
+    }
+
+    [Test]
+    public void ParseValue_DoubleDollar_ReturnsLiteralDollarString()
+    {
+        var result = converter.ParseValue("$$total", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("$total"));
+    }
+
+    [Test]
+    public void ParseValue_DoubleEquals_ReturnsLiteralEqualsString()
+    {
+        var result = converter.ParseValue("==formula", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("=formula"));
+    }
+
+    [Test]
+    public void ParseValue_DoubleAt_BareEscape_ReturnsAtOnly()
+    {
+        var result = converter.ParseValue("@@", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("@"));
+    }
+
+    // Escape sequences in quoted strings
+    [Test]
+    public void ParseValue_QuotedWithDoubleAt_DecodesAtInString()
+    {
+        var result = converter.ParseValue("'user@@example.com'", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("user@example.com"));
+    }
+
+    [Test]
+    public void ParseValue_QuotedWithDoubleDollar_DecodesDollarInString()
+    {
+        var result = converter.ParseValue("'$$ref'", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("$ref"));
+    }
+
+    [Test]
+    public void ParseValue_QuotedWithDoubleEquals_DecodesEqualsInString()
+    {
+        var result = converter.ParseValue("'==expr'", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("=expr"));
+    }
+
+    // Regression guards — single-prefix still works as before
+    [Test]
+    public void ParseValue_SingleAt_StillReturnsPathValue()
+    {
+        var result = converter.ParseValue("@.property", adapter);
+        Assert.That(result, Is.InstanceOf<PathValue<JToken>>());
+    }
+
+    [Test]
+    public void ParseValue_SingleDollar_StillReturnsPathValue()
+    {
+        var result = converter.ParseValue("$.path", adapter);
+        Assert.That(result, Is.InstanceOf<PathValue<JToken>>());
+    }
+
+    [Test]
+    public void ParseValue_SingleEquals_StillReturnsFunctionSupportedValue()
+    {
+        var result = converter.ParseValue("=fetch($.x)", adapter);
+        Assert.That(result, Is.InstanceOf<FunctionSupportedValue<JToken>>());
+    }
+
+    // ── Escape sequences in function arguments ────────────────────────────────
+
+    [Test]
+    public void ParseValue_FunctionArg_DoubleAtInQuotes_DecodesAtPrefix()
+    {
+        var result = converter.ParseValue("=partial($.source, '@@prefix')", adapter);
+        Assert.That(result, Is.InstanceOf<FunctionSupportedValue<JToken>>());
+    }
+
+    [Test]
+    public void ParseValue_FunctionArg_DoubleAt_UnquotedArg_DecodesAtPrefix()
+    {
+        // @@foo as a bare arg: ParseValue is called on "@@foo" → FixedValue("@foo")
+        var result = converter.ParseValue("@@foo", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("@foo"));
+    }
+
     // ── Through-engine: function value in script ──────────────────────────────
 
     [Test]

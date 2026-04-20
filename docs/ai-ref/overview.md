@@ -87,3 +87,36 @@ options.CommandsProvider.RegisterETL<JToken>();
 
 See [commands/Flatten.md](commands/Flatten.md), [commands/Restore.md](commands/Restore.md),
 [commands/Resolve.md](commands/Resolve.md), [commands/ToCsv.md](commands/ToCsv.md).
+
+## Escape Sequences
+
+### Value escapes (FunctionConverter)
+
+When a script value starts with a trigger character (`@`, `$`, `=`), double the first
+character to produce a literal string instead of triggering path or function parsing.
+
+| Want to write | Script value | Result type |
+|---------------|-------------|-------------|
+| Literal `@admin` | `"@@admin"` | `FixedValue("@admin")` |
+| Literal `$ref` | `"$$ref"` | `FixedValue("$ref")` |
+| Literal `=formula` | `"==formula"` | `FixedValue("=formula")` |
+| Literal `@` inside a quoted string | `"'user@@example.com'"` | `FixedValue("user@example.com")` |
+
+The same rules apply inside function arguments: `=concat('@@prefix', @$.name)` passes
+`@prefix` as the first argument and evaluates `@$.name` as a path for the second.
+
+### Path escapes (bracket notation)
+
+When a property name contains the path delimiter (`.`) or other special characters,
+use bracket-quoted notation instead of dot-notation.
+
+| Adapter | Normal path | Bracket-notation path |
+|---------|------------|----------------------|
+| JSON (Newtonsoft / SystemText) | `$.version` | `$['version.major']` |
+| YAML | `$.server` | `$['server.host']` |
+| XML XPath | `item/name` | Use XPath predicates: `item[@id='1']` |
+| XML slash-path | `/root/child` | URL-encode `/` in segment if needed |
+
+**Note**: Bracket-notation reading is fully supported across all adapters.
+Writing to a bracket-notation path via `set`/`add` requires `SplitParentAndLeaf`
+to handle quoted leaf names — tracked as follow-up issue 010-bracket-write.

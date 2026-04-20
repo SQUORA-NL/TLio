@@ -236,28 +236,51 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
             return new List<PathSegment>();
 
         var segments = new List<PathSegment>();
-        var parts = s.Split('.');
+        var i = 0;
 
-        foreach (var part in parts)
+        while (i < s.Length)
         {
-            if (string.IsNullOrEmpty(part)) continue;
-
-            var bracketIdx = part.IndexOf('[');
-            if (bracketIdx >= 0)
+            if (s[i] == '[')
             {
-                var name = part.Substring(0, bracketIdx);
-                if (!string.IsNullOrEmpty(name))
-                    segments.Add(new PathSegment(name));
-
-                var bracket = part.Substring(bracketIdx + 1).TrimEnd(']');
-                if (bracket == "*")
-                    segments.Add(PathSegment.Wildcard());
-                else if (int.TryParse(bracket, out var idx))
-                    segments.Add(PathSegment.ArrayIndex(idx));
+                i++; // skip '['
+                if (i < s.Length && (s[i] == '\'' || s[i] == '"'))
+                {
+                    // Bracket-quoted key: ['key.with.special'] or ["key"]
+                    var q = s[i];
+                    i++; // skip opening quote
+                    var closeSeq = $"{q}]";
+                    var end = s.IndexOf(closeSeq, i, StringComparison.Ordinal);
+                    if (end < 0) end = s.Length;
+                    segments.Add(new PathSegment(s.Substring(i, end - i)));
+                    i = end < s.Length ? end + closeSeq.Length : s.Length;
+                }
+                else
+                {
+                    // Numeric index or wildcard: [n] or [*]
+                    var end = s.IndexOf(']', i);
+                    if (end < 0) end = s.Length;
+                    var bracket = s.Substring(i, end - i);
+                    if (bracket == "*")
+                        segments.Add(PathSegment.Wildcard());
+                    else if (int.TryParse(bracket, out var idx))
+                        segments.Add(PathSegment.ArrayIndex(idx));
+                    i = end < s.Length ? end + 1 : s.Length;
+                }
+            }
+            else if (s[i] == '.')
+            {
+                i++; // skip delimiter between segments
             }
             else
             {
-                segments.Add(new PathSegment(part));
+                // Plain key segment: read until next '.' or '['
+                var end = i;
+                while (end < s.Length && s[end] != '.' && s[end] != '[')
+                    end++;
+                var key = s.Substring(i, end - i);
+                if (!string.IsNullOrEmpty(key))
+                    segments.Add(new PathSegment(key));
+                i = end;
             }
         }
 
