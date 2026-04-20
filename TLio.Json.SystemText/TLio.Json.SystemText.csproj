@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>TLio System.Text.Json adapter: INodeAdapter and IItemsFetcher implementations backed by System.Text.Json.Nodes.JsonNode and a JsonPath library. Provides identical transformation behaviour to TLio.Json (Newtonsoft) but using the in-box System.Text.Json stack.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting json systemtext rfc9535</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

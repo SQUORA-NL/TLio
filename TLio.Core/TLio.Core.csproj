@@ -3,6 +3,8 @@
   <PropertyGroup>
     <Description>TLio Core: type-agnostic contracts and models for the TLio scripting framework. No dependency on any specific data format.</Description>
     <Copyright>Copyright © 2025</Copyright>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting json transformation</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

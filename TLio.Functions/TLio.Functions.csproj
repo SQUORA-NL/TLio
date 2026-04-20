@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>TLio built-in functions. Format-agnostic — all format-specific work is delegated through IExecutionContext.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting functions</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

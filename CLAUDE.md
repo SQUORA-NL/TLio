@@ -4,6 +4,7 @@ Auto-generated from all feature plans. Last updated: 2026-04-20 (updated by 008)
 
 ## Active Technologies
 - C# / .NET 10 + Newtonsoft.Json (TLio.Json), NUnit (tests) (010-unify-script-notation)
+- C# / .NET 10; YAML (GitHub Actions workflows) + MSBuild SDK, GitHub Actions, NuGet.org API (011-nuget-packaging)
 
 - C# / .NET 10 + Newtonsoft.Json, System.Text.Json, JsonPath.Net (json-everything), NUnit (002-migration-from-jlio)
 - TLio.Xml: XmlNodeAdapter + SlashPathItemsFetcher (existing) + NativeXPathItemsFetcher (003, planned)
@@ -54,10 +55,10 @@ dotnet test
 C# / .NET 10: Follow standard conventions
 
 ## Recent Changes
+- 011-nuget-packaging: Added C# / .NET 10; YAML (GitHub Actions workflows) + MSBuild SDK, GitHub Actions, NuGet.org API
 - 010-unify-script-notation: Added C# / .NET 10 + Newtonsoft.Json (TLio.Json), NUnit (tests)
 
 - 008-jlio-api-parity: Adding TLio.Extensions.Text (12 text functions); fluent builder API + TLioConvert in TLio.Client; alias properties in Compare/Merge; ETL settings deserialization fix; newGuid function; fetch/promote optional args; path alias; ai-ref.md updates
-- 006-yaml-multidoc-array: Updating YamlNodeAdapter.Parse() to treat multi-document YAML inputs as array roots (parity with JSON array root)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

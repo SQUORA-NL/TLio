@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>Text/string extension functions for TLio. Format-agnostic — all format-specific work is delegated through IExecutionContext.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting text string functions</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

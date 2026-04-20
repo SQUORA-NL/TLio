@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>TLio ETL extension commands: Flatten, Restore, Resolve, ToCsv. Format-agnostic via INodeAdapter.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting etl flatten restore csv</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

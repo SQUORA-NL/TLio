@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>TLio built-in commands (Set, Add, Remove, Copy, Move, Put). Format-agnostic — all format-specific work is delegated through IExecutionContext.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting commands</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
