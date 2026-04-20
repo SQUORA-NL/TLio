@@ -5,9 +5,11 @@
 ## Syntax
 
 ```
-=concat(a, b)
-=concat(a, b, c, ...)
+=concat(<value1>, <value2>)
+=concat(<value1>, <value2>, <valueN>, ...)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 ## Arguments
 

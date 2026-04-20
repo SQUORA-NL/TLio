@@ -18,6 +18,8 @@ With settings:
 { "command": "flatten", "path": "$.nested", "flattenSettings": { "delimiter": "_", "maxDepth": 3 } }
 ```
 
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
+
 ## Options
 
 | Option | Type | Required | Default | Description |

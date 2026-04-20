@@ -5,8 +5,10 @@
 ## Syntax
 
 ```
-=replace(str, old, new)
+=replace(<source>, <old>, <new>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 ## Arguments
 

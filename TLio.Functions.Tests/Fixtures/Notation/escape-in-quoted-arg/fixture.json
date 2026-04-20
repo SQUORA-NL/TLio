@@ -1,0 +1,5 @@
+{
+  "input": {},
+  "script": [{ "command": "put", "path": "$.email", "value": "=fetch($.missing,'user@@example.com')" }],
+  "result": { "email": "user@example.com" }
+}

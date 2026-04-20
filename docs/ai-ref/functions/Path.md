@@ -8,6 +8,8 @@
 =path()
 ```
 
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
+
 ## Options
 
 None. Identical behaviour to `=scriptpath()`.

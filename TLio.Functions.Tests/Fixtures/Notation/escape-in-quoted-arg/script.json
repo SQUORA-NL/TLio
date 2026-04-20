@@ -1,0 +1,1 @@
+[{ "command": "add", "path": "$.email", "value": "=fetch($.nonexistent, 'user@@example.com')" }]

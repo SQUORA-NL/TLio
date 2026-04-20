@@ -6,9 +6,11 @@
 ## Syntax
 
 ```
-=promote(path)
-=promote(path, propertyName)
+=promote(<path>)
+=promote(<path>, <propertyName>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 Used as a value in any command: `"value": "=promote($.person)"`
 

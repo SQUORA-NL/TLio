@@ -1,0 +1,1 @@
+[{ "command": "add", "path": "$.result", "value": "'=concat($.a, $.b)'" }]

@@ -9,6 +9,8 @@
 { "command": "compare", "fromPath": "$.a", "toPath": "$.b", "resultPath": "$.result" }
 ```
 
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
+
 ## Options
 
 | Option | Type | Required | Default | Description |

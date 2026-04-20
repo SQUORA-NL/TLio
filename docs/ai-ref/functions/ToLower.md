@@ -5,8 +5,10 @@
 ## Syntax
 
 ```
-=toLower(str)
+=toLower(<source>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 Registered as both `"toLower"` (camelCase, 008+) and `"tolower"` (legacy lowercase).
 

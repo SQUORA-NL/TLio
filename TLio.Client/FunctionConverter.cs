@@ -29,8 +29,11 @@ public class FunctionConverter<TNode>
     /// <summary>
     /// Parse a raw script value string into an IFunctionSupportedValue.
     /// Returns null only when a function expression refers to an unknown function.
+    /// <paramref name="warnCallback"/> is invoked (when provided) if a likely notation mistake is detected,
+    /// e.g. <c>@field</c> instead of the required <c>@.field</c> form.
     /// </summary>
-    public IFunctionSupportedValue<TNode>? ParseValue(string rawValue, INodeAdapter<TNode> adapter)
+    public IFunctionSupportedValue<TNode>? ParseValue(string rawValue, INodeAdapter<TNode> adapter,
+        Action<string>? warnCallback = null)
     {
         if (string.IsNullOrEmpty(rawValue))
             return new FixedValue<TNode>(adapter.CreateString(""));
@@ -46,8 +49,20 @@ public class FunctionConverter<TNode>
         if (rawValue.StartsWith("="))
             return ParseFunctionExpression(rawValue.Substring(1), adapter);
 
-        if (rawValue.StartsWith("$") || rawValue.StartsWith("@"))
+        if (rawValue.StartsWith("$"))
             return new PathValue<TNode>(rawValue);
+
+        if (rawValue.StartsWith("@"))
+        {
+            // @@ was already handled above as an escape sequence.
+            // @. is the required form for relative paths in JSON/YAML.
+            // Anything else (e.g. @field) is likely a missing dot — warn and still produce PathValue.
+            if (!rawValue.StartsWith("@."))
+                warnCallback?.Invoke(
+                    $"Path '{rawValue}' is missing the required dot — did you mean '@.{rawValue.Substring(1)}'? " +
+                    "Relative paths in JSON/YAML require the '@.' prefix.");
+            return new PathValue<TNode>(rawValue);
+        }
 
         // Quoted string — @@, $$, == are escape sequences for literal @, $, = inside quotes
         if ((rawValue.StartsWith("'") && rawValue.EndsWith("'")) ||

@@ -5,8 +5,10 @@
 ## Syntax
 
 ```
-=length(str)
+=length(<source>)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 ## Arguments
 

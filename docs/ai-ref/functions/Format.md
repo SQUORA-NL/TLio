@@ -5,9 +5,11 @@
 ## Syntax
 
 ```
-=format(template, value0)
-=format(template, value0, value1, ...)
+=format(<template>, <value0>)
+=format(<template>, <value0>, <value1>, ...)
 ```
+
+> See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
 ## Arguments
 

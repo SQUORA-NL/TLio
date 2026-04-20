@@ -1,0 +1,1 @@
+{ "a": "Hello", "b": "World", "result": "=concat($.a, $.b)" }

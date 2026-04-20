@@ -1,0 +1,1 @@
+[{ "command": "add", "path": "$.items[0].selfPath", "value": "=scriptpath(@.name)" }]
