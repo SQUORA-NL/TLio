@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nuplane" Version="0.0.1" />
+    <PackageReference Include="Nuplane.Abstractions" Version="0.0.1" />
+    <PackageReference Include="Nuplane.Sources.Directory" Version="0.0.1" />
+    <PackageReference Include="Nuplane.Loading" Version="0.0.1" />
+    <PackageReference Include="Nuplane.Loading.Abstractions" Version="0.0.1" />
+    <PackageReference Include="Nuplane.Loading.Api" Version="0.0.1" />
+    <PackageReference Include="CShells" Version="0.0.14" />
+    <PackageReference Include="CShells.Abstractions" Version="0.0.14" />
+    <PackageReference Include="CShells.AspNetCore" Version="0.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\TLio.Core\TLio.Core.csproj" />
+    <ProjectReference Include="..\..\TLio.Commands\TLio.Commands.csproj" />
+    <ProjectReference Include="..\..\TLio.Functions\TLio.Functions.csproj" />
+    <ProjectReference Include="..\..\TLio.Client\TLio.Client.csproj" />
+    <ProjectReference Include="..\..\TLio.Json\TLio.Json.csproj" />
+  </ItemGroup>
+
+</Project>
