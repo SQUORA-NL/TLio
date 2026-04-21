@@ -18,16 +18,45 @@ model to JSON, XML, YAML, and any future structured data format.
 
 ## Projects
 
+### Core libraries
+
 | Project | Purpose |
 |---|---|
 | `TLio.Core` | Contracts + models — zero external dependencies |
-| `TLio.Commands` | Set, Add, Remove, Copy, Move, Put |
-| `TLio.Functions` | Built-in value-producing functions |
+| `TLio.Commands` | Set, Add, Remove, Copy, Move, Put, Compare, Merge, IfElse, DecisionTable, Flatten, Restore, ToCsv |
+| `TLio.Functions` | Built-in value-producing functions (fetch, path, indirect, newGuid, …) |
+| `TLio.Client` | ScriptEngine, command/function registries, fluent `TLioConvert` API |
+
+### Format adapters
+
+| Project | Purpose |
+|---|---|
 | `TLio.Json` | JSON adapter (Newtonsoft.Json + JsonPath) |
-| `TLio.Xml` | XML adapter (System.Xml.Linq + XPath) |
-| `TLio.Yaml` | YAML adapter (YamlDotNet) |
-| `TLio.Client` | ScriptEngine, command/function registries |
-| `TLio.UnitTests` | NUnit 4 test suite |
+| `TLio.Json.SystemText` | JSON adapter (System.Text.Json + JsonPath.Net / RFC 9535) |
+| `TLio.Xml` | XML adapter — slash-path (`SlashPathItemsFetcher`) and native XPath (`NativeXPathItemsFetcher`) |
+| `TLio.Yaml` | YAML adapter (YamlDotNet, dot-notation) |
+
+### Extension packs
+
+| Project | Purpose |
+|---|---|
+| `TLio.Extensions.ETL` | ETL functions: flatten, restore, CSV round-trip |
+| `TLio.Extensions.Math` | Math functions |
+| `TLio.Extensions.Text` | Text functions: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim |
+| `TLio.Extensions.TimeDate` | Date/time functions |
+
+### Tests & samples
+
+| Project | Purpose |
+|---|---|
+| `TLio.UnitTests` | Core / Commands / Engine tests |
+| `TLio.Json.Tests` | Newtonsoft JSON adapter tests |
+| `TLio.Json.SystemText.Tests` | System.Text.Json adapter tests |
+| `TLio.Functions.Tests` | Built-in + extension-pack function tests |
+| `TLio.Xml.Tests` | XML adapter tests (slash-path + XPath fixtures) |
+| `TLio.Yaml.Tests` | YAML adapter tests |
+| `samples/TLio.Sample.Api` | Minimal API sample (JSON/XML/YAML endpoints) |
+| `samples/TLio.Sample.Cli` | CLI sample (file-in / transformed-out) |
 
 ## Development approach
 
@@ -35,12 +64,14 @@ TLio is built using **Spec-Driven Development** via [SpecKit](https://github.com
 
 See `.specify/README.md` for the workflow and template reference.
 See `specs/constitution.md` for the immutable architectural principles.
-See `specs/001-tlio-core-architecture/tasks.md` for the current implementation backlog.
 
 ## Status
 
-The base-form scaffold is complete:
-- All contracts and model stubs are in place and compile.
-- The JSON adapter is partially implemented (`JsonNodeAdapter` is complete; `JsonPathItemsFetcher` needs parent navigation and relative paths).
-- XML and YAML adapters have type-correct stubs.
-- Phase 2–7 tasks are tracked in `specs/001-tlio-core-architecture/tasks.md`.
+The framework is fully implemented and in active development (features 001–011 complete or in progress):
+
+- All adapters ship and are tested: Newtonsoft JSON, System.Text.Json, XML (slash-path + XPath), YAML.
+- All core commands and built-in functions are implemented and covered by fixture-based NUnit tests.
+- Four extension packs are available: ETL, Math, Text, TimeDate.
+- A fluent `TLioConvert` API and `ScriptEngine` are provided in `TLio.Client`.
+- Unified script notation is documented in `docs/ai-ref/notation-reference.md`.
+- All 12 library packages are NuGet-packable; CI/CD pipelines publish preview and release builds.
