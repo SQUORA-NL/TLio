@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>TLio Client: the scripting engine that parses and executes TLio scripts. Format-neutral — format support is registered through the provider pattern.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting engine client</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

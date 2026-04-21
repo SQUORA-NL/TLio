@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>TLio XML adapter: INodeAdapter and IItemsFetcher implementations backed by System.Xml.Linq (XElement) and XPath.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting xml xpath</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

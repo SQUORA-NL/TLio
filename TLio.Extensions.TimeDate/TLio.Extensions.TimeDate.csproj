@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>TimeDate extension functions for TLio. Format-agnostic — all format-specific work is delegated through IExecutionContext.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting datetime functions</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

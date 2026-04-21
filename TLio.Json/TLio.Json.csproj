@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>TLio JSON adapter: INodeAdapter and IItemsFetcher implementations backed by Newtonsoft.Json and JsonPath.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting json newtonsoft</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

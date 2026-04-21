@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>TLio YAML adapter: INodeAdapter and IItemsFetcher implementations. Depends on YamlDotNet.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting yaml</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
