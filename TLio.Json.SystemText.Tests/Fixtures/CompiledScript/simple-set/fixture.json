@@ -1,0 +1,5 @@
+{
+  "input":  { "name": "original" },
+  "script": [{ "command": "set", "path": "$.name", "value": "compiled" }],
+  "result": { "name": "compiled" }
+}

@@ -1,0 +1,8 @@
+{
+  "input":  { "name": "original", "backup": "" },
+  "script": [
+    { "command": "set",  "path": "$.name",     "value": "updated" },
+    { "command": "copy", "fromPath": "$.name", "toPath": "$.backup" }
+  ],
+  "result": { "name": "updated", "backup": "updated" }
+}

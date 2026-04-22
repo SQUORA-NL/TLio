@@ -18,4 +18,15 @@ public interface ICommand<TNode>
 
     /// <summary>Validate the command's own configuration before execution.</summary>
     ValidationResult ValidateCommandInstance();
+
+    /// <summary>
+    /// Returns an independent copy of this command with its own mutable execution state.
+    /// Configuration properties set at parse time are shared (read-only during execution).
+    /// Commands derived from <see cref="CommandBase{TNode}"/> inherit a working implementation via MemberwiseClone.
+    /// External implementations that do not derive from CommandBase must override this to use CompiledScript.
+    /// </summary>
+    ICommand<TNode> Clone() =>
+        throw new NotSupportedException(
+            $"{GetType().Name} does not implement Clone(). " +
+            "Derive from CommandBase<TNode> or override Clone() to use CompiledScript<TNode>.");
 }
