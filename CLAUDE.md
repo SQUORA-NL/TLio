@@ -1,12 +1,13 @@
 # Tlio.claude Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-21 (updated by 008)
+Auto-generated from all feature plans. Last updated: 2026-04-22 (updated by 008)
 
 ## Active Technologies
 - C# / .NET 10 + Newtonsoft.Json (TLio.Json), NUnit (tests) (010-unify-script-notation)
 - C# / .NET 10; YAML (GitHub Actions workflows) + MSBuild SDK, GitHub Actions, NuGet.org API (011-nuget-packaging)
 - C# / .NET 10 + NuPlane 0.0.1 (NuGet hot-loading) + CShells 0.0.14 (modular host) + Docker (012-docker-plugin-api)
 - Filesystem only (`/plugins` volume mount); no database (012-docker-plugin-api)
+- C# / .NET 10 + `System.Text.Json` (in-box), `JsonCons.JsonPath` 1.1.0 (existing in TLio.Json.SystemText), NUnit (tests) (013-parse-once-stj-optimize)
 
 - C# / .NET 10 + Newtonsoft.Json, System.Text.Json, JsonPath.Net (json-everything), NUnit (002-migration-from-jlio)
 - TLio.Xml: XmlNodeAdapter + SlashPathItemsFetcher (existing) + NativeXPathItemsFetcher (003, planned)
@@ -58,9 +59,9 @@ dotnet test
 C# / .NET 10: Follow standard conventions
 
 ## Recent Changes
+- 013-parse-once-stj-optimize: Added C# / .NET 10 + `System.Text.Json` (in-box), `JsonCons.JsonPath` 1.1.0 (existing in TLio.Json.SystemText), NUnit (tests)
+- 013-parse-once-stj-optimize: Added C# / .NET 10 + `System.Text.Json` (in-box), `JsonCons.JsonPath` 1.1.0 (existing in TLio.Json.SystemText), NUnit (tests)
 - 012-docker-plugin-api: Added C# / .NET 10 (existing project standard)
-- 011-nuget-packaging: Added C# / .NET 10; YAML (GitHub Actions workflows) + MSBuild SDK, GitHub Actions, NuGet.org API
-- 010-unify-script-notation: Added C# / .NET 10 + Newtonsoft.Json (TLio.Json), NUnit (tests)
 
 
 <!-- MANUAL ADDITIONS START -->

@@ -35,4 +35,8 @@ public abstract class CommandBase<TNode> : ICommand<TNode>
     protected void MarkFailed() => _executionFailed = true;
     protected void ResetSuccess() => _executionFailed = false;
     protected bool IsSuccessful => !_executionFailed;
+
+    // _executionFailed is a bool (value type) so each clone gets its own independent flag.
+    // Configuration properties set at parse time are reference-copied but read-only during execution.
+    public ICommand<TNode> Clone() => (ICommand<TNode>)MemberwiseClone();
 }

@@ -1,0 +1,6 @@
+{
+    "dotnet.defaultSolution": "TLio.sln",
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": false,
+    "dotnet.unitTests.runSettingsPath": ""
+}

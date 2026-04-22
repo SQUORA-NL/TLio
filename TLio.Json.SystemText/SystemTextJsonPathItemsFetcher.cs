@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -23,10 +24,45 @@ namespace TLio.Json.SystemText;
 ///   3. Navigate the ORIGINAL JsonNode tree using the same path components.
 ///   This preserves parent relationships required by Replace/RemoveFromParent.
 /// </summary>
-public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>
+public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposable
 {
     private static readonly Regex IndirectPattern =
         new(@"=indirect\(([^)]+)\)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    // ── Selector cache (static: shared across all instances and executions) ────
+    // JsonSelector instances are immutable compiled objects — safe to cache and reuse.
+    private static readonly ConcurrentDictionary<string, JsonSelector> _selectorCache = new();
+
+    private static JsonSelector GetSelector(string path) =>
+        _selectorCache.GetOrAdd(path, JsonSelector.Parse);
+
+    // ── Per-execution document cache (instance: one fetcher = one execution) ──
+    // Caches the last serialised JSON string and its parsed JsonDocument.
+    // Invalidated automatically when data.ToJsonString() produces a different result
+    // (i.e., after any in-place node mutation by a preceding command).
+    private string?       _cachedJson;
+    private JsonDocument? _cachedDocument;
+
+    /// <summary>
+    /// Number of times JsonDocument.Parse was invoked on this instance.
+    /// Exposed for test observability (cache-miss counter).
+    /// </summary>
+    internal int ParseCount { get; private set; }
+
+    private JsonDocument GetDocument(JsonNode data)
+    {
+        var json = data.ToJsonString();
+        if (json != _cachedJson)
+        {
+            _cachedDocument?.Dispose();
+            _cachedDocument = JsonDocument.Parse(json);
+            _cachedJson     = json;
+            ParseCount++;
+        }
+        return _cachedDocument!;
+    }
+
+    public void Dispose() => _cachedDocument?.Dispose();
 
     // ── Protocol constants ────────────────────────────────────────────────────
 
@@ -49,11 +85,8 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>
 
         try
         {
-            // Serialize to a JsonDocument for JsonCons evaluation
-            var json = data.ToJsonString();
-            using var doc = JsonDocument.Parse(json);
-
-            var selector = JsonSelector.Parse(path);
+            var doc       = GetDocument(data);
+            var selector  = GetSelector(path);
             var pathNodes = selector.SelectNodes(doc.RootElement);
 
             var results = new List<JsonNode>();
@@ -77,9 +110,8 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>
         if (data == null) return null;
         try
         {
-            var json = data.ToJsonString();
-            using var doc = JsonDocument.Parse(json);
-            var selector = JsonSelector.Parse(path);
+            var doc       = GetDocument(data);
+            var selector  = GetSelector(path);
             var pathNodes = selector.SelectNodes(doc.RootElement);
             if (!pathNodes.Any()) return null;
             return NavigateByPath(data, pathNodes[0].Path);

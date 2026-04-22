@@ -1,0 +1,23 @@
+{
+  "input": {
+    "user": { "firstName": "Jane", "lastName": "Doe", "age": 30 },
+    "tags": ["alpha", "beta"],
+    "status": "pending",
+    "score": 0,
+    "notes": ""
+  },
+  "script": [
+    { "command": "set",  "path": "$.status",              "value": "active" },
+    { "command": "set",  "path": "$.score",               "value": 42 },
+    { "command": "copy", "fromPath": "$.user.firstName",  "toPath": "$.notes" },
+    { "command": "set",  "path": "$.user.age",            "value": 31 },
+    { "command": "set",  "path": "$.tags[0]",             "value": "gamma" }
+  ],
+  "result": {
+    "user": { "firstName": "Jane", "lastName": "Doe", "age": 31 },
+    "tags": ["gamma", "beta"],
+    "status": "active",
+    "score": 42,
+    "notes": "Jane"
+  }
+}
