@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY nuget.config /src/nuget.config
+COPY Directory.Build.props /src/Directory.Build.props
 COPY TLio.Core/TLio.Core.csproj TLio.Core/
 COPY TLio.Commands/TLio.Commands.csproj TLio.Commands/
 COPY TLio.Functions/TLio.Functions.csproj TLio.Functions/

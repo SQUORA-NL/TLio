@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 using Nuplane;
 using Nuplane.Loading;
 using Nuplane.Loading.Hosting.Builder;
-using Nuplane.Sources.Directory.Configuration;
+using Nuplane.Sources.Directory.Builder;
 using TLio.Client;
 using TLio.Json;
 using TLio.Sample.DockerPlugin;
@@ -23,6 +23,7 @@ builder.Services.AddSingleton<MutableFunctionsProvider<JToken>>(sp =>
         sp.GetRequiredService<ILogger<MutableFunctionsProvider<JToken>>>()));
 
 builder.Services.AddSingleton<PluginCatalogService>();
+builder.Services.AddSingleton<PluginFileLoader>();
 
 // ── NuPlane ───────────────────────────────────────────────────────────────────
 
@@ -36,8 +37,12 @@ var nuplaneConfig = builder.Configuration.GetSection("Nuplane");
 
 builder.Services.AddNuplane(nuplaneConfig, nuplane =>
 {
-    nuplane.AddDirectoryFeedsFromConfiguration(nuplaneConfig);
-    nuplane.AutoloadPackages(nuplaneConfig.GetSection("Loading"));
+    nuplane.AddDirectoryFeed("plugins", pluginsPath, cfg =>
+    {
+        cfg.Watch = true;
+        cfg.IncludeAll();
+    });
+    nuplane.AutoloadPackages(nuplaneConfig.GetSection("Loading"), lb => lb.Enable());
     nuplane.OnPackagesChanged<PluginLoader>();
 });
 
@@ -66,7 +71,7 @@ app.MapPost("/transform/{format}", async (
         return Results.BadRequest(new { error = "Request body must not be empty." });
 
     TransformRequest? payload;
-    try { payload = System.Text.Json.JsonSerializer.Deserialize<TransformRequest>(body); }
+    try { payload = System.Text.Json.JsonSerializer.Deserialize<TransformRequest>(body, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }); }
     catch (Exception ex) { return Results.BadRequest(new { error = $"Invalid JSON: {ex.Message}" }); }
 
     if (payload is null || payload.Script is null)
@@ -98,7 +103,8 @@ app.MapPost("/transform/{format}", async (
         return Results.Ok(new { success = false, error = string.Join("; ", errors) });
     }
 
-    return Results.Ok(new { success = true, data = result.Data });
+    var resultJson = System.Text.Json.JsonDocument.Parse(result.Data.ToString(Newtonsoft.Json.Formatting.None));
+    return Results.Ok(new { success = true, data = resultJson.RootElement });
 });
 
 // ── GET /plugins ──────────────────────────────────────────────────────────────
@@ -138,6 +144,18 @@ app.MapGet("/plugins/status", async (IPackageLoadStateCatalog loadStateCatalog, 
             errorMessage = s.Diagnostics.FirstOrDefault()
         })
     });
+});
+
+// ── POST /plugins/reload ──────────────────────────────────────────────────────
+
+app.MapPost("/plugins/reload", async (
+    PluginFileLoader loader,
+    IConfiguration config,
+    CancellationToken ct) =>
+{
+    var pluginsPath = config["NUPLANE_PLUGINS_PATH"] ?? "/plugins";
+    var result = await loader.ReloadAsync(pluginsPath, ct);
+    return Results.Ok(new { loaded = result.Loaded, unloaded = result.Unloaded, errors = result.Errors });
 });
 
 // ── GET /health ───────────────────────────────────────────────────────────────

@@ -97,8 +97,9 @@ public class FunctionConverter<TNode>
         if (parenIdx < 0)
         {
             // Bare name, no parens — treat as zero-arg function
-            var bareFunc = _functionsProvider.GetFunction(expression.Trim());
-            if (bareFunc == null) return null;
+            var bareName = expression.Trim();
+            var bareFunc = _functionsProvider.GetFunction(bareName);
+            if (bareFunc == null) return new NotFoundFunctionValue<TNode>(bareName);
             bareFunc.SetArguments(new Arguments<TNode>());
             return new FunctionSupportedValue<TNode>(bareFunc);
         }
@@ -112,7 +113,7 @@ public class FunctionConverter<TNode>
 
         var function = _functionsProvider.GetFunction(funcName);
         if (function == null)
-            return null;
+            return new NotFoundFunctionValue<TNode>(funcName);
 
         var argStrings = SplitArgs(rest);
         var arguments = new Arguments<TNode>();
