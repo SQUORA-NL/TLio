@@ -1,10 +1,12 @@
 # Tlio.claude Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-20 (updated by 008)
+Auto-generated from all feature plans. Last updated: 2026-04-21 (updated by 008)
 
 ## Active Technologies
 - C# / .NET 10 + Newtonsoft.Json (TLio.Json), NUnit (tests) (010-unify-script-notation)
 - C# / .NET 10; YAML (GitHub Actions workflows) + MSBuild SDK, GitHub Actions, NuGet.org API (011-nuget-packaging)
+- C# / .NET 10 + NuPlane 0.0.1 (NuGet hot-loading) + CShells 0.0.14 (modular host) + Docker (012-docker-plugin-api)
+- Filesystem only (`/plugins` volume mount); no database (012-docker-plugin-api)
 
 - C# / .NET 10 + Newtonsoft.Json, System.Text.Json, JsonPath.Net (json-everything), NUnit (002-migration-from-jlio)
 - TLio.Xml: XmlNodeAdapter + SlashPathItemsFetcher (existing) + NativeXPathItemsFetcher (003, planned)
@@ -31,6 +33,7 @@ TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
 samples/
   TLio.Sample.Api/          ← Minimal API sample (JSON/XML/YAML endpoints, 005)
   TLio.Sample.Cli/          ← CLI sample (file-in / transformed-out, 005)
+  TLio.Sample.DockerPlugin/ ← Docker API with NuPlane hot-loading of .nupkg plugins (012)
 specs/
 ```
 
@@ -55,10 +58,10 @@ dotnet test
 C# / .NET 10: Follow standard conventions
 
 ## Recent Changes
+- 012-docker-plugin-api: Added C# / .NET 10 (existing project standard)
 - 011-nuget-packaging: Added C# / .NET 10; YAML (GitHub Actions workflows) + MSBuild SDK, GitHub Actions, NuGet.org API
 - 010-unify-script-notation: Added C# / .NET 10 + Newtonsoft.Json (TLio.Json), NUnit (tests)
 
-- 008-jlio-api-parity: Adding TLio.Extensions.Text (12 text functions); fluent builder API + TLioConvert in TLio.Client; alias properties in Compare/Merge; ETL settings deserialization fix; newGuid function; fetch/promote optional args; path alias; ai-ref.md updates
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
