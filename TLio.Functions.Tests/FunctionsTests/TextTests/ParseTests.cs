@@ -36,4 +36,32 @@ public class ParseTests
         var result = fn.Execute(data, data, context);
         Assert.That(result.Success, Is.False);
     }
+
+    [Test] public void Parse_NumericString_ReturnsNumericToken()
+    {
+        var fn = new Parse<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.num") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<int>(), Is.EqualTo(42));
+    }
+
+    [Test] public void Parse_JsonArrayString_ReturnsArray()
+    {
+        var fn = new Parse<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.arr") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Type, Is.EqualTo(JTokenType.Array));
+    }
+
+    [Test] public void Parse_JsonObjectString_ReturnsObject()
+    {
+        var d = JToken.Parse("{ \"objStr\": \"{\\\"a\\\":1}\" }");
+        var fn = new Parse<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.objStr") });
+        var result = fn.Execute(d, d, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Type, Is.EqualTo(JTokenType.Object));
+    }
 }

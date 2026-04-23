@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -90,5 +91,13 @@ public class FetchTests
         var result = fetchFn.Execute(data, data, executeOptions);
 
         Assert.That(result.Success, Is.False);
+    }
+
+    [Test]
+    public void ReturnsFalseWithNoArguments_LogsWarning()
+    {
+        var fetchFn = new Fetch<JToken>();
+        fetchFn.Execute(data, data, executeOptions);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Warning), Is.True);
     }
 }

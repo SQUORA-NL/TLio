@@ -27,4 +27,49 @@ public class IsEmptyTests
         var result = fn.Execute(data, data, context);
         Assert.That(result.Success, Is.False);
     }
+
+    [Test] public void IsEmpty_NonEmptyString_ReturnsFalse()
+    {
+        var fn = new IsEmpty<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.str") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<bool>(), Is.False);
+    }
+
+    [Test] public void IsEmpty_EmptyString_ReturnsTrue()
+    {
+        var fn = new IsEmpty<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.empty") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<bool>(), Is.True);
+    }
+
+    [Test] public void IsEmpty_NullValue_ReturnsTrue()
+    {
+        var fn = new IsEmpty<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.nul") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<bool>(), Is.True);
+    }
+
+    [Test] public void IsEmpty_EmptyArray_ReturnsTrue()
+    {
+        var fn = new IsEmpty<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.arr") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<bool>(), Is.True);
+    }
+
+    [Test] public void IsEmpty_NonEmptyArray_ReturnsFalse()
+    {
+        var fn = new IsEmpty<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.arrFull") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<bool>(), Is.False);
+    }
 }
