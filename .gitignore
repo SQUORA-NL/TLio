@@ -34,3 +34,6 @@ Thumbs.db
 .idea/
 *.swp
 *.tmp
+
+# Docker plugin sample — runtime volume contents
+samples/TLio.Sample.DockerPlugin/plugins/

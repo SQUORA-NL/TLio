@@ -8,6 +8,8 @@ Powered by [NuPlane](https://www.nuget.org/packages/Nuplane) for folder watching
 
 - Docker Desktop
 
+> **PowerShell users**: `curl` in PowerShell is an alias for `Invoke-WebRequest` and does not accept `-H`/`-d` flags. Use `curl.exe` instead — it ships with Windows 10/11 and accepts the same syntax as the commands below.
+
 ## Build and run
 
 ```bash
