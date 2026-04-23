@@ -28,7 +28,7 @@ public class FunctionConverter<TNode>
 
     /// <summary>
     /// Parse a raw script value string into an IFunctionSupportedValue.
-    /// Returns null only when a function expression refers to an unknown function.
+    /// Returns a <see cref="NotFoundFunctionValue{TNode}"/> sentinel when a function expression refers to an unknown function.
     /// <paramref name="warnCallback"/> is invoked (when provided) if a likely notation mistake is detected,
     /// e.g. <c>@field</c> instead of the required <c>@.field</c> form.
     /// </summary>

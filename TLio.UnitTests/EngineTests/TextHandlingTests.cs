@@ -58,10 +58,10 @@ public class TextHandlingTests
     }
 
     [Test]
-    public void ParseValue_UnknownFunction_ReturnsNull()
+    public void ParseValue_UnknownFunction_ReturnsNotFoundSentinel()
     {
         var result = converter.ParseValue("=definitelyNotRegistered()", adapter);
-        Assert.That(result, Is.Null);
+        Assert.That(result, Is.InstanceOf<NotFoundFunctionValue<JToken>>());
     }
 
     // ── Path expressions ──────────────────────────────────────────────────────
