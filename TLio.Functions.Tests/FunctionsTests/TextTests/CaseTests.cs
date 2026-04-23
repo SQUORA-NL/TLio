@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Core.Models;
@@ -28,11 +29,47 @@ public class CaseTests
         Assert.That(result.Success, Is.False);
     }
 
+    [Test] public void ToUpper_PathNotFound_LogsError()
+    {
+        var fn = new ToUpper<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.missing") });
+        fn.Execute(data, data, context);
+        Assert.That(context.GetLogEntries().Any(e => e.Level == LogLevel.Error), Is.True);
+    }
+
     [Test] public void ToLower_PathNotFound_ReturnsFailed()
     {
         var fn = new ToLower<JToken>();
         fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.missing") });
         var result = fn.Execute(data, data, context);
         Assert.That(result.Success, Is.False);
+    }
+
+    [Test] public void ToUpper_ReturnsAllUpperCase()
+    {
+        var fn = new ToUpper<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.mixed") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("HELLO WORLD"));
+    }
+
+    [Test] public void ToLower_ReturnsAllLowerCase()
+    {
+        var fn = new ToLower<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.mixed") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("hello world"));
+    }
+
+    [Test] public void ToLower_StringWithNumbers_NumbersUnchanged()
+    {
+        var d = JToken.Parse(@"{ ""s"": ""ABC123"" }");
+        var fn = new ToLower<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.s") });
+        var result = fn.Execute(d, d, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("abc123"));
     }
 }

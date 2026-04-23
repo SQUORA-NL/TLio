@@ -39,4 +39,44 @@ public class SplitJoinTests
         var result = fn.Execute(data, data, context);
         Assert.That(result.Success, Is.False);
     }
+
+    [Test] public void Split_OnCommaDelimiter_ProducesCorrectParts()
+    {
+        var fn = new Split<JToken>();
+        fn.SetArguments(new Arguments<JToken>
+        {
+            new PathValue<JToken>("$.csv"),
+            new PathValue<JToken>("$.delim")
+        });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(context.NodeAdapter.GetArrayLength(result.Data.First!), Is.EqualTo(3));
+    }
+
+    [Test] public void Join_ArrayWithSeparator_ProducesJoinedString()
+    {
+        var fn = new Join<JToken>();
+        fn.SetArguments(new Arguments<JToken>
+        {
+            new PathValue<JToken>("$.arr"),
+            new PathValue<JToken>("$.sep")
+        });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("x-y-z"));
+    }
+
+    [Test] public void Join_EmptyArray_ProducesEmptyString()
+    {
+        var d = JToken.Parse(@"{ ""arr"": [], ""sep"": "","" }");
+        var fn = new Join<JToken>();
+        fn.SetArguments(new Arguments<JToken>
+        {
+            new PathValue<JToken>("$.arr"),
+            new PathValue<JToken>("$.sep")
+        });
+        var result = fn.Execute(d, d, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo(string.Empty));
+    }
 }

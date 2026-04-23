@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -74,5 +75,25 @@ public class IndirectTests
         var result = indirectFn.Execute(data, data, executeOptions);
 
         Assert.That(result.Success, Is.False);
+    }
+
+    [Test]
+    public void ReturnsFalseWithNoArguments_LogsWarning()
+    {
+        var indirectFn = new Indirect<JToken>();
+        indirectFn.Execute(data, data, executeOptions);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Warning), Is.True);
+    }
+
+    [Test]
+    public void NonStringPathReference_LogsWarning()
+    {
+        // $.ref holds an array (not a string). indirect cannot use an array as a path → logs warning.
+        var d = JToken.Parse(@"{ ""ref"": [1, 2, 3] }");
+        var indirectFn = (IFunction<JToken>)new Indirect<JToken>()
+            .SetArguments(new Arguments<JToken> { new FixedValue<JToken>(new JValue("$.ref")) });
+        var result = indirectFn.Execute(d, d, executeOptions);
+        Assert.That(result.Success, Is.False);
+        Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Warning), Is.True);
     }
 }

@@ -27,4 +27,41 @@ public class TrimTests
         var result = fn.Execute(data, data, context);
         Assert.That(result.Success, Is.False);
     }
+
+    [Test] public void Trim_RemovesBothSides()
+    {
+        var fn = new Trim<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.padded") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("hello"));
+    }
+
+    [Test] public void TrimStart_RemovesOnlyLeft()
+    {
+        var fn = new TrimStart<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.padded") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("hello  "));
+    }
+
+    [Test] public void TrimEnd_RemovesOnlyRight()
+    {
+        var fn = new TrimEnd<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.padded") });
+        var result = fn.Execute(data, data, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("  hello"));
+    }
+
+    [Test] public void Trim_NoWhitespace_StringUnchanged()
+    {
+        var d = JToken.Parse(@"{ ""s"": ""hello"" }");
+        var fn = new Trim<JToken>();
+        fn.SetArguments(new Arguments<JToken> { new PathValue<JToken>("$.s") });
+        var result = fn.Execute(d, d, context);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("hello"));
+    }
 }

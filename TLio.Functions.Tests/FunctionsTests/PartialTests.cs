@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Commands;
@@ -93,5 +94,14 @@ public class PartialTests
         var result = partialFn.Execute(data, data, executeOptions);
 
         Assert.That(result.Success, Is.False);
+    }
+
+    [Test]
+    public void ReturnsFalseWithNoArguments_LogsWarningOrError()
+    {
+        var partialFn = new Partial<JToken>();
+        partialFn.Execute(data, data, executeOptions);
+        Assert.That(executeOptions.GetLogEntries().Any(e =>
+            e.Level == LogLevel.Warning || e.Level == LogLevel.Error), Is.True);
     }
 }
