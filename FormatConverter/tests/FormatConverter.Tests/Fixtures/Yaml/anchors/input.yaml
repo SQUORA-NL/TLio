@@ -1,0 +1,6 @@
+base: &base
+  name: Alice
+  active: true
+copy:
+  <<: *base
+  name: Bob

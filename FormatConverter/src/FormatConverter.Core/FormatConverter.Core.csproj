@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>FormatConverter.Core</RootNamespace>
+    <AssemblyName>FormatConverter.Core</AssemblyName>
+  </PropertyGroup>
+</Project>

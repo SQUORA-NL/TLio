@@ -1,6 +1,6 @@
-# Tlio.claude Development Guidelines
+﻿# Tlio.claude Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-23 (updated by 008)
+Auto-generated from all feature plans. Last updated: 2026-04-25 (updated by 008)
 
 ## Active Technologies
 - C# / .NET 10 + Newtonsoft.Json (TLio.Json), NUnit (tests) (010-unify-script-notation)
@@ -12,6 +12,11 @@ Auto-generated from all feature plans. Last updated: 2026-04-23 (updated by 008)
 - C# / .NET 10 + NUnit 4.x, Newtonsoft.Json (TLio.Json.Tests), System.Text.Json (TLio.Json.SystemText.Tests), YamlDotNet (TLio.Yaml.Tests), System.Xml (TLio.Xml.Tests) (015-expand-test-coverage)
 - N/A — test fixtures are file-based (input/script/result triplets) or programmatically generated (015-expand-test-coverage)
 - C# / .NET 10 + NUnit 4.x, Newtonsoft.Json (JToken), TLio.Extensions.Text, TLio.Extensions.ETL, TLio.Extensions.Math, TLio.Functions (016-deepen-test-coverage)
+- [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION] + [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION] (017-im-format-converter)
+- [if applicable, e.g., PostgreSQL, CoreData, files or N/A] (017-im-format-converter)
+- C# / .NET 10 + `System.Text.Json` (built-in, JSON adapter), `System.Xml` (built-in, XML adapter), `YamlDotNet` (YAML adapter only — MIT licensed), `NUnit 4.x` (tests) (017-im-format-converter)
+- N/A — pure in-memory library (017-im-format-converter)
+- C# / .NET 10 + `System.Text.Json` (built-in), `System.Xml` (built-in), `YamlDotNet` (MIT, YAML adapter only), `NUnit 4.x` (tests), `TLio.Core` (FormatConverter.TLio only) (017-im-format-converter)
 
 - C# / .NET 10 + Newtonsoft.Json, System.Text.Json, JsonPath.Net (json-everything), NUnit (002-migration-from-jlio)
 - TLio.Xml: XmlNodeAdapter + SlashPathItemsFetcher (existing) + NativeXPathItemsFetcher (003, planned)
@@ -63,9 +68,9 @@ dotnet test
 C# / .NET 10: Follow standard conventions
 
 ## Recent Changes
-- 016-deepen-test-coverage: Added C# / .NET 10 + NUnit 4.x, Newtonsoft.Json (JToken), TLio.Extensions.Text, TLio.Extensions.ETL, TLio.Extensions.Math, TLio.Functions
-- 015-expand-test-coverage: Added C# / .NET 10 + NUnit 4.x, Newtonsoft.Json (TLio.Json.Tests), System.Text.Json (TLio.Json.SystemText.Tests), YamlDotNet (TLio.Yaml.Tests), System.Xml (TLio.Xml.Tests)
-- main: Added C# / .NET 10 + Docker, MSBuild SDK, `Directory.Build.props` (global MSBuild properties)
+- 017-im-format-converter: Added C# / .NET 10 + `System.Text.Json` (built-in), `System.Xml` (built-in), `YamlDotNet` (MIT, YAML adapter only), `NUnit 4.x` (tests), `TLio.Core` (FormatConverter.TLio only)
+- 017-im-format-converter: Added C# / .NET 10 + `System.Text.Json` (built-in, JSON adapter), `System.Xml` (built-in, XML adapter), `YamlDotNet` (YAML adapter only — MIT licensed), `NUnit 4.x` (tests)
+- 017-im-format-converter: Added [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION] + [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
 
 
 <!-- MANUAL ADDITIONS START -->

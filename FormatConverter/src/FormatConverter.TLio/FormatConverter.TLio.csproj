@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>FormatConverter.TLio</RootNamespace>
+    <AssemblyName>FormatConverter.TLio</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FormatConverter.Core\FormatConverter.Core.csproj" />
+    <ProjectReference Include="..\FormatConverter.Json\FormatConverter.Json.csproj" />
+    <ProjectReference Include="..\FormatConverter.Xml\FormatConverter.Xml.csproj" />
+    <ProjectReference Include="..\FormatConverter.Yaml\FormatConverter.Yaml.csproj" />
+    <ProjectReference Include="..\..\..\TLio.Core\TLio.Core.csproj" />
+    <ProjectReference Include="..\..\..\TLio.Client\TLio.Client.csproj" />
+  </ItemGroup>
+</Project>
