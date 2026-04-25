@@ -25,11 +25,13 @@ public sealed class ExtensibilityTests
     {
         _converter.Register(new EchoFormatAdapter());
 
-        // Echo as source
+        // Echo as source: wraps input in ScalarNode
         var im = _converter.ToIM("echo", "hello world", ConversionSettings.Empty);
-        Assert.That(im, Is.Not.Null);
+        var scalar = im as global::FormatConverter.Core.Model.ScalarNode;
+        Assert.That(scalar, Is.Not.Null);
+        Assert.That(scalar!.RawValue, Is.EqualTo("hello world"));
 
-        // Echo as target
+        // Echo as target: returns the scalar value unchanged
         var output = _converter.FromIM("echo", im, ConversionSettings.Empty);
         Assert.That(output, Is.EqualTo("hello world"));
     }

@@ -56,9 +56,9 @@ public sealed class ErrorHandlingTests
     {
         var ex = Assert.Throws<FormatParseException>(
             () => _converter.ToIM("json", "!!!invalid!!!", ConversionSettings.Empty));
-        Assert.That(ex.FormatId, Is.Not.Null.And.Not.Empty);
-        Assert.That(ex.Operation, Is.Not.Null.And.Not.Empty);
-        Assert.That(ex.Message, Does.Contain(ex.FormatId));
+        Assert.That(ex.FormatId, Is.EqualTo("json"));
+        Assert.That(ex.Operation, Is.EqualTo("ToIM"));
+        Assert.That(ex.Message, Does.Contain("json"));
     }
 
     [Test]

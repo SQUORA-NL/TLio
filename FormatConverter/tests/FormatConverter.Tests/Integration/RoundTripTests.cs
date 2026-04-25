@@ -61,8 +61,11 @@ public sealed class RoundTripTests
         var json = _converter.Convert("xml", input, "json", ConversionSettings.Empty);
         var output = _converter.Convert("json", json, "xml", ConversionSettings.Empty);
 
-        // Attribute @id should survive the round trip
-        Assert.That(output, Contains.Substring("id=\"1\""));
+        // Attribute @id and element name should survive the round trip
+        var outDoc = new XmlDocument();
+        outDoc.LoadXml(output);
+        Assert.That(outDoc.DocumentElement!.LocalName, Is.EqualTo("person"));
+        Assert.That(outDoc.DocumentElement.GetAttribute("id"), Is.EqualTo("1"));
     }
 
     [Test]
@@ -84,12 +87,12 @@ public sealed class RoundTripTests
     {
         var dir = FixtureDir("RoundTrip", "yaml-json-yaml");
         var input = File.ReadAllText(Path.Combine(dir, "input.yaml"));
+        var expected = File.ReadAllText(Path.Combine(dir, "expected.yaml")).TrimEnd().Replace("\r\n", "\n");
 
         var json = _converter.Convert("yaml", input, "json", new ConversionSettings { InferTypes = true });
-        var yaml = _converter.Convert("json", json, "yaml", ConversionSettings.Empty);
+        var yaml = _converter.Convert("json", json, "yaml", ConversionSettings.Empty).TrimEnd().Replace("\r\n", "\n");
 
-        Assert.That(yaml, Contains.Substring("name"));
-        Assert.That(yaml, Contains.Substring("city"));
+        Assert.That(yaml, Is.EqualTo(expected));
     }
 
     [Test]

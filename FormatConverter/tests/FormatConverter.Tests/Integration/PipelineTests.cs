@@ -99,9 +99,9 @@ public sealed class PipelineTests
         var script = "[{\"command\":\"convert\",\"to\":\"json\"}]";
         var input = "<item id=\"1\" />";
 
-        // Default attributePrefix is "@" — attribute should appear as "@id"
+        // Default attributePrefix is "@" — attribute key and value must survive conversion
         var output = _runner.Execute("xml", input, script);
-        Assert.That(output, Contains.Substring("\"@id\""));
+        Assert.That(NormJson(output), Is.EqualTo(NormJson("{\"item\":{\"@id\":\"1\"}}")));
     }
 
     [Test]
@@ -124,8 +124,8 @@ public sealed class PipelineTests
 
         var output = _runner.Execute("xml", input, script);
 
-        // Final format is YAML — should contain YAML-style key: value
-        Assert.That(output, Contains.Substring("key:"));
+        // Final format is YAML — verify structure and values are preserved
+        Assert.That(ExtractYamlKeys(output), Is.EquivalentTo(new[] { "root", "key" }));
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
