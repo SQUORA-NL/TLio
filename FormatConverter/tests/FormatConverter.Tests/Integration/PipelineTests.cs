@@ -47,11 +47,11 @@ public sealed class PipelineTests
         var dir = FixtureDir("Pipeline", "xml-json-yaml");
         var input = File.ReadAllText(Path.Combine(dir, "input.xml"));
         var script = File.ReadAllText(Path.Combine(dir, "script.json"));
+        var expected = File.ReadAllText(Path.Combine(dir, "expected.yaml")).TrimEnd();
 
-        var output = _runner.Execute("xml", input, script);
+        var output = _runner.Execute("xml", input, script).TrimEnd();
 
-        // Result should be valid YAML (contains key: value)
-        Assert.That(output, Contains.Substring("name"));
+        Assert.That(ExtractYamlKeys(output), Is.EquivalentTo(ExtractYamlKeys(expected)));
     }
 
     [Test]
@@ -135,4 +135,10 @@ public sealed class PipelineTests
 
     private static string NormJson(string json) =>
         JsonSerializer.Serialize(JsonSerializer.Deserialize<JsonElement>(json));
+
+    private static IEnumerable<string> ExtractYamlKeys(string yaml) =>
+        yaml.Split('\n')
+            .Select(l => l.Trim())
+            .Where(l => l.Contains(':'))
+            .Select(l => l.Split(':')[0].Trim('\'', ' '));
 }
