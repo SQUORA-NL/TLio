@@ -45,6 +45,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TLio.Sample.Cli", "samples\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TLio.Sample.DockerPlugin", "samples\TLio.Sample.DockerPlugin\TLio.Sample.DockerPlugin.csproj", "{D6E7F8A9-B0C1-2345-D6E7-F8A9B0C12346}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{5D20AA90-6969-D8BD-9DCD-8634F4692FDA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TLio.Sample.Api.IntegrationTests", "samples\TLio.Sample.Api.IntegrationTests\TLio.Sample.Api.IntegrationTests.csproj", "{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -307,8 +311,23 @@ Global
 		{D6E7F8A9-B0C1-2345-D6E7-F8A9B0C12346}.Release|x64.Build.0 = Release|Any CPU
 		{D6E7F8A9-B0C1-2345-D6E7-F8A9B0C12346}.Release|x86.ActiveCfg = Release|Any CPU
 		{D6E7F8A9-B0C1-2345-D6E7-F8A9B0C12346}.Release|x86.Build.0 = Release|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Debug|x64.Build.0 = Debug|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Debug|x86.Build.0 = Debug|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Release|x64.ActiveCfg = Release|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Release|x64.Build.0 = Release|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Release|x86.ActiveCfg = Release|Any CPU
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 	EndGlobalSection
 EndGlobal
