@@ -1,0 +1,96 @@
+using System.Text.Json;
+using FormatConverter.Core;
+using TLio.Core.Contracts;
+using TLio.Core.Models;
+
+namespace FormatConverter.TLio;
+
+/// <summary>
+/// TLio command that signals a format boundary in a multi-format script.
+/// Command name: <c>"convert"</c>.
+/// </summary>
+/// <remarks>
+/// This command is intercepted by <see cref="MultiFormatScriptRunner"/> during pre-processing.
+/// If executed directly by the standard TLio engine (outside a multi-format runner),
+/// it is a no-op and logs a warning.
+/// </remarks>
+/// <typeparam name="TNode">Native node type of the current section's format.</typeparam>
+public sealed class ConvertCommand<TNode> : ICommand<TNode>
+{
+    /// <inheritdoc/>
+    public string CommandName => "convert";
+
+    /// <summary>Target format ID parsed from the script.</summary>
+    public string To { get; private set; } = string.Empty;
+
+    /// <summary>Per-boundary settings parsed from the script.</summary>
+    public ConversionSettings Settings { get; private set; } = ConversionSettings.Empty;
+
+    /// <summary>Initialises a new instance (used by command factory).</summary>
+    public ConvertCommand() { }
+
+    /// <summary>Initialises with pre-parsed values (used in tests).</summary>
+    public ConvertCommand(string to, ConversionSettings settings)
+    {
+        To = to;
+        Settings = settings;
+    }
+
+    /// <summary>
+    /// Parses a <see cref="ConvertCommand{TNode}"/> from the raw JSON command element.
+    /// </summary>
+    public static ConvertCommand<TNode> Parse(JsonElement element)
+    {
+        var to = element.TryGetProperty("to", out var toProp) ? toProp.GetString() ?? string.Empty : string.Empty;
+        var settings = ParseSettings(element);
+        return new ConvertCommand<TNode>(to, settings);
+    }
+
+    /// <summary>
+    /// When executed directly (outside <see cref="MultiFormatScriptRunner"/>), this is a no-op.
+    /// </summary>
+    public TLioExecutionResult<TNode> Execute(TNode dataContext, IExecutionContext<TNode> context)
+    {
+        context.LogWarning("ConvertCommand",
+            $"'convert' command to '{To}' was executed inline — it has no effect outside MultiFormatScriptRunner.");
+        return TLioExecutionResult<TNode>.Successful(dataContext);
+    }
+
+    /// <inheritdoc/>
+    public ValidationResult ValidateCommandInstance()
+    {
+        var result = new ValidationResult();
+        if (string.IsNullOrWhiteSpace(To))
+            result.AddError("ConvertCommand requires a non-empty 'to' property.");
+        return result;
+    }
+
+    /// <inheritdoc/>
+    public ICommand<TNode> Clone() => new ConvertCommand<TNode>(To, Settings);
+
+    private static ConversionSettings ParseSettings(JsonElement element)
+    {
+        if (!element.TryGetProperty("settings", out var settingsEl) || settingsEl.ValueKind != JsonValueKind.Object)
+            return ConversionSettings.Empty;
+
+        return new ConversionSettings
+        {
+            TextProperty = GetString(settingsEl, "textProperty", "#text"),
+            AttributePrefix = GetString(settingsEl, "attributePrefix", "@"),
+            NamespacePrefix = GetString(settingsEl, "namespacePrefix", "xmlns:"),
+            InferTypes = GetBool(settingsEl, "inferTypes", false),
+            CdataAsText = GetBool(settingsEl, "cdataAsText", false),
+            FlattenAnchors = GetBool(settingsEl, "flattenAnchors", true),
+        };
+    }
+
+    private static string GetString(JsonElement el, string prop, string defaultValue) =>
+        el.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String
+            ? v.GetString() ?? defaultValue
+            : defaultValue;
+
+    private static bool GetBool(JsonElement el, string prop, bool defaultValue) =>
+        el.TryGetProperty(prop, out var v) && v.ValueKind is JsonValueKind.True or JsonValueKind.False
+            ? v.GetBoolean()
+            : defaultValue;
+}

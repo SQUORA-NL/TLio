@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>FormatConverter.Xml</RootNamespace>
+    <AssemblyName>FormatConverter.Xml</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FormatConverter.Core\FormatConverter.Core.csproj" />
+  </ItemGroup>
+</Project>
