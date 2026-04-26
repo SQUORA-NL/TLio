@@ -7,8 +7,14 @@ using Nuplane.Sources.Directory.Builder;
 using TLio.Client;
 using TLio.Json;
 using TLio.Sample.DockerPlugin;
+using TLio.Sample.DockerPlugin.Endpoints;
+using TLio.Sample.DockerPlugin.Registry;
+using TLio.Sample.DockerPlugin.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(o =>
+    o.Limits.MaxRequestBodySize = builder.Configuration.GetValue<long?>("SlugCache:MaxBodySizeBytes") ?? 10 * 1024 * 1024);
 
 // ── TLio ─────────────────────────────────────────────────────────────────────
 
@@ -24,6 +30,14 @@ builder.Services.AddSingleton<MutableFunctionsProvider<JToken>>(sp =>
 
 builder.Services.AddSingleton<PluginCatalogService>();
 builder.Services.AddSingleton<PluginFileLoader>();
+
+// ── Slug-cache services ───────────────────────────────────────────────────────
+
+builder.Services.AddSingleton<IScriptRegistry, ScriptRegistry>();
+builder.Services.AddSingleton<ScriptCompiler>();
+builder.Services.AddSingleton<FormatDetector>();
+builder.Services.AddSingleton<RegistrationPayloadParser>();
+builder.Services.AddSingleton<StartupScriptLoader>();
 
 // ── NuPlane ───────────────────────────────────────────────────────────────────
 
@@ -55,6 +69,11 @@ builder.Services.AddCShellsAspNetCore();
 var app = builder.Build();
 
 app.MapShells();
+
+// ── Slug-cache endpoints ──────────────────────────────────────────────────────
+
+SlugExecutionEndpoints.Map(app);
+ScriptManagementEndpoints.Map(app);
 
 // ── POST /transform/{format} ──────────────────────────────────────────────────
 
@@ -162,6 +181,18 @@ app.MapPost("/plugins/reload", async (
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
+// ── Startup: seed registry from config ───────────────────────────────────────
+
+using (var scope = app.Services.CreateScope())
+{
+    var loader  = scope.ServiceProvider.GetRequiredService<StartupScriptLoader>();
+    var reg     = scope.ServiceProvider.GetRequiredService<IScriptRegistry>();
+    var comp    = scope.ServiceProvider.GetRequiredService<ScriptCompiler>();
+    var logger  = scope.ServiceProvider.GetRequiredService<ILogger<StartupScriptLoader>>();
+    var config  = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    await loader.LoadAsync(reg, comp, logger, config);
+}
+
 app.Run();
 
 // ── Request model ─────────────────────────────────────────────────────────────
@@ -169,3 +200,5 @@ app.Run();
 internal sealed record TransformRequest(
     object? Input,
     object[]? Script);
+
+public partial class Program { }
