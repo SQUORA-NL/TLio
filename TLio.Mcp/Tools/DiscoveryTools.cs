@@ -21,7 +21,10 @@ public sealed class DiscoveryTools
     }
 
     [McpServerTool(Name = "tlio_list_commands")]
-    [Description("Lists all available TLio commands with their names and one-line intent descriptions.")]
+    [Description("Lists all available TLio commands with their names and one-line intent descriptions. " +
+                 "Use this to discover command names, then call tlio_describe('CommandName') to get full documentation " +
+                 "including When to use, When NOT to use, Comparison tables, and Common mistakes before writing a script. " +
+                 "For a command decision tree (which command for which goal), call tlio_guide.")]
     public object ListCommands()
     {
         if (!_rateLimiter.TryAcquire(out var retryAfter))
@@ -34,7 +37,10 @@ public sealed class DiscoveryTools
     }
 
     [McpServerTool(Name = "tlio_list_functions")]
-    [Description("Lists all available TLio functions with their names and one-line intent descriptions.")]
+    [Description("Lists all available TLio functions with their names and one-line intent descriptions. " +
+                 "Use this to discover function names, then call tlio_describe('functionName') to get full documentation " +
+                 "including When to use, When NOT to use, argument types, and Common mistakes before using a function. " +
+                 "For a function decision tree (which function for which goal), call tlio_guide.")]
     public object ListFunctions()
     {
         if (!_rateLimiter.TryAcquire(out var retryAfter))
@@ -46,8 +52,24 @@ public sealed class DiscoveryTools
         return new { functions };
     }
 
+    [McpServerTool(Name = "tlio_guide")]
+    [Description("Returns the TLio command and function decision trees plus the 8 critical rules every agent must know. " +
+                 "Call this FIRST before writing any script to select the right commands and functions for your goal. " +
+                 "For full documentation on a specific command or function, call tlio_describe('Name').")]
+    public object Guide()
+    {
+        if (!_rateLimiter.TryAcquire(out var retryAfter))
+            return RateLimitError(retryAfter);
+
+        var content = _reader.GetGuide();
+        return new { guide = content };
+    }
+
     [McpServerTool(Name = "tlio_describe")]
-    [Description("Returns full documentation for a named command, function, or adapter.")]
+    [Description("Returns full documentation for a named command, function, or adapter. " +
+                 "Documentation includes: syntax, arguments, returns, examples, When to use, When NOT to use, " +
+                 "Comparison tables (for grouped commands/functions), and Common mistakes. " +
+                 "Call this before using any command or function to understand the correct usage and avoid known pitfalls.")]
     public object Describe(
         [Description("Exact name of the command, function, or adapter")] string name,
         [Description("Type hint: 'command', 'function', or 'adapter'. Auto-detected if omitted.")] string? type = null)

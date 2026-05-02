@@ -56,3 +56,32 @@ var result = engine.Execute(
     JObject.Parse("{\"items\":[{\"id\":1},{\"id\":2}]}"),
     JsonExecutionContext.CreateDefault());
 ```
+
+## When to use
+
+- Stamping each node in a wildcard expansion with its own absolute path — e.g. adding a `"_path"` audit field to every item in an array.
+- Logging or metadata: recording which node was processed so downstream systems can trace transformations back to their source position.
+- Self-referential scripts: when a script operates over a dynamic set of nodes and each node needs to carry its own address.
+- Using the optional `@.child` argument to compute the absolute path of a sibling or child of the current node without knowing the index at script-write time.
+
+## When NOT to use
+
+- You need the **value at a path** — use `=fetch($.some.path)`. `=scriptpath()` returns the path *string* of the current context node, not data at some arbitrary location.
+- The command targets a single, fixed node (no wildcard) — `=scriptpath()` will always return the same string; a literal is clearer.
+- Pure data transformation with no audit or metadata requirement — path strings are only useful to systems that consume them.
+
+## Comparison
+
+| Function | Returns | Use when |
+|----------|---------|----------|
+| `=scriptpath()` | Absolute path string of the current context node | Canonical TLio name; use for new scripts |
+| `=path()` | Same — exact alias | Use for JLio compatibility |
+| `=fetch(<path>)` | Value at the specified path | You need data, not a path string |
+
+## Common mistakes
+
+- **Confusing scriptpath with fetch**: `=scriptpath()` returns the path *string* of the node the command is currently processing — not the value of a path you specify. For values, use `=fetch()`.
+- **Expecting scriptpath to accept an arbitrary absolute path**: the optional argument is a *relative* path (`@.child`) resolved from the current node. It cannot point to an unrelated part of the document.
+- **Using `@child` without the dot**: the relative path argument requires `@.` (with dot separator). `@child` is not a valid relative path in TLio's JSON/YAML notation.
+- **Using scriptpath() at document root**: when a command targets `$`, `=scriptpath()` returns `"$"`. This is correct but can be surprising in scripts that expect a longer path.
+- **Expecting scriptpath and path to differ**: they are exact aliases sharing the same implementation. Choose based on naming preference, not expected behaviour differences.

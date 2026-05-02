@@ -40,7 +40,11 @@ public sealed class ExecutionTools
     }
 
     [McpServerTool(Name = "tlio_execute")]
-    [Description("Executes a TLio script against a document and returns the transformed output with an execution trace.")]
+    [Description("Executes a TLio script against a document and returns the transformed output with an execution trace. " +
+                 "The result includes: 'success' (bool), 'output' (transformed document), 'trace' (per-command outcome: success/noop/failure with detail), " +
+                 "and 'suggestions' (actionable fixes for every noop and failure, including tlio_describe calls for docs). " +
+                 "Before writing a script: call tlio_guide for the command/function decision tree, " +
+                 "then call tlio_describe('CommandName') for usage guidance and common mistakes for each command you plan to use.")]
     public object Execute(
         [Description("Raw document text to transform")] string document,
         [Description("Document format: 'json', 'xml', or 'yaml'")] string format,
@@ -157,17 +161,42 @@ public sealed class ExecutionTools
         var issues = trace.Where(t => t.Outcome is "noop" or "failure").ToList();
         if (issues.Count == 0) return [];
 
-        return issues.Select(t => t.Outcome switch
+        var suggestions = new List<string>();
+
+        foreach (var t in issues)
         {
-            "noop" =>
-                $"[noop] '{t.CommandName}' at '{t.Path}' matched 0 nodes — the path does not exist in the document. " +
-                $"If updating an existing field use 'set'; if creating a new field use 'add'. " +
-                $"Call tlio_analyze to see the exact paths that need changes.",
-            "failure" =>
-                $"[failure] '{t.CommandName}' at '{t.Path}' — {t.Detail} " +
-                $"Review the command definition and ensure all required properties (path, value) are present.",
-            _ => $"[{t.Outcome}] '{t.CommandName}' at '{t.Path}': {t.Detail}"
-        }).ToList();
+            var describeCall = $"tlio_describe('{t.CommandName}')";
+
+            if (t.Outcome == "noop")
+            {
+                if (t.Detail.Contains("already exists"))
+                    suggestions.Add(
+                        $"[noop] '{t.CommandName}' at '{t.Path}': field already exists — 'add' skips existing fields by design. " +
+                        $"Use 'set' to update an existing field, or 'put' for unconditional write (upsert). " +
+                        $"Call {describeCall} for the add/set/put comparison table.");
+                else if (t.Detail.Contains("not found") || t.Detail.Contains("0 nodes") || t.Detail.Contains("no nodes"))
+                    suggestions.Add(
+                        $"[noop] '{t.CommandName}' at '{t.Path}': path matched 0 nodes — the field does not exist. " +
+                        $"Use 'add' or 'put' to create a new field, or call tlio_analyze to verify the correct path. " +
+                        $"Call {describeCall} for when-to-use guidance and common path mistakes.");
+                else
+                    suggestions.Add(
+                        $"[noop] '{t.CommandName}' at '{t.Path}': {t.Detail} " +
+                        $"Call {describeCall} for usage guidance and common mistakes.");
+            }
+            else // failure
+            {
+                suggestions.Add(
+                    $"[failure] '{t.CommandName}' at '{t.Path}': {t.Detail} " +
+                    $"Call {describeCall} for required properties, when-to-use rules, and common mistakes.");
+            }
+        }
+
+        suggestions.Add(
+            "Call tlio_guide for the command and function decision tree. " +
+            "Call tlio_describe('CommandName') for full documentation before writing each command.");
+
+        return suggestions;
     }
 
     private static ScriptEngine<TNode> CreateEngine<TNode>()

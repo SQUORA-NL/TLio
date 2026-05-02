@@ -18,6 +18,12 @@ public sealed class AiRefReader
     public IReadOnlyList<(string Name, string Intent)> ListFunctions()
         => ListItems(Path.Combine(_aiRefRoot, "functions"));
 
+    public string GetGuide()
+    {
+        var path = Path.Combine(_aiRefRoot, "guide.md");
+        return File.Exists(path) ? File.ReadAllText(path) : "Guide not found. Call tlio_describe for individual command or function documentation.";
+    }
+
     public string? GetContent(string name, string? type)
     {
         var file = FindFile(name, type);

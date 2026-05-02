@@ -33,3 +33,31 @@ Output: `{ "prices": [...], "total": 29.97 }`
 
 - Path not found → command **fails** with an error trace entry
 - Null elements in the array are treated as 0
+
+## When to use
+
+- You need the **total** of a numeric array — revenue, quantities, scores, weights.
+- The source is a wildcard path like `$.orders[*].amount` — the wildcard resolves all matching values as a flat list, and `sum` aggregates them correctly.
+- You need to sum across multiple disjoint paths: `=sum($.a, $.b)`.
+
+## When NOT to use
+
+- You need the **count** of items — use `count` instead. `sum` on a list of ones accidentally produces a count, but that is fragile.
+- The path might not exist at runtime — guard with a conditional or ensure the path is always present, because a missing path causes failure, not zero.
+- You need a conditional total (only some rows) — use `sumif` instead.
+
+## Comparison
+
+| Function | Question answered | Input requirement |
+|----------|-------------------|-------------------|
+| `sum` | What is the total? | Numeric array; fails if empty/missing |
+| `avg` | What is the mean? | Numeric array; fails if empty/missing |
+| `count` | How many items? | Any array (strings, objects, numbers) |
+| `sumif` | Total where condition? | Two parallel arrays of equal length |
+
+## Common mistakes
+
+- **Using `sum` to count** — `=sum($.items)` when items are non-numeric silently fails or produces wrong results. Use `=count($.items)`.
+- **Empty array** — `sum` of an empty array fails. If the array might be empty, ensure at least one value exists or use a conditional command.
+- **Wrong path scope** — inside a function, paths resolve against the document ROOT (`$`), not the current node. `@.field` inside a function argument refers to the root, not an array element.
+- **Forgetting wildcard flattening** — `$.items[*].price` passes a flat list of prices to `sum`; this is correct and intended behavior.

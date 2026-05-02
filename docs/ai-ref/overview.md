@@ -1,125 +1,148 @@
 # TLio AI Reference — Overview
 
-TLio is a data-format-agnostic scripting framework. Scripts are JSON arrays of command
-objects; values can be literals or `=function()` expressions. The same script runs against
-JSON, XML, or YAML documents by swapping the execution context — no script changes needed.
+TLio is a data-format-agnostic scripting framework. A script is a JSON array of command
+objects. Each command reads and/or writes nodes in a document via path expressions. The
+same script runs against JSON, XML, or YAML by swapping the execution context — no script
+changes needed.
+
+---
+
+## Execution Model
+
+```
+script (JSON array)  +  document (JSON / XML / YAML)  +  execution context
+        |
+        v
+  ScriptEngine<TNode>.Execute(scriptJson, data, context)
+        |
+        v
+  ExecutionResult  →  trace log  +  mutated document
+```
+
+1. The engine iterates the command array in order.
+2. Each command resolves its `"path"` (or `"fromPath"` / `"toPath"`) against the document.
+3. Values can be literals or `=function()` expressions — evaluated at write time.
+4. Each command appends one trace entry: `"success"`, `"noop"`, or `"failure"`.
+
+---
 
 ## Adapter Selection
 
-| Format | Adapter project | Execution context factory | Path style |
-|--------|----------------|--------------------------|------------|
-| JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.Create(data, script, options)` | JSONPath `$.a.b` |
-| JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.Create(data, script, options)` | JSONPath `$.a.b` (RFC 9535) |
-| XML — slash paths | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths(data, script)` | `/root/child` |
-| XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath(data, script)` | `//child`, `item[@id='1']` |
-| YAML | `TLio.Yaml` | `YamlExecutionContext.Create(data, script, options)` | Dot-notation `$.a.b` |
+| Format | Adapter project | Execution context factory | Path style | When to use |
+|--------|----------------|--------------------------|------------|-------------|
+| JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` | Default JSON choice; Goessner JSONPath; filter and script expressions |
+| JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` (RFC 9535) | RFC 9535 strict; Newtonsoft excluded; no script expressions `()` |
+| XML — slash paths | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths()` | `/root/child` | Simple hierarchies; no predicates needed |
+| XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `//child`, `item[@id='1']` | Predicates, recursive descent, axes; indexing is 1-based |
+| YAML | `TLio.Yaml` | `YamlExecutionContext.CreateDefault()` | Dot-notation `$.a.b` | YAML source documents; multi-doc `---` parsed as array root |
 
-**Choose `TLio.Json` (Newtonsoft)** when: scripts use filter expressions, script expressions
-`()`, or you need maximum JSONPath compatibility.
+Full adapter details, path-syntax tables, and "When NOT to use" guidance:
+[TLio_AI_Reference.md — Adapters](TLio_AI_Reference.md#adapters)
 
-**Choose `TLio.Json.SystemText`** when: strict RFC 9535 required or Newtonsoft is excluded
-from your dependency constraints.
+---
 
-**Choose XML slash-path** when: paths are simple `/parent/child` hierarchies with no
-predicates needed.
+## Path Notation Basics
 
-**Choose XML XPath** when: paths need attribute predicates (`[@id='1']`), recursive descent
-(`//name`), or positional indexing (`item[1]`).
+| Adapter | Root | Child | Nested | Array index | Wildcard |
+|---------|------|-------|--------|-------------|----------|
+| JSON (both) | `$` | `$.name` | `$.a.b` | `$.a[0]` | `$.a[*]` |
+| XML slash-path | `/` | `/name` | `/a/b` | — | `/a/*` |
+| XML XPath | `.` | `name` | `a/b` | `a/b[1]` (1-based) | `*` |
+| YAML | `$` | `$.name` | `$.a.b` | `$.a[0]` | `$.a[*]` |
 
-**Choose YAML** when: source documents are YAML. Multi-document YAML (`---` separator)
-is parsed as an array root.
+---
 
-## JSONPath: Newtonsoft vs System.Text.Json
+## Function Value Syntax
 
-| Feature | Newtonsoft (`TLio.Json`) | System.Text.Json (`TLio.Json.SystemText`) |
-|---------|--------------------------|------------------------------------------|
-| Spec basis | Goessner (informal) | RFC 9535 |
-| Root `$` | ✅ | ✅ |
-| Child `$.name` | ✅ | ✅ |
-| Nested `$.a.b.c` | ✅ | ✅ |
-| Array index `$.a[0]` | ✅ | ✅ |
-| Wildcard `$.a[*]` | ✅ | ✅ |
-| Recursive descent `$..name` | ✅ | ✅ |
-| Slice `$.a[0:2]` | ✅ | ✅ |
-| Filter `$.a[?(@.x > 1)]` | ✅ | ✅ |
-| Script expressions `$.a[(@.length-1)]` | ✅ | ❌ not supported |
-| Negative index `$.a[-1]` | ✅ | ✅ |
-| Union `$.a[0,2]` | ✅ | ✅ |
+Any `"value"` field can be a function expression by prefixing with `=`:
 
-## Script Format
+```json
+{ "command": "set", "path": "$.target", "value": "=fetch($.source)" }
+{ "command": "put", "path": "$.id",     "value": "=newGuid()" }
+{ "command": "add", "path": "$.full",   "value": "=concat($.first,' ',$.last)" }
+```
 
-A TLio script is a JSON array of command objects. The `"command"` field is the discriminator.
-All other property names are camelCase.
+Rules:
+- Functions are strings — NOT objects. `"value": "=fetch($.x)"` is correct;
+  `"value": {"fn": "fetch"}` is wrong.
+- The `=` prefix triggers evaluation. To write a literal string starting with `=`,
+  escape it: `"==formula"` → writes the string `"=formula"`.
+- Path arguments starting with `$` or `@` inside a function call are resolved against
+  the document ROOT (`$`), not the current element.
+
+---
+
+## Trace Outcomes
+
+Every command produces one trace entry. An agent should check the outcome before
+assuming the document was changed.
+
+| Outcome | Meaning | Agent action |
+|---------|---------|--------------|
+| `"success"` | Command executed and changed the document | Continue |
+| `"noop"` | Command ran but found nothing to change — path not found, already-exists skip, or no matches | Investigate path or precondition — NOT an error |
+| `"failure"` | Command could not execute — validation error, function path-not-found, wrong type | Fix the script or input data |
+
+A `"noop"` is not an error. It is the normal signal for a precondition mismatch
+(e.g. `add` on a field that already exists, `set` on a field that does not exist).
+
+---
+
+## Decision Trees
+
+For one-step navigation to the right tool, see the decision trees in the full reference:
+
+- **Command picker** — which command for which write / transfer / logic / ETL goal:
+  [TLio_AI_Reference.md — Choosing the Right Command](TLio_AI_Reference.md#choosing-the-right-command)
+
+- **Function picker** — which function for string, numeric, date, or path operations:
+  [TLio_AI_Reference.md — Choosing the Right Function](TLio_AI_Reference.md#choosing-the-right-function)
+
+---
+
+## Quick Setup
+
+### Built-in commands and functions (JSON / Newtonsoft)
+
+```csharp
+using TLio.Json;
+using TLio.Client;
+
+var options = ParseOptions<JToken>.CreateDefault();
+var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result  = engine.Execute(scriptJson, data, JsonExecutionContext.CreateDefault());
+```
+
+### Register extension packs
+
+```csharp
+// ETL commands: flatten, restore, resolve, tocsv
+options.CommandsProvider.RegisterETL<JToken>();
+
+// Text functions: concat, format, substring, toLower, toUpper, trim, split, join,
+//   contains, startsWith, endsWith, indexOf, isEmpty, replace, parse, toString,
+//   newguid, padleft, padright, length
+options.FunctionsProvider.RegisterText<JToken>();
+```
+
+### Minimal script example
 
 ```json
 [
-  { "command": "set",    "path": "$.name",    "value": "Alice" },
-  { "command": "add",    "path": "$.tags",    "value": ["admin"] },
+  { "command": "put",    "path": "$.status",    "value": "active" },
+  { "command": "add",    "path": "$.createdAt", "value": "=datetime()" },
   { "command": "remove", "path": "$.tempId" }
 ]
 ```
 
-Function calls are string values prefixed with `=`:
+---
 
-```json
-{ "command": "set", "path": "$.target", "value": "=fetch($.source)" }
-```
+## Critical Rules (summary)
 
-See [Notation Reference](notation-reference.md) for complete quoting and escape rules.
+Full details in [TLio_AI_Reference.md — Critical Rules Every Agent Must Know](TLio_AI_Reference.md#critical-rules-every-agent-must-know).
 
-The script is executed by `ScriptEngine<TNode>.Execute(scriptJson, data, context)`.
-
-### Default setup (built-in commands + functions)
-
-```csharp
-var options = ParseOptions<JToken>.CreateDefault();
-var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
-var result  = engine.Execute(scriptJson, data, context);
-```
-
-## ETL Extension Pack
-
-The four ETL commands (`flatten`, `restore`, `resolve`, `tocsv`) are not included in
-`ParseOptions.CreateDefault()`. Register them explicitly:
-
-```csharp
-var options = ParseOptions<JToken>.CreateDefault();
-options.CommandsProvider.RegisterETL<JToken>();
-```
-
-See [commands/Flatten.md](commands/Flatten.md), [commands/Restore.md](commands/Restore.md),
-[commands/Resolve.md](commands/Resolve.md), [commands/ToCsv.md](commands/ToCsv.md).
-
-## Escape Sequences
-
-### Value escapes (FunctionConverter)
-
-When a script value starts with a trigger character (`@`, `$`, `=`), double the first
-character to produce a literal string instead of triggering path or function parsing.
-
-| Want to write | Script value | Result type |
-|---------------|-------------|-------------|
-| Literal `@admin` | `"@@admin"` | `FixedValue("@admin")` |
-| Literal `$ref` | `"$$ref"` | `FixedValue("$ref")` |
-| Literal `=formula` | `"==formula"` | `FixedValue("=formula")` |
-| Literal `@` inside a quoted string | `"'user@@example.com'"` | `FixedValue("user@example.com")` |
-
-The same rules apply inside function arguments: `=concat('@@prefix', @$.name)` passes
-`@prefix` as the first argument and evaluates `@$.name` as a path for the second.
-
-### Path escapes (bracket notation)
-
-When a property name contains the path delimiter (`.`) or other special characters,
-use bracket-quoted notation instead of dot-notation.
-
-| Adapter | Normal path | Bracket-notation path |
-|---------|------------|----------------------|
-| JSON (Newtonsoft / SystemText) | `$.version` | `$['version.major']` |
-| YAML | `$.server` | `$['server.host']` |
-| XML XPath | `item/name` | Use XPath predicates: `item[@id='1']` |
-| XML slash-path | `/root/child` | URL-encode `/` in segment if needed |
-
-**Note**: Bracket-notation reading is fully supported across all adapters.
-Writing to a bracket-notation path via `set`/`add` is tracked on branch `fix/bracket-write`.
-
-> Full escape-sequence rules: [Notation Reference §6](notation-reference.md#6-escape-sequences)
+1. **add / set / put**: `add` = create-only (noop if exists); `set` = update-only (noop if absent); `put` = upsert (always writes). When uncertain, use `put`.
+2. **Function path resolution uses ROOT**: inside a function call, paths resolve against `$`, not the current array element.
+3. **dateCompare returns long** (`-1` / `0` / `1`), never a string.
+4. **decisionTable results must be plain primitives** — not objects.
+5. **ifElse condition must be a primitive** — `true`, `false`, or `"=function()"` — not an object.

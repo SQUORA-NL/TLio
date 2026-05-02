@@ -29,7 +29,11 @@ public sealed class AnalysisTools
     }
 
     [McpServerTool(Name = "tlio_analyze")]
-    [Description("Performs a structural diff between an input and a target document. Returns a gap report listing every change needed to convert input into target.")]
+    [Description("Performs a structural diff between an input and a target document. " +
+                 "Returns a gap report listing every change needed (change_type: Add/Mutate/Rename/Remove/Reorder), " +
+                 "with 'suggested_command' and 'describe_call' on each change telling you exactly which TLio command to use " +
+                 "and how to get its full documentation. Also returns 'command_guidance' summarising all recommended commands. " +
+                 "Use this to plan your script before calling tlio_execute.")]
     public object Analyze(
         [Description("Raw input document text")] string input,
         [Description("Input document format: 'json', 'xml', or 'yaml'")] string inputFormat,
@@ -60,14 +64,18 @@ public sealed class AnalysisTools
                     _diff.ApplyRefinement(changes, priorTrace);
             }
 
+            AnnotateCommandSuggestions(changes);
+
             var summary = BuildSummary(changes);
             var unresolvedCount = changes.Count(c => c.Resolution == "unresolved");
+            var commandGuidance = BuildCommandGuidance(changes);
 
             return new AnalyzeResult
             {
                 Changes = changes,
                 Summary = summary,
-                UnresolvedCount = unresolvedCount
+                UnresolvedCount = unresolvedCount,
+                CommandGuidance = commandGuidance
             };
         }
         catch (Exception ex)
@@ -98,6 +106,57 @@ public sealed class AnalysisTools
             return JsonSerializer.Deserialize<List<CommandTraceRecord>>(json, options) ?? [];
         }
         catch { return []; }
+    }
+
+    private static void AnnotateCommandSuggestions(List<ChangeItem> changes)
+    {
+        foreach (var change in changes)
+        {
+            (change.SuggestedCommand, change.DescribeCall) = change.ChangeType switch
+            {
+                "Add" => ("put",
+                    "tlio_describe('Put') — or tlio_describe('Add') if the field must not already exist"),
+                "Mutate" => ("set",
+                    "tlio_describe('Set') — or tlio_describe('Put') if the field may not exist yet"),
+                "Rename" => ("copy + remove",
+                    "tlio_describe('Copy') and tlio_describe('Remove') — or tlio_describe('Move') for a single step"),
+                "Remove" => ("remove",
+                    "tlio_describe('Remove')"),
+                "Reorder" => ("copy + remove (rebuild order)",
+                    "tlio_describe('Copy') — TLio does not have a native reorder command; rebuild the target array"),
+                _ => (null, null)
+            };
+        }
+    }
+
+    private static string BuildCommandGuidance(List<ChangeItem> changes)
+    {
+        if (changes.Count == 0) return "No changes required — no commands needed.";
+
+        var groups = changes
+            .Where(c => c.SuggestedCommand != null)
+            .GroupBy(c => c.SuggestedCommand!)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        if (groups.Count == 0) return "No command suggestions available.";
+
+        var lines = new List<string>
+        {
+            "Recommended commands for each change type:"
+        };
+
+        foreach (var g in groups)
+        {
+            var count = g.Count();
+            var sample = g.First();
+            lines.Add($"  • {count}× {g.Key}: {sample.DescribeCall}");
+        }
+
+        lines.Add("Call tlio_guide for the full command and function decision tree.");
+        lines.Add("Call tlio_describe('CommandName') for usage guidance, when-to-use, and common mistakes before writing each command.");
+
+        return string.Join("\n", lines);
     }
 
     private static string BuildSummary(List<ChangeItem> changes)

@@ -53,3 +53,30 @@ var result = engine.Execute(
     JObject.Parse("{\"items\":[\"first\",\"second\",\"third\"]}"),
     JsonExecutionContext.CreateDefault());
 ```
+
+## When to use
+
+- A wildcard or recursive path returns multiple nodes and you need one **specific element by position** — e.g. `=partial($.items[*].price, 2)` returns the price of the third item.
+- The index is computed or variable and cannot be embedded in the path literal at script-write time.
+- You want to extract a named property from all matched elements and then select one: `=partial($.users[*].email, 0)` picks the first user's email from a wildcard match.
+
+## When NOT to use
+
+- You **know the index at script-write time** and can express it directly in the path — prefer `$.items[2].price` over `=partial($.items[*].price, 2)`. The direct path is cleaner and more explicit.
+- You need **all** matched values — iterate over the wildcard path directly or use array-aware commands rather than calling `partial` for each position.
+- The path is guaranteed to return exactly one node — use `=fetch()` instead; `partial` is designed for multi-match scenarios.
+
+## Comparison
+
+| Function | Use when |
+|----------|----------|
+| `=partial(<path>, N)` | Wildcard/recursive path; you need element at index N |
+| `$.items[N].field` (direct path) | Index is known and fixed; simpler and more readable |
+| `=fetch(<path>)` | Path returns exactly one node; no index selection needed |
+
+## Common mistakes
+
+- **Zero-based indexing**: `partial(expr, 0)` is the **first** element, `partial(expr, 1)` is the second. Off-by-one errors are the most common mistake.
+- **Out-of-bounds index**: if the path matches fewer elements than the requested index, `partial` returns null. Validate that the collection has enough elements before using a high index.
+- **Using partial on a single-match path**: `partial` is for multi-match paths. On a path that returns one node, index 0 works but `=fetch()` is the more appropriate and readable choice.
+- **Confusing with fetch**: `=fetch()` returns the first match of any path; `=partial()` is explicit about selecting from a multi-match result by index and communicates intent more clearly.

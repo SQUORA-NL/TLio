@@ -51,3 +51,29 @@ var result = engine.Execute(
     JObject.Parse("{\"name\":\"Alice\"}"),
     JsonExecutionContext.CreateDefault());
 ```
+
+## When to use
+
+- Generating uppercase identifiers, ISO country codes, currency codes, enum values, or any domain standard that requires UPPERCASE.
+- Display labels or headings that must appear in capitals.
+- Normalising data when the downstream system or comparison is uppercase-keyed.
+
+## When NOT to use
+
+- General normalisation for comparison or storage — prefer `toLower` (more common, less aggressive visually).
+- Display formatting where locale-aware casing is required — `toUpper` uses `InvariantCulture`.
+- The string is already known to be uppercase — the operation is harmless but unnecessary.
+
+## Comparison
+
+| Function | Converts to | Culture | Use when |
+|----------|------------|---------|----------|
+| `toUpper` | UPPERCASE | Invariant | Codes, enums, display labels requiring caps |
+| `toLower` | lowercase | Invariant | Normalisation, comparison prep, storage |
+
+## Common mistakes
+
+- **Culture assumption**: `ToUpperInvariant` does not follow locale-specific rules. Locale-sensitive casing (e.g., Turkish, German) may not match expectation.
+- **Path resolution**: argument resolves against the document root (dataContext). `@.field` inside a function refers to the ROOT, not a parent element.
+- **Wildcard paths**: `$.items[*].code` as argument produces a flat list. Use indexed paths for per-element operations.
+- **Applying toUpper to numbers or booleans**: the function coerces to string first. `true` becomes `"TRUE"`. Verify this is the intended result.

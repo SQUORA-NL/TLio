@@ -65,6 +65,14 @@ public sealed class ChangeItem
 
     [JsonPropertyName("resolution")]
     public string? Resolution { get; set; }
+
+    /// <summary>The TLio command recommended to implement this change.</summary>
+    [JsonPropertyName("suggested_command")]
+    public string? SuggestedCommand { get; set; }
+
+    /// <summary>MCP call to get full docs for the suggested command.</summary>
+    [JsonPropertyName("describe_call")]
+    public string? DescribeCall { get; set; }
 }
 
 public sealed class AnalyzeResult
@@ -77,4 +85,11 @@ public sealed class AnalyzeResult
 
     [JsonPropertyName("unresolved_count")]
     public int UnresolvedCount { get; init; }
+
+    /// <summary>
+    /// Grouped guidance mapping each change type to the recommended TLio command.
+    /// Read this before writing a script to pick the right commands.
+    /// </summary>
+    [JsonPropertyName("command_guidance")]
+    public string CommandGuidance { get; init; } = "";
 }

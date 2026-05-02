@@ -422,7 +422,7 @@ public sealed class McpComplexChallengeTests
         // Suggestions must expose ALL noop issues in one view
         Assert.That(exec1.Suggestions.Count, Is.GreaterThanOrEqualTo(2),
             "Each noop must produce a suggestion so agent can fix all issues at once");
-        foreach (var suggestion in exec1.Suggestions)
+        foreach (var suggestion in exec1.Suggestions.Where(s => s.StartsWith("[noop]") || s.StartsWith("[failure]")))
         {
             Assert.That(suggestion, Does.Contain("noop").IgnoreCase,
                 "Each suggestion must identify noop outcome");

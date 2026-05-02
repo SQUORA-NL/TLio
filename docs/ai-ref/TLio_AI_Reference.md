@@ -6,23 +6,17 @@ YAML documents by swapping the execution context — no script changes needed.
 
 ---
 
-## Overview
+## Adapter Selection
 
-### Adapter Selection
+| Format | Adapter project | Execution context factory | Path style | When to use | When NOT to use |
+|--------|----------------|--------------------------|------------|-------------|-----------------|
+| JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` | Default JSON choice; scripts with filter or script expressions `()`, Goessner JSONPath features | When strict RFC 9535 compliance is required |
+| JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` (RFC 9535) | RFC 9535 strict compliance; Newtonsoft excluded from dependencies | When scripts use script expressions `()` — not supported |
+| XML — slash paths | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths()` | `/root/child` | Simple hierarchical XML with no predicates | When XPath predicates, `//` recursive descent, or positional indexing is needed |
+| XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `//child`, `item[@id='1']` | Full XPath 1.0: predicates, axes, recursive descent | When simple slash paths are sufficient — prefer slash-path for simplicity |
+| YAML | `TLio.Yaml` | `YamlExecutionContext.CreateDefault()` | Dot-notation `$.a.b` | YAML source documents; multi-doc YAML (`---`) parsed as array root | When you need array-index path syntax identical to JSON filter expressions |
 
-| Format | Adapter project | Execution context factory | Path style |
-|--------|----------------|--------------------------|------------|
-| JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` |
-| JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` (RFC 9535) |
-| XML — slash paths | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths()` | `/root/child` |
-| XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `//child`, `item[@id='1']` |
-| YAML | `TLio.Yaml` | `YamlExecutionContext.CreateDefault()` | Dot-notation `$.a.b` |
-
-**Choose `TLio.Json`** when: scripts use filter expressions, script expressions `()`, or maximum JSONPath compatibility is needed.  
-**Choose `TLio.Json.SystemText`** when: strict RFC 9535 is required or Newtonsoft is excluded.  
-**Choose XML slash-path** when: simple `/parent/child` hierarchies with no predicates.  
-**Choose XML XPath** when: attribute predicates (`[@id='1']`), recursive descent (`//name`), or positional indexing.  
-**Choose YAML** when: source documents are YAML. Multi-document YAML (`---` separator) is parsed as an array root.
+**XML XPath note**: indexing is **1-based** (`item[1]` = first item, not `item[0]`).
 
 ### JSONPath: Newtonsoft vs System.Text.Json
 
@@ -41,7 +35,9 @@ YAML documents by swapping the execution context — no script changes needed.
 | Negative index `$.a[-1]` | ✅ | ✅ |
 | Union `$.a[0,2]` | ✅ | ✅ |
 
-### Script Format
+---
+
+## Script Format
 
 A TLio script is a JSON array of command objects. The `"command"` field is the discriminator.
 All other property names are camelCase.
@@ -92,12 +88,202 @@ options.FunctionsProvider.RegisterTextPack<JToken>();
 
 ---
 
+## Choosing the Right Command
+
+Use this decision tree to pick the command in one step.
+
+### Property write (create / update / upsert)
+
+| Situation | Command | Behaviour |
+|-----------|---------|-----------|
+| Field must NOT already exist (create-only) | `add` | Skips silently if field is present — never overwrites |
+| Field MUST already exist (update-only) | `set` | Logs warning and skips if field is absent — never creates |
+| Don't know / don't care (safe default) | `put` | Upsert: creates if absent, updates if present |
+
+### Node transfer and deletion
+
+| Goal | Command |
+|------|---------|
+| Copy a node, keep the source | `copy` |
+| Move a node, delete the source | `move` |
+| Delete a node entirely | `remove` |
+
+### Conditional logic
+
+| Situation | Command |
+|-----------|---------|
+| Two outcomes, one condition | `ifElse` |
+| Three or more outcomes, or evolving rule sets | `decisionTable` |
+| Produce a comparison classification (equal / greater / less / different) | `compare` |
+
+### Combining data
+
+| Goal | Command |
+|------|---------|
+| Deep-merge two objects | `merge` |
+| Fan-out / join by key across collections | `resolve` |
+
+### ETL and serialization
+
+| Goal | Command | Note |
+|------|---------|------|
+| Flatten nested object to flat key-value | `flatten` | ETL pack required |
+| Reconstruct nested from flat | `restore` | ETL pack required; pair with `flatten` + `IncludeMetadata=true` |
+| Export to CSV | `tocsv` | ETL pack required |
+
+---
+
+## Choosing the Right Function
+
+### String checks (return boolean)
+
+| Goal | Function | Notes |
+|------|----------|-------|
+| Substring anywhere in string | `contains` | Fails on null input |
+| String starts with prefix | `startsWith` | Fails on null input |
+| String ends with suffix | `endsWith` | Fails on null input |
+| Find position of substring | `indexOf` | Returns -1 when not found; fails on null |
+| Null-safe blank check | `isEmpty` | The ONLY null-safe predicate; others fail on null input |
+
+### String assembly
+
+| Goal | Function | When to use |
+|------|----------|-------------|
+| Fixed fields, mixed separators | `concat` | Variadic; any mix of literal strings and path values |
+| Array of values, single separator | `join` | Pass an array path and one separator string |
+| Prose template with `{0}` placeholders | `format` | Numbered placeholders; use when template text is fixed |
+
+### String decomposition
+
+| Goal | Function |
+|------|----------|
+| Split on delimiter | `split` |
+| Extract by position | `substring` |
+| Find position of substring | `indexOf` |
+
+### Case and whitespace
+
+| Goal | Function |
+|------|----------|
+| Both ends | `trim` |
+| Leading only | `trimStart` |
+| Trailing only | `trimEnd` |
+| Lowercase | `toLower` |
+| Uppercase | `toUpper` |
+
+### Numeric aggregates
+
+| Goal | Function | Notes |
+|------|----------|-------|
+| Total | `sum` | |
+| Mean | `avg` | Skewed by outliers |
+| Middle value | `median` | Robust to outliers; prefer over `avg` for skewed data |
+| Count of items | `count` | |
+| Smallest | `min` | |
+| Largest | `max` | |
+| Conditional total | `sumif` | |
+| Conditional count | `countif` | |
+
+### Rounding
+
+| Goal | Function |
+|------|----------|
+| Nearest | `round` |
+| Always up | `ceiling` |
+| Always down | `floor` |
+
+### Date and time
+
+| Goal | Function | Return type |
+|------|----------|-------------|
+| Is date in range? | `isDateBetween` | Boolean; both bounds inclusive |
+| Which date is earlier? | `dateCompare` | Long: -1 (d1 before d2) / 0 (equal) / 1 (d1 after d2) — NOT a string |
+| Earliest in array | `minDate` | Date value |
+| Latest in array | `maxDate` | Date value |
+| Current UTC time | `datetime` | Formatted string |
+
+### Advanced and path functions
+
+| Goal | Function | Notes |
+|------|----------|-------|
+| Copy a value inline | `fetch` | Returns first match; optional default argument |
+| Dynamic path stored in data | `indirect` | Two-step: reads path string, then resolves it |
+| Select one from multi-match | `partial` | Zero-based index; default 0 |
+| Get path of current node | `scriptpath` / `path` | `path()` is the JLio-compatible alias |
+| Wrap node in parent object | `promote` | Optional explicit key name |
+| Unique ID | `newGuid` | `newguid` (lowercase) from Text pack |
+| JSON string → node | `parse` | Fails if argument is not valid JSON |
+| Node → JSON string | `toString` | Objects emit compact JSON; null emits `""` |
+
+---
+
+## Critical Rules Every Agent Must Know
+
+### 1. Function path resolution uses document ROOT, not current node
+
+Inside any function call, `@.field` resolves against the ROOT (`$`), not the current array
+element. To apply a function to each array element, use absolute indexed paths:
+`$.users[0].email`, `$.users[1].email`. Wildcard paths `$.users[*].email` inside a function
+produce a FLAT LIST — correct for aggregates (`sum`, `count`), wrong for per-element
+transformation.
+
+### 2. Function value syntax
+
+Functions are written as string values: `"value": "=functionName(arg1, arg2)"`. NOT as
+objects. The `=` prefix triggers function evaluation.
+
+### 3. add vs set vs put
+
+| Command | Field already exists | Field is absent |
+|---------|---------------------|-----------------|
+| `add` | Noop (trace: `"noop"`, detail: `"already exists"`) | Creates the field |
+| `set` | Updates the field | Noop (trace: `"noop"`, detail: `"property not found"`) |
+| `put` | Updates the field | Creates the field |
+
+When uncertain, use `put`.
+
+### 4. Trace outcome meanings
+
+| Outcome | Meaning | Agent action |
+|---------|---------|--------------|
+| `"success"` | Command executed and changed data | Continue |
+| `"noop"` | Command ran but found nothing to change (path not found, already-exists skip, no matches) | Investigate path or precondition — a noop is NOT an error |
+| `"failure"` | Command could not execute (validation error, function path-not-found, wrong type) | Fix the script or input |
+
+A `"noop"` is not an error. It signals a path or precondition mismatch to investigate.
+
+### 5. Script format
+
+Scripts are JSON arrays of command objects. Each command has a `"command"` key. All property
+names are camelCase strings.
+
+### 6. dateCompare returns long
+
+`-1` = d1 before d2, `0` = equal, `1` = d1 after d2. NEVER returns strings.
+
+### 7. decisionTable result values must be plain primitives
+
+`"results": {"tier": "gold"}` is correct. `"results": {"tier": {"value": "gold"}}` writes
+the entire object as the output — wrong.
+
+### 8. ifElse condition must be a JSON primitive
+
+`"condition": true` (boolean) or `"condition": "=isEmpty($.x)"` (function string). NOT
+`"condition": {"value": true}`.
+
+---
+
 ## Adapters
 
 ### JSON — Newtonsoft
 
-> JSON adapter using Newtonsoft.Json with Goessner JSONPath. Most permissive JSONPath variant;
-> use when scripts require filter expressions or script expressions `()`.
+> JSON adapter using Newtonsoft.Json with Goessner JSONPath.
+
+**When to use**: default choice for JSON; scripts that use filter expressions `?()`,
+script expressions `()`, recursive descent `$..`, or maximum JSONPath compatibility.
+
+**When NOT to use**: when strict RFC 9535 compliance is required or Newtonsoft.Json
+must not be added as a dependency.
 
 **Node type**: `JToken`
 
@@ -130,8 +316,13 @@ var result  = engine.Execute(scriptJson, data, JsonExecutionContext.CreateDefaul
 
 ### JSON — System.Text.Json
 
-> JSON adapter using System.Text.Json with RFC 9535-compliant JSONPath. Use when Newtonsoft is
-> excluded or strict RFC compliance is required. Does **not** support script expressions `()`.
+> JSON adapter using System.Text.Json with RFC 9535-compliant JSONPath.
+
+**When to use**: strict RFC 9535 path compliance is required; Newtonsoft.Json is excluded
+from your dependency constraints; System.Text.Json performance characteristics are needed.
+
+**When NOT to use**: when scripts use script expressions `()` — they are not supported.
+Also avoid when you need Goessner-specific behaviours.
 
 **Node type**: `JsonNode`
 
@@ -144,14 +335,20 @@ var engine  = new ScriptEngine<JsonNode>(options.CommandsProvider, options.Funct
 var result  = engine.Execute(scriptJson, data, SystemTextJsonExecutionContext.CreateDefault());
 ```
 
-**Path syntax**: identical to JSON (Newtonsoft) except script expressions `()` are not supported.
+**Path syntax**: identical to JSON (Newtonsoft) except script expressions `()` are not
+supported.
 
 ---
 
 ### XML — Slash Paths
 
-> XML adapter using slash-separated paths. Simplest XML path model; use for straightforward
-> hierarchies with no predicates.
+> XML adapter using slash-separated paths. Simplest XML path model.
+
+**When to use**: straightforward hierarchical XML with no predicates; paths are simple
+`/parent/child` chains; readable scripts are preferred over full XPath power.
+
+**When NOT to use**: when you need XPath predicates (`[@id='1']`), recursive descent
+(`//name`), positional indexing, or any XPath axis.
 
 **Node type**: `XElement`
 
@@ -179,8 +376,14 @@ Notes: root is `/`; no predicate support; element names are case-sensitive.
 
 ### XML — Native XPath
 
-> XML adapter using native XPath. Use when paths need attribute predicates, recursive descent,
-> or positional indexing.
+> XML adapter using native XPath 1.0.
+
+**When to use**: paths need attribute predicates (`[@id='1']`), recursive descent (`//name`),
+XPath axes, or positional indexing. Use when slash-path is not powerful enough.
+
+**When NOT to use**: when simple slash paths are sufficient — prefer slash-path for
+simplicity and readability. Note that XPath indexing is **1-based** (`item[1]` = first,
+not `item[0]`).
 
 **Node type**: `XElement`
 
@@ -206,8 +409,13 @@ Notes: root is `.` (dot), not `/`; XPath indexing is **1-based**.
 
 ### YAML
 
-> YAML adapter using dot-notation paths. Multi-document YAML (separated by `---`) is parsed as
-> an array root.
+> YAML adapter using dot-notation paths.
+
+**When to use**: source documents are YAML. Multi-document YAML (separated by `---`) is
+parsed as an array root — access documents via `$[0]`, `$[1]`, etc.
+
+**When NOT to use**: when you need filter expressions or array-index path syntax identical
+to JSONPath. YAML paths use dot-notation; filter expressions are not supported.
 
 **Node type**: `YamlNode`
 
@@ -230,7 +438,8 @@ var result  = engine.Execute(scriptJson, data, YamlExecutionContext.CreateDefaul
 | Array index | `$.items[0]` | First element (0-based) |
 | Wildcard | `$.items[*]` | All array elements |
 
-Notes: keys are case-sensitive; no filter expression support; multi-doc → use `$[0]`, `$[1]`, etc.
+Notes: keys are case-sensitive; no filter expression support; multi-doc → use `$[0]`,
+`$[1]`, etc.
 
 ---
 
@@ -240,6 +449,12 @@ Notes: keys are case-sensitive; no filter expression support; multi-doc → use 
 
 > Creates a new property or appends to an array; **skips silently if the property already
 > exists**. Use `put` to update existing values, or `set` when the node must already exist.
+
+**When to use**: you want create-only semantics — the field must not already exist. Ideal
+for initialising defaults without risking overwrites.
+
+**When NOT to use**: when the field might already exist and you want to update it — use
+`put` (upsert) or `set` (update-only). Do not use `add` when you need guaranteed writes.
 
 **Supports functions**: ✅
 
@@ -274,6 +489,12 @@ var script = new TLioScript<JToken>()
 
 > Compares two nodes and writes a result string (`"equal"`, `"greater"`, `"less"`, or
 > `"different"`) to a target path.
+
+**When to use**: you need a classification of the relationship between two values — for
+branching logic downstream (e.g. feed the result into `ifElse` or `decisionTable`).
+
+**When NOT to use**: when you need a numeric difference or want to branch immediately —
+use `ifElse` for branching, or `dateCompare` (which returns `-1/0/1`) for date ordering.
 
 **Supports functions**: ❌
 
@@ -312,6 +533,10 @@ var script = new TLioScript<JToken>()
 > Copies all nodes matched by `fromPath` to the location(s) specified by `toPath`.
 > Source nodes remain. Use `move` to copy-and-delete the source.
 
+**When to use**: you need the value in a new location and the original must be preserved.
+
+**When NOT to use**: when the source should be deleted after copying — use `move` instead.
+
 **Supports functions**: ❌
 
 ```json
@@ -339,6 +564,13 @@ var script = new TLioScript<JToken>()
 
 > Matches input values against a rule table and writes output values. Supports `firstMatch`,
 > `bestMatch`, and `allMatches` strategies with configurable conflict resolution.
+
+**When to use**: three or more outcomes based on data values; rule sets that evolve
+independently of the script; business-rule tables maintained by non-developers.
+
+**When NOT to use**: when there are exactly two outcomes from a single condition — `ifElse`
+is simpler. Do not use when rule result values need to be objects — results must be plain
+primitives.
 
 **Supports functions**: ✅ (rule result values only)
 
@@ -381,6 +613,7 @@ var script = new TLioScript<JToken>()
 **Rule object**: `{ priority, conditions: {inputName: value}, results: {outputName: value} }`
 
 Notes: `"decisionTable"` key is accepted as alias for `"config"` (JLio compatibility, 008+).
+Result values must be plain primitives — wrapping in an object writes the object itself.
 
 ---
 
@@ -389,7 +622,13 @@ Notes: `"decisionTable"` key is accepted as alias for `"config"` (JLio compatibi
 > Flattens a nested object to a single-level object with delimiter-separated keys, and
 > optionally stores metadata for reconstruction with `restore`.
 
-**Supports functions**: ❌  
+**When to use**: you need to process nested data in a flat key-value format, or prepare
+data for CSV export. Always set `metadataPath` if you plan to `restore` afterward.
+
+**When NOT to use**: when you need to preserve nested structure for further path-based
+operations. Do not flatten without metadata if you intend to restore.
+
+**Supports functions**: ❌
 **ETL extension** — requires `options.CommandsProvider.RegisterETL<TNode>()`
 
 ```json
@@ -420,6 +659,12 @@ Notes: `"decisionTable"` key is accepted as alias for `"config"` (JLio compatibi
 
 > Evaluates a condition and executes one of two script branches. The condition can be a
 > literal boolean, a value path, or a `=function()` expression that returns a truthy node.
+
+**When to use**: exactly two outcomes from a single condition. Condition can be a literal
+boolean, a path, or a function expression like `=isEmpty($.x)`.
+
+**When NOT to use**: three or more outcomes — use `decisionTable`. The condition must be
+a JSON primitive, not an object; `"condition": {"value": true}` is wrong.
 
 **Supports functions**: ✅ (condition only)
 
@@ -468,6 +713,12 @@ var script = new TLioScript<JToken>()
 > Deep-merges the node(s) at `fromPath` (source) into the node(s) at `toPath` (destination).
 > Objects are merged recursively; arrays follow `arrayMergeMode`.
 
+**When to use**: combining two objects where overlapping keys should be resolved by the
+source overwriting the destination. Common for applying patches or partial updates.
+
+**When NOT to use**: when you want a simple field copy — use `copy`. When you need to
+join collections by key — use `resolve`.
+
 **Supports functions**: ❌
 
 ```json
@@ -495,6 +746,11 @@ var script = new TLioScript<JToken>()
 
 > Moves nodes from `fromPath` to `toPath` — equivalent to `copy` followed by `remove`
 > on the source. Source nodes are deleted after the copy succeeds.
+
+**When to use**: renaming a field or relocating a node where the original location must
+not remain. Atomic copy-then-delete.
+
+**When NOT to use**: when the source must be preserved — use `copy` instead.
 
 **Supports functions**: ❌
 
@@ -524,6 +780,12 @@ var script = new TLioScript<JToken>()
 > **Upsert**: sets the value if the node already exists, creates it if absent.
 > Use `set` when the node must pre-exist, or `add` to create-only.
 
+**When to use**: the safe default when you are unsure whether a field exists. Creates or
+updates — always writes.
+
+**When NOT to use**: when you specifically need create-only (`add`) or update-only (`set`)
+semantics for correctness guarantees.
+
 **Supports functions**: ✅
 
 ```json
@@ -552,6 +814,11 @@ var script = new TLioScript<JToken>()
 > Removes all nodes matched by the path expression. Logs a warning if no nodes match;
 > does not error.
 
+**When to use**: permanently deleting a field or node. Wildcards remove multiple nodes at once.
+
+**When NOT to use**: when you want to move a node to a new location — use `move`. A
+no-match produces a `"noop"` trace, not a failure.
+
 **Supports functions**: ❌
 
 ```json
@@ -578,7 +845,13 @@ var script = new TLioScript<JToken>()
 > Looks up matching entries in a reference collection and writes derived values to
 > the target document. Supports relative `@.property` paths for writing results.
 
-**Supports functions**: ❌  
+**When to use**: fan-out / join by key — enriching an array of records with fields from
+a separate reference collection, similar to a LEFT JOIN.
+
+**When NOT to use**: when you need to deep-merge objects (use `merge`) or simply copy a
+single value (use `copy` or `fetch`).
+
+**Supports functions**: ❌
 **ETL extension** — requires `options.CommandsProvider.RegisterETL<TNode>()`
 
 ```json
@@ -623,7 +896,13 @@ var script = new TLioScript<JToken>()
 > Reconstructs a nested object from data previously flattened by `flatten`. Uses stored
 > metadata when available; falls back to delimiter-based inference in non-strict mode.
 
-**Supports functions**: ❌  
+**When to use**: after a `flatten` operation when you need to reconstruct the original
+nested structure. Always pair with `flatten` that had `metadataPath` set (`IncludeMetadata=true`).
+
+**When NOT to use**: without prior `flatten` + metadata. In `strictMode: true`, missing
+metadata causes a failure rather than a noop.
+
+**Supports functions**: ❌
 **ETL extension** — requires `options.CommandsProvider.RegisterETL<TNode>()`
 
 ```json
@@ -653,6 +932,12 @@ var script = new TLioScript<JToken>()
 
 > Sets the value of an **existing** node; logs a warning and skips if the node is absent.
 > Use `put` for upsert (create-or-update) or `add` to create-only.
+
+**When to use**: update-only semantics — you want a noop (not a creation) when the field
+is absent. Useful for enforcing that a field was expected to already exist.
+
+**When NOT to use**: when the field might not exist and you want to create it — use `put`.
+Do not use `set` as a general-purpose write command when field existence is uncertain.
 
 **Supports functions**: ✅
 
@@ -688,7 +973,13 @@ var script = new TLioScript<JToken>()
 > Converts an object or array of objects to a CSV-formatted string and writes it to
 > the target node.
 
-**Supports functions**: ❌  
+**When to use**: exporting structured data to CSV format for downstream file or reporting
+consumption.
+
+**When NOT to use**: when you need structured output — CSV is a string, not a structured
+node. For structured transformation, use `flatten` + `resolve` instead.
+
+**Supports functions**: ❌
 **ETL extension** — requires `options.CommandsProvider.RegisterETL<TNode>()`
 
 ```json
@@ -717,14 +1008,18 @@ var script = new TLioScript<JToken>()
 
 ## Functions
 
-Functions are called in `"value"` fields with the `=` prefix: `"value": "=functionName(args)"`.  
-All built-in functions are registered by `ParseOptions.CreateDefault()`. Text-pack functions require `RegisterText<TNode>()`.
+Functions are called in `"value"` fields with the `=` prefix: `"value": "=functionName(args)"`.
+All built-in functions are registered by `ParseOptions.CreateDefault()`. Text-pack functions
+require `RegisterText<TNode>()`.
 
 ### concat
 
 > Concatenates two or more string arguments into a single string.
 
-**Syntax**: `=concat(a, b)` or `=concat(a, b, c, ...)`  
+**When to use**: assembling strings from multiple fields or literals with different separators.
+**When NOT to use**: joining an array of values with one separator — use `join` instead.
+
+**Syntax**: `=concat(a, b)` or `=concat(a, b, c, ...)`
 **Pack**: Text (requires `RegisterText<TNode>()`)
 
 | # | Type | Required | Description |
@@ -747,7 +1042,10 @@ Input: `{ "first": "Alice", "last": "Smith" }` → `"full": "Alice Smith"`
 
 > Returns the **current UTC date/time** as a formatted string.
 
-**Syntax**: `=datetime()` or `=datetime(format)`  
+**When to use**: stamping a record with the current time at script execution. Returns
+the wall-clock UTC time — not deterministic across runs.
+
+**Syntax**: `=datetime()` or `=datetime(format)`
 **Pack**: built-in
 
 | # | Type | Required | Description |
@@ -765,11 +1063,6 @@ Input: `{ "first": "Alice", "last": "Smith" }` → `"full": "Alice Smith"`
 
 **Example**: `{ "command": "put", "path": "$.createdAt", "value": "=datetime()" }`
 
-```csharp
-engine.Execute("[{\"command\":\"put\",\"path\":\"$.createdAt\",\"value\":\"=datetime()\"}]",
-    JObject.Parse("{}"), JsonExecutionContext.CreateDefault());
-```
-
 ---
 
 ### fetch
@@ -777,7 +1070,14 @@ engine.Execute("[{\"command\":\"put\",\"path\":\"$.createdAt\",\"value\":\"=date
 > Evaluates a path expression and returns the **first matched node's value**. Returns an
 > optional default value when the path matches nothing.
 
-**Syntax**: `=fetch(path)` or `=fetch(path, defaultValue)`  
+**When to use**: copying a value inline within a function argument or value expression.
+The workhorse for value transfer in function contexts. Provide a default to avoid failures
+on missing paths.
+
+**When NOT to use**: when you need to copy the node itself (structure included) to another
+path — use `copy`. When you need multi-match results — use `partial`.
+
+**Syntax**: `=fetch(path)` or `=fetch(path, defaultValue)`
 **Pack**: built-in
 
 | # | Type | Required | Description |
@@ -785,7 +1085,8 @@ engine.Execute("[{\"command\":\"put\",\"path\":\"$.createdAt\",\"value\":\"=date
 | 1 | string (path) | yes | Path selecting the source node. |
 | 2 | any | no | Default value when path resolves to nothing. |
 
-**Returns**: first matched node, or default if provided; logs warning and fails if no match and no default.
+**Returns**: first matched node, or default if provided; logs warning and fails if no match
+and no default.
 
 **Examples**:
 
@@ -794,18 +1095,19 @@ engine.Execute("[{\"command\":\"put\",\"path\":\"$.createdAt\",\"value\":\"=date
 { "command": "add",  "path": "$.name",   "value": "=fetch($.user.name,'Anonymous')" }
 ```
 
-```csharp
-engine.Execute("[{\"command\":\"add\",\"path\":\"$.name\",\"value\":\"=fetch($.user.name,'Anonymous')\"}]",
-    JObject.Parse("{}"), JsonExecutionContext.CreateDefault());
-```
-
 ---
 
 ### format
 
 > Replaces `{0}`, `{1}`, … placeholders in a template string with the supplied argument values.
 
-**Syntax**: `=format(template, value0)` or `=format(template, value0, value1, ...)`  
+**When to use**: prose templates where the structure is fixed and the values are variable.
+Cleaner than nested `concat` calls when the template has surrounding text.
+
+**When NOT to use**: joining an array with a separator — use `join`. Simple two-field
+concatenation — `concat` is more direct.
+
+**Syntax**: `=format(template, value0)` or `=format(template, value0, value1, ...)`
 **Pack**: Text (requires `RegisterText<TNode>()`)
 
 | # | Type | Required | Description |
@@ -828,7 +1130,12 @@ Input: `{ "name": "Alice" }` → `"greeting": "Hello, Alice!"`
 > Two-step path resolution: reads a **string value** at the given path, then uses that
 > string as a second path expression to retrieve the final value.
 
-**Syntax**: `=indirect(pathToPath)`  
+**When to use**: the path to read is itself stored in the data — dynamic dispatch based
+on a runtime value.
+
+**When NOT to use**: when the path is statically known — use `fetch` directly.
+
+**Syntax**: `=indirect(pathToPath)`
 **Pack**: built-in
 
 | # | Type | Required | Description |
@@ -845,19 +1152,16 @@ Given `{ "pathRef": "$.source", "source": "hello" }`:
 
 Result: `$.target` = `"hello"` (resolved via `$.pathRef` → `"$.source"` → `"hello"`)
 
-```csharp
-engine.Execute("[{\"command\":\"set\",\"path\":\"$.target\",\"value\":\"=indirect($.pathRef)\"}]",
-    JObject.Parse("{\"pathRef\":\"$.source\",\"source\":\"hello\"}"),
-    JsonExecutionContext.CreateDefault());
-```
-
 ---
 
 ### length
 
 > Returns the number of characters in a string.
 
-**Syntax**: `=length(str)`  
+**When to use**: measuring string length for validation or conditional logic.
+**When NOT to use**: counting array elements — use `count` instead.
+
+**Syntax**: `=length(str)`
 **Pack**: Text (requires `RegisterText<TNode>()`)
 
 | # | Type | Required | Description |
@@ -876,7 +1180,9 @@ Input: `{ "name": "Alice" }` → `"len": 5`
 
 > Generates a new random UUID string each time it is evaluated.
 
-**Syntax**: `=newGuid()`  
+**When to use**: assigning a unique identifier to a new record at script execution time.
+
+**Syntax**: `=newGuid()`
 **Pack**: built-in (camelCase) + Text pack (`"newguid"` lowercase alias)
 
 No arguments.
@@ -889,7 +1195,8 @@ No arguments.
 
 Output: `{ "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }` (any valid UUID v4)
 
-Notes: UUID is generated at execution time; `"newguid"` (lowercase) is registered by `RegisterText<TNode>()`.
+Notes: UUID is generated at execution time; `"newguid"` (lowercase) is registered by
+`RegisterText<TNode>()`.
 
 ---
 
@@ -897,7 +1204,13 @@ Notes: UUID is generated at execution time; `"newguid"` (lowercase) is registere
 
 > Parses a JSON string into a structured node (object, array, or primitive).
 
-**Syntax**: `=parse(str)`  
+**When to use**: a field contains a JSON string that needs to be treated as a structured
+node for further processing. Complement of `=toString()`.
+
+**When NOT to use**: when the value is already a structured node. Fails if the argument
+is not valid JSON.
+
+**Syntax**: `=parse(str)`
 **Pack**: Text (requires `RegisterText<TNode>()`)
 
 | # | Type | Required | Description |
@@ -912,15 +1225,18 @@ Notes: UUID is generated at execution time; `"newguid"` (lowercase) is registere
 
 Input: `{ "jsonString": "{\"name\":\"Alice\"}" }` → `"obj": { "name": "Alice" }`
 
-Complement of `=toString()`. Fails if the argument is not valid JSON.
-
 ---
 
 ### partial
 
 > Selects one element from a **multi-match path expression** by zero-based index.
 
-**Syntax**: `=partial(path)` or `=partial(path, index)`  
+**When to use**: a path expression returns multiple nodes and you need exactly one of
+them by position.
+
+**When NOT to use**: when the path returns a single node — use `fetch` instead.
+
+**Syntax**: `=partial(path)` or `=partial(path, index)`
 **Pack**: built-in
 
 | # | Type | Required | Description |
@@ -936,19 +1252,16 @@ Complement of `=toString()`. Fails if the argument is not valid JSON.
 
 Given `{ "items": ["first","second","third"] }` → `"pick": "third"`
 
-```csharp
-engine.Execute("[{\"command\":\"set\",\"path\":\"$.pick\",\"value\":\"=partial($.items[*],1)\"}]",
-    JObject.Parse("{\"items\":[\"first\",\"second\",\"third\"]}"),
-    JsonExecutionContext.CreateDefault());
-```
-
 ---
 
 ### path
 
 > Returns the current node's absolute path as a string. Alias for `=scriptpath()`.
 
-**Syntax**: `=path()`  
+**When to use**: JLio-compatible scripts; when you need the canonical absolute path of
+the node being processed.
+
+**Syntax**: `=path()`
 **Pack**: built-in (alias registered in `ParseOptions.CreateDefault()`)
 
 No arguments. Identical behaviour to `=scriptpath()`.
@@ -959,9 +1272,11 @@ No arguments. Identical behaviour to `=scriptpath()`.
 { "command": "add", "path": "$.items[*].loc", "value": "=path()" }
 ```
 
-Input: `{ "items": [{"id":1},{"id":2}] }` → each item gets `"loc": "$.items[0]"` / `"$.items[1]"`
+Input: `{ "items": [{"id":1},{"id":2}] }` → each item gets `"loc": "$.items[0]"` /
+`"$.items[1]"`
 
-Notes: `=path()` and `=scriptpath()` share the same implementation (`ScriptPath<TNode>`). Use `=path()` for JLio compatibility.
+Notes: `=path()` and `=scriptpath()` share the same implementation. Use `=path()` for
+JLio compatibility.
 
 ---
 
@@ -970,7 +1285,12 @@ Notes: `=path()` and `=scriptpath()` share the same implementation (`ScriptPath<
 > Wraps the matched node in a new object using either the node's own **property name**
 > or an **explicit name** as the key.
 
-**Syntax**: `=promote(path)` or `=promote(path, propertyName)`  
+**When to use**: when you need to nest an existing value under a named key, e.g. to
+build envelope objects or reshape data for a downstream API.
+
+**When NOT to use**: when you need to move (not wrap) a node — use `move` or `copy`.
+
+**Syntax**: `=promote(path)` or `=promote(path, propertyName)`
 **Pack**: built-in
 
 | # | Type | Required | Description |
@@ -992,18 +1312,18 @@ Given `{ "person": {"name":"Alice"} }` → `$.result` = `{ "person": {"name":"Al
 
 Given `{ "rawValue": 42 }` → `$.wrapped` = `{ "data": 42 }`
 
-```csharp
-engine.Execute("[{\"command\":\"add\",\"path\":\"$.wrapped\",\"value\":\"=promote($.rawValue,'data')\"}]",
-    JObject.Parse("{\"rawValue\":42}"), JsonExecutionContext.CreateDefault());
-```
-
 ---
 
 ### replace
 
 > Replaces all occurrences of a substring within a string.
 
-**Syntax**: `=replace(str, old, new)`  
+**When to use**: normalising delimiters, removing characters, or substituting substrings.
+Case-sensitive by default.
+
+**When NOT to use**: when you need case-insensitive replacement or regex — not supported.
+
+**Syntax**: `=replace(str, old, new)`
 **Pack**: Text (requires `RegisterText<TNode>()`)
 
 | # | Type | Required | Description |
@@ -1026,7 +1346,10 @@ Input: `{ "code": "my-value-key" }` → `"code": "my_value_key"`
 
 > Returns the **absolute path** of the currently executing node as a string.
 
-**Syntax**: `=scriptpath()` or `=scriptpath(@.child)`  
+**When to use**: when you need the canonical path of the node currently being processed,
+e.g. to store self-referential metadata or debug output.
+
+**Syntax**: `=scriptpath()` or `=scriptpath(@.child)`
 **Pack**: built-in. Also registered as `"path"` (alias, 008+).
 
 | # | Type | Required | Description |
@@ -1049,7 +1372,13 @@ Notes: `=path()` and `=scriptpath()` are identical at runtime.
 
 > Extracts a portion of a string starting at a given index.
 
-**Syntax**: `=substring(str, start)` or `=substring(str, start, count)`  
+**When to use**: extracting a known positional slice of a string (e.g. first 3 chars,
+chars from position 5).
+
+**When NOT to use**: when you need to find a position first — use `indexOf` to get the
+start index, then `substring`.
+
+**Syntax**: `=substring(str, start)` or `=substring(str, start, count)`
 **Pack**: Text (requires `RegisterText<TNode>()`)
 
 | # | Type | Required | Description |
@@ -1072,7 +1401,7 @@ Input: `{ "name": "Alice" }` → `"abbr": "Ali"`
 
 > Converts a string to lowercase.
 
-**Syntax**: `=toLower(str)`  
+**Syntax**: `=toLower(str)`
 **Pack**: Text. Registered as both `"toLower"` (camelCase, 008+) and `"tolower"` (legacy).
 
 | # | Type | Required | Description |
@@ -1089,7 +1418,13 @@ Input: `{ "name": "Alice" }` → `"lower": "alice"`
 
 > Converts any node to its string representation.
 
-**Syntax**: `=toString(node)`  
+**When to use**: serialising a structured node to a JSON string, e.g. before storing in
+a string field or passing to a system that expects string payloads.
+
+**When NOT to use**: when you want to write the node as a structured value — use `copy`
+or `fetch`. `toString` on null returns `""`, not `"null"`.
+
+**Syntax**: `=toString(node)`
 **Pack**: Text (requires `RegisterText<TNode>()`). Registered as `"toString"` (camelCase).
 
 | # | Type | Required | Description |
@@ -1106,7 +1441,8 @@ Input: `{ "name": "Alice" }` → `"lower": "alice"`
 
 Input: `{ "obj": {"a":1,"b":2} }` → `"str": "{\"a\":1,\"b\":2}"`
 
-Notes: `FunctionName` must be overridden explicitly because the CLR type name `ToStringFunction` would otherwise produce `"tostringfunction"`.
+Notes: `FunctionName` must be overridden explicitly because the CLR type name
+`ToStringFunction` would otherwise produce `"tostringfunction"`.
 
 ---
 
@@ -1114,7 +1450,7 @@ Notes: `FunctionName` must be overridden explicitly because the CLR type name `T
 
 > Converts a string to uppercase.
 
-**Syntax**: `=toUpper(str)`  
+**Syntax**: `=toUpper(str)`
 **Pack**: Text. Registered as both `"toUpper"` (camelCase, 008+) and `"toupper"` (legacy).
 
 | # | Type | Required | Description |
@@ -1131,7 +1467,10 @@ Input: `{ "name": "Alice" }` → `"upper": "ALICE"`
 
 > Removes leading and trailing whitespace from a string.
 
-**Syntax**: `=trim(str)`  
+**When to use**: normalising user input or data ingested from external sources.
+**When NOT to use**: when you only want one side — use `trimStart` or `trimEnd`.
+
+**Syntax**: `=trim(str)`
 **Pack**: Text (requires `RegisterText<TNode>()`)
 
 | # | Type | Required | Description |
@@ -1148,7 +1487,7 @@ Input: `{ "name": "  Alice  " }` → `"name": "Alice"`
 
 > Removes trailing (right-side) whitespace from a string.
 
-**Syntax**: `=trimEnd(str)`  
+**Syntax**: `=trimEnd(str)`
 **Pack**: Text. Registered as both `"trimEnd"` (camelCase, 008+) and `"trimend"` (legacy).
 
 | # | Type | Required | Description |
@@ -1165,7 +1504,7 @@ Input: `{ "name": "Alice  " }` → `"name": "Alice"`
 
 > Removes leading (left-side) whitespace from a string.
 
-**Syntax**: `=trimStart(str)`  
+**Syntax**: `=trimStart(str)`
 **Pack**: Text. Registered as both `"trimStart"` (camelCase, 008+) and `"trimstart"` (legacy).
 
 | # | Type | Required | Description |
@@ -1182,44 +1521,44 @@ Input: `{ "name": "  Alice" }` → `"name": "Alice"`
 
 ### Command Summary
 
-| Command | Supports functions | Fluent | Pack |
-|---------|-------------------|--------|------|
-| add | ✅ | `.Add(v).OnPath(p)` | built-in |
-| compare | ❌ | `.Compare().From(a).To(b).Result(r)` | built-in |
-| copy | ❌ | `.Copy().From(a).To(b)` | built-in |
-| decisionTable | ✅ (results only) | — | built-in |
-| flatten | ❌ | — | ETL |
-| ifElse | ✅ (condition only) | `.IfElse(c).If(...).Else(...)` | built-in |
-| merge | ❌ | `.Merge().From(a).To(b)` | built-in |
-| move | ❌ | `.Move().From(a).To(b)` | built-in |
-| put | ✅ | `.Put(v).OnPath(p)` | built-in |
-| remove | ❌ | `.Remove().OnPath(p)` | built-in |
-| resolve | ❌ | — | ETL |
-| restore | ❌ | — | ETL |
-| set | ✅ | `.Set(v).OnPath(p)` | built-in |
-| tocsv | ❌ | — | ETL |
+| Command | When to use (one line) | Supports functions | Fluent | Pack |
+|---------|------------------------|-------------------|--------|------|
+| add | Create-only; noop if field exists | ✅ | `.Add(v).OnPath(p)` | built-in |
+| compare | Classify relationship between two values | ❌ | `.Compare().From(a).To(b).Result(r)` | built-in |
+| copy | Copy node, keep source | ❌ | `.Copy().From(a).To(b)` | built-in |
+| decisionTable | 3+ outcomes or evolving rule sets | ✅ (results only) | — | built-in |
+| flatten | Nested → flat key-value | ❌ | — | ETL |
+| ifElse | Two outcomes, one condition | ✅ (condition only) | `.IfElse(c).If(...).Else(...)` | built-in |
+| merge | Deep-merge two objects | ❌ | `.Merge().From(a).To(b)` | built-in |
+| move | Copy node, delete source | ❌ | `.Move().From(a).To(b)` | built-in |
+| put | Upsert — safe default write | ✅ | `.Put(v).OnPath(p)` | built-in |
+| remove | Delete a node | ❌ | `.Remove().OnPath(p)` | built-in |
+| resolve | Join / fan-out by key | ❌ | — | ETL |
+| restore | Flat key-value → nested (reverses flatten) | ❌ | — | ETL |
+| set | Update-only; noop if field absent | ✅ | `.Set(v).OnPath(p)` | built-in |
+| tocsv | Export array to CSV string | ❌ | — | ETL |
 
 ### Function Summary
 
-| Function | Syntax | Pack |
-|----------|--------|------|
-| concat | `=concat(a,b,...)` | Text |
-| datetime | `=datetime()` / `=datetime(fmt)` | built-in |
-| fetch | `=fetch(path)` / `=fetch(path,default)` | built-in |
-| format | `=format(tpl,v0,...)` | Text |
-| indirect | `=indirect(pathToPath)` | built-in |
-| length | `=length(str)` | Text |
-| newGuid | `=newGuid()` | built-in / Text (`newguid`) |
-| parse | `=parse(str)` | Text |
-| partial | `=partial(path)` / `=partial(path,i)` | built-in |
-| path | `=path()` | built-in (alias of scriptpath) |
-| promote | `=promote(path)` / `=promote(path,name)` | built-in |
-| replace | `=replace(str,old,new)` | Text |
-| scriptpath | `=scriptpath()` / `=scriptpath(@.child)` | built-in |
-| substring | `=substring(str,start)` / `=substring(str,start,n)` | Text |
-| toLower | `=toLower(str)` | Text |
-| toString | `=toString(node)` | Text |
-| toUpper | `=toUpper(str)` | Text |
-| trim | `=trim(str)` | Text |
-| trimEnd | `=trimEnd(str)` | Text |
-| trimStart | `=trimStart(str)` | Text |
+| Function | Syntax | When to use (one line) | Pack |
+|----------|--------|------------------------|------|
+| concat | `=concat(a,b,...)` | Fixed fields, mixed separators | Text |
+| datetime | `=datetime()` / `=datetime(fmt)` | Current UTC timestamp | built-in |
+| fetch | `=fetch(path)` / `=fetch(path,default)` | Read a value inline; workhorse for value transfer | built-in |
+| format | `=format(tpl,v0,...)` | Prose template with `{0}` placeholders | Text |
+| indirect | `=indirect(pathToPath)` | Path stored in data — dynamic dispatch | built-in |
+| length | `=length(str)` | String character count | Text |
+| newGuid | `=newGuid()` | Generate unique ID | built-in / Text (`newguid`) |
+| parse | `=parse(str)` | JSON string → structured node | Text |
+| partial | `=partial(path)` / `=partial(path,i)` | One element from multi-match by index | built-in |
+| path | `=path()` | Absolute path of current node (JLio alias) | built-in |
+| promote | `=promote(path)` / `=promote(path,name)` | Wrap node in parent object | built-in |
+| replace | `=replace(str,old,new)` | Substitute substring | Text |
+| scriptpath | `=scriptpath()` / `=scriptpath(@.child)` | Absolute path of current node | built-in |
+| substring | `=substring(str,start)` / `=substring(str,start,n)` | Extract by position | Text |
+| toLower | `=toLower(str)` | Lowercase | Text |
+| toString | `=toString(node)` | Node → JSON string | Text |
+| toUpper | `=toUpper(str)` | Uppercase | Text |
+| trim | `=trim(str)` | Both-end whitespace removal | Text |
+| trimEnd | `=trimEnd(str)` | Trailing whitespace removal | Text |
+| trimStart | `=trimStart(str)` | Leading whitespace removal | Text |
