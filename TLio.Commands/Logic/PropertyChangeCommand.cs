@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using TLio.Core;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
@@ -35,8 +36,13 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path ?? "", TraceOutcome.Failure, 0,
+                $"{CommandName}: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
+
+        var logsBefore = context.GetLogEntries().Count;
 
         if (Property != null)
             ExecuteNewSyntax(dataContext, context);
@@ -45,6 +51,28 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
 
         if (IsSuccessful)
             context.LogInfo(CoreConstants.CommandExecution, $"{CommandName}: completed successfully on path '{Path}'");
+
+        var newLogs = context.GetLogEntries().Skip(logsBefore).ToList();
+        var hasNoMatchWarning = newLogs.Any(e => e.Level == LogLevel.Warning &&
+                      (e.Message.Contains("no nodes matched") ||
+                       (e.Message.Contains("property '") && e.Message.Contains("' not found")) ||
+                       e.Message.Contains("already exists, skipping")));
+        var traceOutcome = !IsSuccessful ? TraceOutcome.Failure
+                         : hasNoMatchWarning ? TraceOutcome.NoOp
+                         : TraceOutcome.Success;
+        var failureDetail = traceOutcome == TraceOutcome.Failure
+            ? string.Join("; ", newLogs.Where(e => e.Level == LogLevel.Warning || e.Level == LogLevel.Error).Select(e => e.Message))
+            : "";
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, Path ?? "", traceOutcome,
+            traceOutcome == TraceOutcome.Success ? 1 : 0,
+            traceOutcome == TraceOutcome.NoOp
+                ? $"{CommandName}: path '{Path}' matched 0 nodes — field does not exist at this location. " +
+                  $"Use 'set' to update an existing field or 'add' to create a new one. " +
+                  $"Call tlio_analyze to see the exact paths that require changes."
+                : traceOutcome == TraceOutcome.Failure
+                ? $"{CommandName}: failed at '{Path}'" + (string.IsNullOrEmpty(failureDetail) ? "." : $" — {failureDetail}.")
+                : $"{CommandName}: successfully applied to '{Path}'."));
 
         return new TLioExecutionResult<TNode>(IsSuccessful, dataContext);
     }
@@ -103,9 +131,12 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
         var parents = context.ItemsFetcher.SelectNodes(resolvedParentPath, dataContext);
         if (parents.Count == 0)
         {
-            // Pass the full path so EnsurePath creates the entire chain up to (but not
-            // including) the leaf — mirrors JLio's CheckOrCreateParentPath(dataContext, targetPath, ...)
-            context.ItemsFetcher.EnsurePath(Path!, dataContext, context.NodeAdapter);
+            // Add uses the parent path so EnsurePath stops at the parent, leaving the leaf
+            // absent — Add.ApplyValueToTarget will then create it via SetProperty.
+            // Set/Put use the full path so EnsurePath also creates the leaf placeholder,
+            // which ReplaceProperty can find and Replace() with the actual value.
+            var ensurePath = EnsureFullPathForLeaf ? Path! : resolvedParentPath;
+            context.ItemsFetcher.EnsurePath(ensurePath, dataContext, context.NodeAdapter);
             parents = context.ItemsFetcher.SelectNodes(resolvedParentPath, dataContext);
         }
 
@@ -123,6 +154,14 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     }
 
     // ── Template method ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// When true (default), EnsurePath uses the full path including the leaf segment,
+    /// creating a placeholder node that ReplaceProperty can then Replace().
+    /// Add overrides this to false: EnsurePath stops at the parent so the leaf property
+    /// remains absent and AddProperty can create it via SetProperty without skipping.
+    /// </summary>
+    protected virtual bool EnsureFullPathForLeaf => true;
 
     /// <summary>
     /// Apply <paramref name="value"/> to <paramref name="propertyName"/> on

@@ -29,12 +29,17 @@ public class ToCsv<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path, TraceOutcome.Failure, 0,
+                $"tocsv: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
+        var csvCount = 0;
         try
         {
             var targets = context.ItemsFetcher.SelectNodes(Path, dataContext).ToList();
+            csvCount = targets.Count;
             foreach (var target in targets)
             {
                 var csv = BuildCsv(target, context.NodeAdapter, context);
@@ -44,9 +49,19 @@ public class ToCsv<TNode> : CommandBase<TNode>
         catch (Exception ex)
         {
             context.LogError(CoreConstants.CommandExecution, $"tocsv: {ex.Message}");
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path, TraceOutcome.Failure, 0,
+                $"tocsv: error — {ex.Message}"));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, Path,
+            csvCount == 0 ? TraceOutcome.NoOp : TraceOutcome.Success,
+            csvCount,
+            csvCount == 0
+                ? $"tocsv: path '{Path}' matched 0 nodes; nothing converted."
+                : $"tocsv: converted {csvCount} node(s) at '{Path}' to CSV."));
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }
 

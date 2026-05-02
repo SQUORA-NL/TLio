@@ -23,9 +23,13 @@ public class Restore<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path, TraceOutcome.Failure, 0,
+                $"restore: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
+        var restoreCount = 0;
         try
         {
             var targets = context.ItemsFetcher.SelectNodes(Path, dataContext).ToList();
@@ -44,6 +48,9 @@ public class Restore<TNode> : CommandBase<TNode>
                 {
                     context.LogError(CoreConstants.CommandExecution,
                         "restore: no flatten metadata found and strict mode is enabled");
+                    context.TraceCollector?.Record(new TraceEntry(
+                        CommandName, Path, TraceOutcome.Failure, 0,
+                        "restore: no flatten metadata found and strict mode is enabled."));
                     return TLioExecutionResult<TNode>.Failed(dataContext);
                 }
 
@@ -58,6 +65,7 @@ public class Restore<TNode> : CommandBase<TNode>
                 }
 
                 context.NodeAdapter.Replace(target, restored);
+                restoreCount++;
 
                 if (RestoreSettings.RemoveMetadata && metadata != null)
                     RemoveMetadata(dataContext, context);
@@ -66,9 +74,19 @@ public class Restore<TNode> : CommandBase<TNode>
         catch (Exception ex)
         {
             context.LogError(CoreConstants.CommandExecution, $"restore: {ex.Message}");
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path, TraceOutcome.Failure, 0,
+                $"restore: error — {ex.Message}"));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, Path,
+            restoreCount == 0 ? TraceOutcome.NoOp : TraceOutcome.Success,
+            restoreCount,
+            restoreCount == 0
+                ? $"restore: path '{Path}' matched 0 nodes; nothing restored."
+                : $"restore: restored {restoreCount} node(s) at '{Path}'."));
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }
 

@@ -40,6 +40,9 @@ public class IfElse<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, "(condition)", TraceOutcome.Failure, 0,
+                $"{CommandName}: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
@@ -48,6 +51,10 @@ public class IfElse<TNode> : CommandBase<TNode>
 
         context.LogInfo(CoreConstants.CommandExecution,
             $"{CommandName}: condition evaluated to {isTrue}");
+
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, "(condition)", TraceOutcome.Success, 1,
+            $"{CommandName}: condition evaluated to {isTrue}; executing {(isTrue ? "if" : "else")} branch."));
 
         var scriptToRun = isTrue ? IfScript : ElseScript;
         if (scriptToRun is { Count: > 0 })

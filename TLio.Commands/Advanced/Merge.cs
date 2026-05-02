@@ -41,6 +41,9 @@ public class Merge<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path ?? "", TraceOutcome.Failure, 0,
+                $"{CommandName}: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
@@ -48,6 +51,9 @@ public class Merge<TNode> : CommandBase<TNode>
         if (sources.Count == 0)
         {
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes at source path '{Path}'");
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path ?? "", TraceOutcome.NoOp, 0,
+                $"{CommandName}: source path '{Path}' matched 0 nodes; nothing merged."));
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
@@ -55,6 +61,9 @@ public class Merge<TNode> : CommandBase<TNode>
         if (targets.Count == 0)
         {
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes at target path '{TargetPath}'");
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, TargetPath ?? "", TraceOutcome.NoOp, 0,
+                $"{CommandName}: target path '{TargetPath}' matched 0 nodes; nothing merged."));
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
@@ -64,6 +73,9 @@ public class Merge<TNode> : CommandBase<TNode>
 
         context.LogInfo(CoreConstants.CommandExecution,
             $"{CommandName}: merged {sources.Count} source(s) into {targets.Count} target(s)");
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, Path ?? "", TraceOutcome.Success, sources.Count,
+            $"{CommandName}: merged {sources.Count} source(s) from '{Path}' into {targets.Count} target(s) at '{TargetPath}'."));
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }
 

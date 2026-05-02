@@ -44,6 +44,9 @@ public class Compare<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, $"{FirstPath} vs {SecondPath}", TraceOutcome.Failure, 0,
+                $"{CommandName}: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
@@ -53,11 +56,17 @@ public class Compare<TNode> : CommandBase<TNode>
         if (firstNodes.Count == 0)
         {
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no node at FirstPath '{FirstPath}'");
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, $"{FirstPath} vs {SecondPath}", TraceOutcome.NoOp, 0,
+                $"{CommandName}: FirstPath '{FirstPath}' matched 0 nodes; comparison skipped."));
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
         if (secondNodes.Count == 0)
         {
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no node at SecondPath '{SecondPath}'");
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, $"{FirstPath} vs {SecondPath}", TraceOutcome.NoOp, 0,
+                $"{CommandName}: SecondPath '{SecondPath}' matched 0 nodes; comparison skipped."));
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
@@ -76,6 +85,9 @@ public class Compare<TNode> : CommandBase<TNode>
             context.NodeAdapter.SetProperty(parent, leafName, context.NodeAdapter.DeepClone(resultNode));
 
         context.LogInfo(CoreConstants.CommandExecution, $"{CommandName}: result = '{comparisonResult}'");
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, $"{FirstPath} vs {SecondPath}", TraceOutcome.Success, 1,
+            $"{CommandName}: compared '{FirstPath}' and '{SecondPath}'; result = '{comparisonResult}' written to '{ResultPath}'."));
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }
 

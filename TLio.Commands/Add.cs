@@ -26,6 +26,8 @@ public class Add<TNode> : PropertyChangeCommand<TNode>
         Value = value;
     }
 
+    protected override bool EnsureFullPathForLeaf => false;
+
     protected override void ApplyValueToTarget(
         string propertyName, TNode targetNode, TNode value,
         TNode dataContext, IExecutionContext<TNode> context)

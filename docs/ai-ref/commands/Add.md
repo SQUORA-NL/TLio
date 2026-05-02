@@ -40,6 +40,49 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 ]
 ```
 
+## When to use
+
+- You want to **create a field that must not already exist** — `add` protects existing values by design.
+- The script may be **replayed or run multiple times**; on re-runs the existing value is left untouched (idempotent create).
+- You are populating a document template and want to guarantee initial values are only written once.
+- You are appending to an array.
+
+## When NOT to use
+
+- The field might already exist and you want to **overwrite** it — use `put` instead.
+- You need to **update** a field that should already be present — use `set` instead.
+- You are unsure whether the field exists — use `put` (the safe default for unconditional write).
+
+## Comparison: Add vs Set vs Put
+
+| | `add` | `set` | `put` |
+|---|---|---|---|
+| Field absent | **Creates** it | Noop (logs warning) | **Creates** it |
+| Field present | **Noop** (skips) | **Updates** it | **Updates** it |
+| Array target | Appends | Replaces element | Replaces whole array |
+| Idempotent re-run | Safe — never overwrites | Safe — only touches existing | Safe — always writes latest value |
+| Use when | Create-only | Update-only (field guaranteed present) | Upsert / unsure |
+
+**Decision rule for agents:**
+- Know the field is absent and must stay absent once written → `add`
+- Know the field exists and must be updated → `set`
+- Don't know, or want unconditional write → `put`
+
+## Common mistakes
+
+- **Using `add` to update a value**: the command will silently skip; trace outcome is `"noop"`. Switch to `put`.
+- **Expecting an error when the field exists**: `add` never errors on duplicates — it just skips. If you need a hard failure, check the trace outcome instead.
+- **Missing parent path**: if the parent object (`$.address` for `$.address.country`) does not exist, the result is `"failure"`, not a silent skip. Add an `EnsurePath` step first.
+- **Confusing `add` with array index writes**: targeting `$.items[2]` with `add` when index 2 already exists will be treated as existing → noop. Use `put` to overwrite a specific index.
+
+## Failure modes and what the trace tells you
+
+| Situation | Trace outcome | Trace detail | Action |
+|---|---|---|---|
+| Field already exists | `noop` | contains `"already exists"` | Not an error — field was previously set. Use `put` if overwrite is intended. |
+| Parent path is missing | `failure` | path resolution error | The parent object/array does not exist. Insert an `EnsurePath` or `add`/`put` step to create it first. |
+| Path resolves normally and field is absent | `success` | — | Field was created as expected. |
+
 ## C# Fluent API
 
 ```csharp

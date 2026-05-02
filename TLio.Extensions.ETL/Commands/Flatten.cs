@@ -26,12 +26,17 @@ public class Flatten<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path, TraceOutcome.Failure, 0,
+                $"flatten: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
+        var flattenCount = 0;
         try
         {
             var targets = context.ItemsFetcher.SelectNodes(Path, dataContext).ToList();
+            flattenCount = targets.Count;
             foreach (var target in targets)
             {
                 var flat = new Dictionary<string, TNode>();
@@ -46,9 +51,19 @@ public class Flatten<TNode> : CommandBase<TNode>
         catch (Exception ex)
         {
             context.LogError(CoreConstants.CommandExecution, $"flatten: {ex.Message}");
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path, TraceOutcome.Failure, 0,
+                $"flatten: error — {ex.Message}"));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, Path,
+            flattenCount == 0 ? TraceOutcome.NoOp : TraceOutcome.Success,
+            flattenCount,
+            flattenCount == 0
+                ? $"flatten: path '{Path}' matched 0 nodes; nothing flattened."
+                : $"flatten: flattened {flattenCount} node(s) at '{Path}'."));
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }
 

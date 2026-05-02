@@ -54,3 +54,32 @@ var result = engine.Execute(
     JObject.Parse("{\"obj\":{\"a\":1,\"b\":2}}"),
     JsonExecutionContext.CreateDefault());
 ```
+
+## When to use
+
+- Serialising a structured object or array into a JSON string so it can be stored in a string field.
+- Embedding a structured value as an escaped JSON string inside another document (e.g., storing a payload as a string for transport).
+- Converting a number or boolean to its string form for use with string functions (`concat`, `replace`, etc.).
+- As the complement to `parse`: use `toString` to serialise before transport, use `parse` to deserialise on the other end.
+
+## When NOT to use
+
+- The input is already a string — `toString` returns it unchanged, but the call is unnecessary.
+- You need pretty-printed or formatted JSON output — `toString` produces compact JSON with no whitespace.
+- You need human-readable display formatting of a number (e.g., decimal places, currency symbol) — use `format` with a template instead.
+
+## Comparison
+
+| Function | Direction | Use when |
+|----------|-----------|----------|
+| `toString` | node → JSON string | Serialising structured data into a string field |
+| `parse` | JSON string → node | Deserialising a JSON string back into a structured node |
+| `format` | template + args → string | Producing formatted human-readable strings from values |
+
+## Common mistakes
+
+- **Compact output**: `toString` always produces compact JSON (no spaces). Do not rely on specific whitespace formatting in the output.
+- **Null becomes empty string**: `toString(null)` returns `""`, not `"null"`. If you need the literal string `"null"`, use a literal value instead.
+- **Path resolution**: argument resolves against the document root (dataContext). `@.field` inside a function refers to the ROOT, not a parent element.
+- **Wildcard paths**: `$.items[*]` as argument passes the matched node set. The behaviour depends on how the adapter serialises a multi-match result — use a specific path for predictable output.
+- **Do not use toString to compare objects**: serialise both sides to strings and compare — only works reliably if key order is deterministic (Newtonsoft.Json preserves insertion order; System.Text.Json may differ).

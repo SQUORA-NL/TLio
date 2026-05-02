@@ -50,6 +50,9 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, $"{FromPath} → {ToPath}", TraceOutcome.Failure, 0,
+                $"{CommandName}: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
@@ -60,6 +63,9 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
         if (sources.Count == 0)
         {
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes found at FromPath '{FromPath}'");
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, $"{FromPath} → {ToPath}", TraceOutcome.NoOp, 0,
+                $"{CommandName}: FromPath '{FromPath}' matched 0 nodes; nothing {(IsMove ? "moved" : "copied")}."));
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
@@ -86,6 +92,9 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
             }
 
             context.LogInfo(CoreConstants.CommandExecution, $"{CommandName}: merged {sources.Count} node(s) into root");
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, $"{FromPath} → $", TraceOutcome.Success, sources.Count,
+                $"{CommandName}: merged {sources.Count} node(s) from '{FromPath}' into root."));
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
@@ -129,6 +138,11 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
         if (IsMove)
             foreach (var source in sources)
                 context.NodeAdapter.RemoveFromParent(source);
+
+        var removalNote = IsMove ? $" Source '{FromPath}' removed." : "";
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, $"{FromPath} → {ToPath}", TraceOutcome.Success, sources.Count,
+            $"{CommandName}: {(IsMove ? "moved" : "copied")} {sources.Count} node(s) from '{FromPath}' to '{ToPath}'.{removalNote}"));
 
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }

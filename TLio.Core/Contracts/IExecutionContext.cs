@@ -19,6 +19,8 @@ public interface IExecutionContext<TNode>
     /// <summary>Structured execution log.</summary>
     IExecutionLogger Logger { get; set; }
 
+    ITraceCollector? TraceCollector { get; set; }
+
     void LogWarning(string group, string message);
     void LogError(string group, string message);
     void LogInfo(string group, string message);

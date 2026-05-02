@@ -27,11 +27,15 @@ public class Resolve<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path, TraceOutcome.Failure, 0,
+                $"resolve: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
         bool foundErrors = false;
-        foreach (var target in context.ItemsFetcher.SelectNodes(Path, dataContext))
+        var resolveTargets = context.ItemsFetcher.SelectNodes(Path, dataContext).ToList();
+        foreach (var target in resolveTargets)
         {
             foreach (var setting in ResolveSettings)
             {
@@ -48,6 +52,15 @@ public class Resolve<TNode> : CommandBase<TNode>
         }
 
         context.LogInfo(CoreConstants.CommandExecution, $"resolve: completed for {Path}");
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, Path,
+            foundErrors ? TraceOutcome.Failure : (resolveTargets.Count == 0 ? TraceOutcome.NoOp : TraceOutcome.Success),
+            resolveTargets.Count,
+            foundErrors
+                ? $"resolve: completed with errors for '{Path}'."
+                : resolveTargets.Count == 0
+                ? $"resolve: path '{Path}' matched 0 nodes; nothing resolved."
+                : $"resolve: resolved {resolveTargets.Count} node(s) at '{Path}'."));
         return new TLioExecutionResult<TNode>(!foundErrors, dataContext);
     }
 
