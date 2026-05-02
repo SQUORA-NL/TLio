@@ -65,7 +65,7 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes found at FromPath '{FromPath}'");
             context.TraceCollector?.Record(new TraceEntry(
                 CommandName, $"{FromPath} → {ToPath}", TraceOutcome.NoOp, 0,
-                $"{CommandName}: FromPath '{FromPath}' matched 0 nodes; nothing copied."));
+                $"{CommandName}: FromPath '{FromPath}' matched 0 nodes; nothing {(IsMove ? "moved" : "copied")}."));
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
@@ -139,9 +139,10 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
             foreach (var source in sources)
                 context.NodeAdapter.RemoveFromParent(source);
 
+        var removalNote = IsMove ? $" Source '{FromPath}' removed." : "";
         context.TraceCollector?.Record(new TraceEntry(
             CommandName, $"{FromPath} → {ToPath}", TraceOutcome.Success, sources.Count,
-            $"{CommandName}: copied {sources.Count} node(s) from '{FromPath}' to '{ToPath}'."));
+            $"{CommandName}: {(IsMove ? "moved" : "copied")} {sources.Count} node(s) from '{FromPath}' to '{ToPath}'.{removalNote}"));
 
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }

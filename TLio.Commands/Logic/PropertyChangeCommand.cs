@@ -55,7 +55,8 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
         var newLogs = context.GetLogEntries().Skip(logsBefore).ToList();
         var hasNoMatchWarning = newLogs.Any(e => e.Level == LogLevel.Warning &&
                       (e.Message.Contains("no nodes matched") ||
-                       (e.Message.Contains("property '") && e.Message.Contains("' not found"))));
+                       (e.Message.Contains("property '") && e.Message.Contains("' not found")) ||
+                       e.Message.Contains("already exists, skipping")));
         var traceOutcome = !IsSuccessful ? TraceOutcome.Failure
                          : hasNoMatchWarning ? TraceOutcome.NoOp
                          : TraceOutcome.Success;

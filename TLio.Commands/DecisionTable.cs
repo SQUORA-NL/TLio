@@ -70,39 +70,54 @@ public class DecisionTable<TNode> : CommandBase<TNode>
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
+        var appliedDetails = new List<string>();
         foreach (var targetNode in targetNodes)
-            ApplyDecision(targetNode, dataContext, context);
+            ApplyDecision(targetNode, dataContext, context, appliedDetails);
 
         context.LogInfo(CoreConstants.CommandExecution,
             $"{CommandName}: processed {targetNodes.Count} node(s) at '{Path}'");
+        var rulesSummary = appliedDetails.Count > 0
+            ? $" {string.Join("; ", appliedDetails.Distinct())}."
+            : "";
         context.TraceCollector?.Record(new TraceEntry(
             CommandName, Path ?? "", TraceOutcome.Success, targetNodes.Count,
-            $"{CommandName}: applied decision table to {targetNodes.Count} node(s) at '{Path}'."));
+            $"{CommandName}: applied decision table to {targetNodes.Count} node(s) at '{Path}'.{rulesSummary}"));
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }
 
     // ── Decision application ─────────────────────────────────────────────────
 
-    private void ApplyDecision(TNode targetNode, TNode dataContext, IExecutionContext<TNode> context)
+    private void ApplyDecision(TNode targetNode, TNode dataContext, IExecutionContext<TNode> context, List<string> appliedDetails)
     {
         var cfg = Config!;
         var strategy = cfg.Strategy ?? new DecisionTableExecutionStrategy();
 
-        // Resolve input values
         var inputValues = ResolveInputValues(targetNode, dataContext, context);
-
-        // Evaluate all rules and collect matching ones
         var matchingRules = EvaluateRules(cfg.Rules, inputValues, context);
 
         if (matchingRules.Count == 0)
         {
-            // Apply default results when nothing matches
             if (cfg.DefaultResults != null)
+            {
+                appliedDetails.Add($"no rule matched → defaults applied ({string.Join(", ", cfg.DefaultResults.Keys)} set)");
                 ApplyResults(cfg.DefaultResults, targetNode, dataContext, context);
+            }
+            else
+            {
+                appliedDetails.Add("no rule matched, no defaults");
+            }
             return;
         }
 
         var resultsToApply = SelectResults(matchingRules, strategy, context);
+        var outputKeys = string.Join(", ", resultsToApply.Keys);
+        var matchDesc = strategy.Mode.ToLowerInvariant() switch
+        {
+            "allmatches" => $"{matchingRules.Count} rules matched",
+            "bestmatch"  => $"best-match rule[priority={matchingRules.OrderByDescending(m => m.ConditionsMatched * 100 - m.Rule.Priority).First().Rule.Priority}]",
+            _            => $"rule[priority={matchingRules.OrderBy(m => m.Rule.Priority).First().Rule.Priority}]"
+        };
+        appliedDetails.Add($"{matchDesc} → {outputKeys} set");
         ApplyResults(resultsToApply, targetNode, dataContext, context);
     }
 
