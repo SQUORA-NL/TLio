@@ -1,6 +1,6 @@
-﻿# Tlio.claude Development Guidelines
+# Tlio.claude Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-26 (updated by 008)
+Auto-generated from all feature plans. Last updated: 2026-05-01 (updated by 008)
 
 ## Active Technologies
 - C# / .NET 10 + Newtonsoft.Json (TLio.Json), NUnit (tests) (010-unify-script-notation)
@@ -19,6 +19,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-26 (updated by 008)
 - C# / .NET 10 + `System.Text.Json` (built-in), `System.Xml` (built-in), `YamlDotNet` (MIT, YAML adapter only), `NUnit 4.x` (tests), `TLio.Core` (FormatConverter.TLio only) (017-im-format-converter)
 - C# / .NET 10 + ASP.NET Core Minimal API; `TLio.Client` (`ScriptEngine<TNode>`, `CompiledScript<TNode>`); `TLio.Json` (`JsonExecutionContext`, `JsonNodeAdapter`); `TLio.Xml` (`XmlExecutionContext`); `TLio.Yaml` (`YamlExecutionContext`); NuPlane + CShells (DockerPlugin host only) (018-api-script-slug-cache)
 - In-memory `ConcurrentDictionary<string, ScriptRegistryEntry>` — ephemeral, process-scoped (018-api-script-slug-cache)
+- C# / .NET 10 + `ModelContextProtocol` (Anthropic MCP SDK, stdio server), `System.Threading.RateLimiting` (in-box .NET), `TLio.Json`, `TLio.Json.SystemText`, `TLio.Xml`, `TLio.Yaml`, `TLio.Client`, `TLio.Commands`, `TLio.Functions`, `TLio.Extensions.*` (019-mcp-tlio-server)
+- N/A — stateless, in-memory execution per request; configuration from `appsettings.json` / environment variables (019-mcp-tlio-server)
 
 - C# / .NET 10 + Newtonsoft.Json, System.Text.Json, JsonPath.Net (json-everything), NUnit (002-migration-from-jlio)
 - TLio.Xml: XmlNodeAdapter + SlashPathItemsFetcher (existing) + NativeXPathItemsFetcher (003, planned)
@@ -42,6 +44,8 @@ TLio.Functions.Tests/       ← Built-in function tests + extension-pack fixture
 TLio.Extensions.Text/      ← Optional text function pack: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim (008)
 TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtures
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
+TLio.Mcp/                   ← MCP stdio server (tlio_list_commands, tlio_describe, tlio_execute, tlio_analyze, 019)
+TLio.Mcp.Tests/             ← MCP server tests (DiscoveryTools, ExecutionTools, AnalysisTools, E2E workflow)
 samples/
   TLio.Sample.Api/          ← Minimal API sample (JSON/XML/YAML endpoints, 005)
   TLio.Sample.Cli/          ← CLI sample (file-in / transformed-out, 005)
@@ -70,9 +74,9 @@ dotnet test
 C# / .NET 10: Follow standard conventions
 
 ## Recent Changes
+- 019-mcp-tlio-server: Added C# / .NET 10 + `ModelContextProtocol` (Anthropic MCP SDK, stdio server), `System.Threading.RateLimiting` (in-box .NET), `TLio.Json`, `TLio.Json.SystemText`, `TLio.Xml`, `TLio.Yaml`, `TLio.Client`, `TLio.Commands`, `TLio.Functions`, `TLio.Extensions.*`
 - 018-api-script-slug-cache: Added C# / .NET 10 + ASP.NET Core Minimal API; `TLio.Client` (`ScriptEngine<TNode>`, `CompiledScript<TNode>`); `TLio.Json` (`JsonExecutionContext`, `JsonNodeAdapter`); `TLio.Xml` (`XmlExecutionContext`); `TLio.Yaml` (`YamlExecutionContext`); NuPlane + CShells (DockerPlugin host only)
 - 017-im-format-converter: Added C# / .NET 10 + `System.Text.Json` (built-in), `System.Xml` (built-in), `YamlDotNet` (MIT, YAML adapter only), `NUnit 4.x` (tests), `TLio.Core` (FormatConverter.TLio only)
-- 017-im-format-converter: Added C# / .NET 10 + `System.Text.Json` (built-in, JSON adapter), `System.Xml` (built-in, XML adapter), `YamlDotNet` (YAML adapter only — MIT licensed), `NUnit 4.x` (tests)
 
 
 <!-- MANUAL ADDITIONS START -->

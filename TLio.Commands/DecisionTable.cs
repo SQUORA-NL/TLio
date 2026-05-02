@@ -54,6 +54,9 @@ public class DecisionTable<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path ?? "", TraceOutcome.Failure, 0,
+                $"{CommandName}: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
@@ -61,6 +64,9 @@ public class DecisionTable<TNode> : CommandBase<TNode>
         if (targetNodes.Count == 0)
         {
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes matched path '{Path}'");
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path ?? "", TraceOutcome.NoOp, 0,
+                $"{CommandName}: path '{Path}' matched 0 nodes; decision table not applied."));
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
@@ -69,6 +75,9 @@ public class DecisionTable<TNode> : CommandBase<TNode>
 
         context.LogInfo(CoreConstants.CommandExecution,
             $"{CommandName}: processed {targetNodes.Count} node(s) at '{Path}'");
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, Path ?? "", TraceOutcome.Success, targetNodes.Count,
+            $"{CommandName}: applied decision table to {targetNodes.Count} node(s) at '{Path}'."));
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }
 

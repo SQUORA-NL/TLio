@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="1.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="System.Threading.RateLimiting" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TLio.Client\TLio.Client.csproj" />
+    <ProjectReference Include="..\TLio.Json\TLio.Json.csproj" />
+    <ProjectReference Include="..\TLio.Json.SystemText\TLio.Json.SystemText.csproj" />
+    <ProjectReference Include="..\TLio.Xml\TLio.Xml.csproj" />
+    <ProjectReference Include="..\TLio.Yaml\TLio.Yaml.csproj" />
+    <ProjectReference Include="..\TLio.Commands\TLio.Commands.csproj" />
+    <ProjectReference Include="..\TLio.Functions\TLio.Functions.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.ETL\TLio.Extensions.ETL.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Text\TLio.Extensions.Text.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Math\TLio.Extensions.Math.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.TimeDate\TLio.Extensions.TimeDate.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

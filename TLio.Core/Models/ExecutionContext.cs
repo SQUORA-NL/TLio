@@ -9,6 +9,7 @@ public class ExecutionContext<TNode> : IExecutionContext<TNode>
     public required IItemsFetcher<TNode> ItemsFetcher { get; set; }
     public required INodeAdapter<TNode> NodeAdapter { get; set; }
     public IExecutionLogger Logger { get; set; } = new ExecutionLogger();
+    public ITraceCollector? TraceCollector { get; set; }
 
     public void LogWarning(string group, string message) =>
         Logger.Log(LogLevel.Warning, group, message);

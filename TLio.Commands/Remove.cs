@@ -22,6 +22,9 @@ public class Remove<TNode> : CommandBase<TNode>
         if (!validation.IsValid)
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path ?? "", TraceOutcome.Failure, 0,
+                $"{CommandName}: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
@@ -38,6 +41,13 @@ public class Remove<TNode> : CommandBase<TNode>
             else
                 context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: could not remove node at '{path}' (root or unsupported type)");
         }
+
+        var removeOutcome = targetList.Count == 0 ? TraceOutcome.NoOp : TraceOutcome.Success;
+        context.TraceCollector?.Record(new TraceEntry(
+            CommandName, Path ?? "", removeOutcome, targetList.Count,
+            removeOutcome == TraceOutcome.NoOp
+                ? $"{CommandName}: path '{Path}' matched 0 nodes — field does not exist; nothing removed. Verify the path is correct."
+                : $"{CommandName}: removed {targetList.Count} node(s) at '{Path}'."));
 
         return new TLioExecutionResult<TNode>(IsSuccessful, dataContext);
     }
