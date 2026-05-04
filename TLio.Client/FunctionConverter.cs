@@ -12,7 +12,9 @@ namespace TLio.Client;
 ///   - Starts with "@@" → FixedValue with literal "@" + remainder (escape sequence)
 ///   - Starts with "=" → function call expression
 ///   - Starts with "$" or "@" → path expression (PathValue)
-///   - Quoted string 'value' or "value" → FixedValue with string node; @@ $$ == decoded inside
+///   - Quoted string 'value' or "value":
+///       - Inner starts with "=" (not "==") → nested function expression (enables dynamic paths)
+///       - Otherwise → FixedValue; @@, $$, == and doubled quote char ('' / "") decoded inside
 ///   - Numeric literal → FixedValue with number node
 ///   - Boolean literal true/false → FixedValue with bool node
 ///   - Otherwise → FixedValue with string node
@@ -64,11 +66,31 @@ public class FunctionConverter<TNode>
             return new PathValue<TNode>(rawValue);
         }
 
-        // Quoted string — @@, $$, == are escape sequences for literal @, $, = inside quotes
+        // Quoted string — @@, $$, == are escape sequences for literal @, $, = inside quotes.
+        // '' (or "") is an escape for a literal quote char inside a quoted string.
+        // If the inner content (before escape processing) starts with = (but not ==),
+        // it is treated as a nested function expression whose result is used as-is.
+        // This enables dynamic path computation: =fetch('=concat($.a, $.b)')
         if ((rawValue.StartsWith("'") && rawValue.EndsWith("'")) ||
             (rawValue.StartsWith("\"") && rawValue.EndsWith("\"")))
         {
-            var content = rawValue.Substring(1, rawValue.Length - 2)
+            var quoteChar = rawValue[0];
+            var inner = rawValue.Substring(1, rawValue.Length - 2);
+
+            // If inner content starts with = (but not ==), treat as nested function expression.
+            // Unescape doubled quote chars first so inner quoted-string args are correct.
+            if (inner.Length > 0 && inner[0] == '=' && (inner.Length < 2 || inner[1] != '='))
+            {
+                var escapedQuote = new string(quoteChar, 2); // '' or ""
+                // Unescape only the doubled quote chars; other escapes (@@, $$, ==) are handled
+                // by the function parser for each inner argument individually.
+                var innerExpr = inner.Substring(1).Replace(escapedQuote, quoteChar.ToString());
+                return ParseFunctionExpression(innerExpr, adapter);
+            }
+
+            // Apply escape sequences: doubled quote char → literal quote; @@, $$, == → @, $, =
+            var content = inner
+                .Replace(new string(quoteChar, 2), quoteChar.ToString())
                 .Replace("@@", "@")
                 .Replace("$$", "$")
                 .Replace("==", "=");
@@ -138,6 +160,8 @@ public class FunctionConverter<TNode>
 
     /// <summary>
     /// Split a comma-separated argument string, respecting nested parentheses and quotes.
+    /// A doubled quote char inside a quoted string ('' or "") is treated as an escape for a
+    /// literal quote, keeping the parser inside the current quoted token rather than ending it.
     /// Ported from JLio's SplitText.GetChoppedElements.
     /// </summary>
     internal static List<string> SplitArgs(string argsStr)
@@ -148,8 +172,10 @@ public class FunctionConverter<TNode>
         var inQuote = false;
         var quoteChar = '\0';
 
-        foreach (var c in argsStr)
+        for (int i = 0; i < argsStr.Length; i++)
         {
+            var c = argsStr[i];
+
             if (!inQuote && (c == '\'' || c == '"'))
             {
                 inQuote = true;
@@ -158,8 +184,19 @@ public class FunctionConverter<TNode>
             }
             else if (inQuote && c == quoteChar)
             {
-                inQuote = false;
-                current.Append(c);
+                // A doubled quote char ('' or "") is an escape for a literal quote inside
+                // the string — keep the parser in-quote and append both characters.
+                if (i + 1 < argsStr.Length && argsStr[i + 1] == quoteChar)
+                {
+                    current.Append(c);
+                    current.Append(c);
+                    i++; // skip the second quote of the pair
+                }
+                else
+                {
+                    inQuote = false;
+                    current.Append(c);
+                }
             }
             else if (!inQuote && c == '(')
             {

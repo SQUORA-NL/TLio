@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using TLio.Client;
 using TLio.Commands;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
@@ -99,5 +100,47 @@ public class FetchTests
         var fetchFn = new Fetch<JToken>();
         fetchFn.Execute(data, data, executeOptions);
         Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Warning), Is.True);
+    }
+
+    // ── Script-engine integration: quoted-path and dynamic-path invocation styles ──
+
+    [Test]
+    public void Engine_FetchWithQuotedPath_WorksLikeBarePath()
+    {
+        // =fetch('$.source') must behave identically to =fetch($.source)
+        var options = ParseOptions<JToken>.CreateDefault();
+        var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+        var testData = JToken.Parse(@"{ ""source"": ""hello"", ""target"": null }");
+        const string script = @"[{ ""command"": ""set"", ""path"": ""$.target"", ""value"": ""=fetch('$.source')"" }]";
+        var result = engine.Execute(script, testData, JsonExecutionContext.CreateDefault());
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.SelectToken("$.target")?.Value<string>(), Is.EqualTo("hello"));
+    }
+
+    [Test]
+    public void Engine_FetchWithQuotedNestedPath_ResolvesCorrectly()
+    {
+        var options = ParseOptions<JToken>.CreateDefault();
+        var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+        var testData = JToken.Parse(@"{ ""a"": { ""b"": ""deep"" }, ""target"": null }");
+        const string script = @"[{ ""command"": ""set"", ""path"": ""$.target"", ""value"": ""=fetch('$.a.b')"" }]";
+        var result = engine.Execute(script, testData, JsonExecutionContext.CreateDefault());
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.SelectToken("$.target")?.Value<string>(), Is.EqualTo("deep"));
+    }
+
+    [Test]
+    public void Engine_FetchWithDynamicPathViaIndirectInQuotes_ResolvesPath()
+    {
+        // =fetch('=indirect($.pathField)') — the quoted arg '=indirect(...)' is evaluated
+        // as a function expression; indirect reads the path string from $.pathField and
+        // returns the node at that path; fetch then returns that node's value.
+        var options = ParseOptions<JToken>.CreateDefault();
+        var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+        var testData = JToken.Parse(@"{ ""pathField"": ""$.price"", ""price"": 99, ""target"": null }");
+        const string script = @"[{ ""command"": ""set"", ""path"": ""$.target"", ""value"": ""=fetch('=indirect($.pathField)')"" }]";
+        var result = engine.Execute(script, testData, JsonExecutionContext.CreateDefault());
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.SelectToken("$.target")?.Value<int>(), Is.EqualTo(99));
     }
 }

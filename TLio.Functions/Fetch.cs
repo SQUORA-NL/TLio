@@ -5,6 +5,20 @@ namespace TLio.Functions;
 
 /// <summary>
 /// =fetch($.path) — evaluates the path argument and returns the first matched node.
+///
+/// Invocation styles (both are equivalent at the top level of a command value):
+///   =fetch($.order.email)          — bare path
+///   =fetch('$.order.email')        — quoted path
+///
+/// Dynamic path computation (evaluate an expression to produce the path at runtime):
+///   =fetch('=indirect($.pathField)')   — indirect reads the path string from $.pathField
+///   =fetch('=concat($.prefix, $.sfx)') — concat builds the path from field values
+///
+/// Path-detection rule: if the argument resolves to a string starting with '$' or '@'
+/// it is used as a path expression; otherwise the resolved value is returned as-is.
+/// This means a non-path result from a nested function is returned directly without
+/// an attempted (and failing) SelectNodes call.
+///
 /// Returns a failed result when the path matches nothing.
 /// Ported from JLio's Fetch function.
 /// </summary>
@@ -24,9 +38,15 @@ public class Fetch<TNode> : FunctionBase<TNode>
         if (!pathResult.Success || pathResult.Data.First == null)
             return FunctionResult<TNode>.Failed(currentNode);
 
-        // If the argument resolved to a string, treat it as a path expression
+        // If the argument resolved to a string that looks like a path expression
+        // (starts with $ or @), use it as a path. Any other string or non-string
+        // value is returned directly — this handles both the "fetch returns its
+        // own computed value" case and prevents number/bool→string coercions from
+        // being misinterpreted as path expressions.
+        // Length < 2: a lone '$' or '@' with nothing after it is not a useful path;
+        // all real path expressions have at least one more character (e.g. '$.', '@.').
         var pathStr = context.NodeAdapter.TryGetString(pathResult.Data.First);
-        if (pathStr == null)
+        if (pathStr == null || pathStr.Length < 2 || (pathStr[0] != '$' && pathStr[0] != '@'))
             return FunctionResult<TNode>.Successful(pathResult.Data.First);
 
         var nodes = context.ItemsFetcher.SelectNodes(pathStr, dataContext);

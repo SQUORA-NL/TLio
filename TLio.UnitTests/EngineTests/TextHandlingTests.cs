@@ -326,4 +326,94 @@ public class TextHandlingTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result, Is.InstanceOf<FunctionSupportedValue<JToken>>());
     }
+
+    // ── Quoted-string function expression (dynamic paths) ─────────────────────
+
+    [Test]
+    public void ParseValue_QuotedStringStartingWithEquals_ReturnsFunctionValue()
+    {
+        // '=fetch($.x)' — inner starts with = → treated as nested function expression
+        var result = converter.ParseValue("'=fetch($.x)'", adapter);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.InstanceOf<FunctionSupportedValue<JToken>>());
+    }
+
+    [Test]
+    public void ParseValue_QuotedStringStartingWithDoubleEquals_ReturnsLiteralEqualsString()
+    {
+        // '==expr' — inner starts with == → literal =expr (escape, not function)
+        var result = converter.ParseValue("'==expr'", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("=expr"));
+    }
+
+    [Test]
+    public void ParseValue_QuotedStringWithEscapedSingleQuote_DecodesLiteralQuote()
+    {
+        // 'it''s' — '' inside quotes → literal '
+        var result = converter.ParseValue("'it''s'", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("it's"));
+    }
+
+    [Test]
+    public void ParseValue_QuotedStringWithEscapedDoubleQuote_DecodesLiteralQuote()
+    {
+        // "say ""hello""" — "" inside double-quoted string → literal "
+        var result = converter.ParseValue("\"say \"\"hello\"\"\"", adapter);
+        Assert.That(result, Is.InstanceOf<FixedValue<JToken>>());
+        var node = result!.GetValue(JToken.Parse("{}"), JToken.Parse("{}"), JsonExecutionContext.CreateDefault());
+        Assert.That(node.Data.First?.Value<string>(), Is.EqualTo("say \"hello\""));
+    }
+
+    // ── SplitArgs with '' escape — tested indirectly via ParseValue ──────────────
+
+    [Test]
+    public void ParseValue_FunctionArg_QuotedStringWithEscapedQuoteAndComma_ParsedAsSingleArg()
+    {
+        // concat('hello, it''s me') — the '' inside the quoted arg is escaped and must not split at comma.
+        // If SplitArgs incorrectly splits, concat would have 2 args and parsing would produce a different result.
+        var result = converter.ParseValue("=partial($.source, 'hello, it''s me')", adapter);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.InstanceOf<FunctionSupportedValue<JToken>>());
+    }
+
+    [Test]
+    public void ParseValue_FetchWithEscapedQuotesInInnerExpression_ParsedCorrectly()
+    {
+        // =fetch('=fetch($.pathField)') — outer quoted string has = prefix, inner is a fetch call
+        var result = converter.ParseValue("=fetch('=fetch($.pathField)')", adapter);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.InstanceOf<FunctionSupportedValue<JToken>>());
+    }
+
+    // ── Integration: fetch with quoted path ───────────────────────────────────
+
+    [Test]
+    public void Engine_FetchWithQuotedPath_WorksLikeBarePathAtTopLevel()
+    {
+        var options = ParseOptions<JToken>.CreateDefault();
+        var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+        var data    = JToken.Parse(@"{ ""source"": ""hello"", ""out"": null }");
+        // =fetch('$.source') quoted path — must work exactly like =fetch($.source)
+        const string script = @"[{ ""command"": ""set"", ""path"": ""$.out"", ""value"": ""=fetch('$.source')"" }]";
+        var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+        Assert.That(result.Data.SelectToken("$.out")?.Value<string>(), Is.EqualTo("hello"));
+    }
+
+    [Test]
+    public void Engine_FetchWithDynamicPathViaQuotedIndirect_ResolvesPath()
+    {
+        // =fetch('=indirect($.pathField)') — indirect reads path string from $.pathField,
+        // then fetch uses that resulting path to read the value.
+        var options = ParseOptions<JToken>.CreateDefault();
+        var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+        var data    = JToken.Parse(@"{ ""pathField"": ""$.price"", ""price"": 99, ""out"": null }");
+        const string script = @"[{ ""command"": ""set"", ""path"": ""$.out"", ""value"": ""=fetch('=indirect($.pathField)')"" }]";
+        var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.SelectToken("$.out")?.Value<int?>(), Is.EqualTo(99));
+    }
 }

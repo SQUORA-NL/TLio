@@ -1,5 +1,5 @@
 {
   "input": { "a": "Alice", "b": "Smith" },
-  "script": [{ "command": "put", "path": "$.full", "value": "'=concat($.a, $.b)'" }],
+  "script": [{ "command": "put", "path": "$.full", "value": "'==concat($.a, $.b)'" }],
   "result": { "a": "Alice", "b": "Smith", "full": "=concat($.a, $.b)" }
 }

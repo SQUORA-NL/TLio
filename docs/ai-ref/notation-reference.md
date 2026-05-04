@@ -32,11 +32,13 @@ inside JSON string delimiters `"..."`.
 ## 3. Function Expressions
 
 Function expressions start with `=`. The `=` prefix is the only marker required —
-**do not wrap the expression in outer single quotes**.
+**do not wrap the expression in outer single quotes** unless you want the inner string to be
+evaluated as a nested function expression (see Section 4a).
 
 ```json
 { "value": "=fetch($.source)" }         ✅ correct — = marks the function
-{ "value": "'=fetch($.source)'" }        ❌ wrong  — treated as literal string
+{ "value": "=fetch('$.source')" }        ✅ also correct — quoted path, same result
+{ "value": "'=fetch($.source)'" }        ✅ evaluates fetch as a nested expression
 ```
 
 Syntax: `=functionName(<arg1>, <arg2>, ...)`
@@ -63,6 +65,38 @@ use single quotes `'...'`** because the outer delimiter is already `"`. Path arg
 | Path in function arg | `$.f` or `@.f` | None |
 | Plain string at value level | `"Alice"` | None (JSON string) |
 | Number / boolean / null | `42`, `true`, `null` | None (JSON literal) |
+
+## 4a. Quoted-string function expressions
+
+A quoted string whose inner content begins with `=` (but not `==`) is evaluated as a
+nested function expression. Its return value is used directly (or as a path if the result
+starts with `$` or `@`).
+
+```json
+{ "value": "=fetch('$.source')" }                  ✅ quoted path — same as =fetch($.source)
+{ "value": "=fetch('=indirect($.pathRef)')" }       ✅ dynamic path via nested function
+{ "value": "=fetch('=concat($.a, $.b)')" }          ✅ path built from field values
+```
+
+To produce a literal `=something` string inside quotes, double the `=`:
+
+```json
+{ "command": "put", "path": "$.label", "value": "'==concat($.a, $.b)'" }
+```
+
+→ stores the literal text `=concat($.a, $.b)` (not evaluated).
+
+### Doubled-quote escape (`''`)
+
+To embed a literal single-quote character inside a `'...'` argument, double it:
+
+```
+=fetch('=concat(''$.'', $.fieldname, ''.price'')')
+```
+
+After `''` → `'` unescape, the inner expression is `concat('$.', $.fieldname, '.price')`,
+which builds a path string at runtime. This also prevents commas inside the doubled-quoted
+content from being interpreted as argument separators.
 
 ## 5. Path References
 
@@ -93,6 +127,12 @@ function parsing. Works **identically** at the value level and inside `'...'` qu
 | `$$` | Inside `'...'` | Literal `$` | `'$$var'` → `$var` |
 | `==` | Value level | Literal `=` | `"==expr"` → `=expr` |
 | `==` | Inside `'...'` | Literal `=` | `'==x+1'` → `=x+1` |
+| `''` | Inside `'...'` | Literal `'` | `'it''s'` → `it's` |
+| `""` | Inside `"..."` args | Literal `"` | inner `""` → one `"` |
+
+The `''` / `""` doubled-quote escape is especially useful inside function expressions
+nested within a quoted argument — it prevents the inner quote from ending the outer
+quoted string prematurely.
 
 ## 7. The Three Roles of `@`
 
