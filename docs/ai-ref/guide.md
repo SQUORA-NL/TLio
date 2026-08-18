@@ -38,6 +38,9 @@
 | Intent | Command |
 |--------|---------|
 | Deep-merge two objects | `merge` |
+| Merge two collections by element key | `merge` with `settings.arraySettings[].keyPaths` |
+| Append to a collection without duplicates | `merge` with `settings.arraySettings[].uniqueItemsWithoutKeys` |
+| Apply defaults without overwriting | `merge` with `settings.strategy = "onlyStructure"` |
 | Lookup join (enrich from reference collection) | `resolve` |
 
 ### ETL / serialization

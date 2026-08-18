@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using TLio.Commands.Advanced;
+using TLio.Commands.Advanced.Settings;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 
@@ -16,6 +17,12 @@ namespace TLio.Client;
 /// </summary>
 public static class TLioConvert
 {
+    private static readonly JsonSerializerOptions MergeSettingsSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
+
     /// <summary>Parse a JSON script string into a TLioScript.</summary>
     public static TLioScript<TNode> Parse<TNode>(
         string scriptJson,
@@ -76,6 +83,13 @@ public static class TLioConvert
 
                 case ArrayMergeMode m:
                     writer.WriteString(key, m.ToString().ToLowerInvariant());
+                    break;
+
+                // Merge settings are only emitted when they deviate from the default,
+                // so scripts that never used them serialize exactly as before.
+                case MergeSettings mergeSettings when !mergeSettings.IsDefault:
+                    writer.WritePropertyName(key);
+                    writer.WriteRawValue(JsonSerializer.Serialize(mergeSettings, MergeSettingsSerializerOptions));
                     break;
 
                 case IFunctionSupportedValue<TNode> fsv:

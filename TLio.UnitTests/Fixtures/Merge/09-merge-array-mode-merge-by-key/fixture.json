@@ -1,0 +1,37 @@
+{
+  "input": {
+    "source": {
+      "tags": [
+        "a",
+        "b"
+      ]
+    },
+    "target": {
+      "tags": [
+        "a"
+      ]
+    }
+  },
+  "script": [
+    {
+      "command": "merge",
+      "path": "$.source",
+      "targetPath": "$.target",
+      "arrayMergeMode": "mergeByKey"
+    }
+  ],
+  "result": {
+    "source": {
+      "tags": [
+        "a",
+        "b"
+      ]
+    },
+    "target": {
+      "tags": [
+        "a",
+        "b"
+      ]
+    }
+  }
+}

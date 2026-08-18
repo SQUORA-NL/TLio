@@ -1,0 +1,33 @@
+{
+  "input": {
+    "source": {
+      "a": "from-source",
+      "c": "new"
+    },
+    "target": {
+      "a": "keep-me",
+      "b": "untouched"
+    }
+  },
+  "script": [
+    {
+      "command": "merge",
+      "path": "$.source",
+      "targetPath": "$.target",
+      "settings": {
+        "strategy": "onlyStructure"
+      }
+    }
+  ],
+  "result": {
+    "source": {
+      "a": "from-source",
+      "c": "new"
+    },
+    "target": {
+      "a": "keep-me",
+      "b": "untouched",
+      "c": "new"
+    }
+  }
+}

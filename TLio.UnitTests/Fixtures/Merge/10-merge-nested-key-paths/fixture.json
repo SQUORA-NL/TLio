@@ -1,0 +1,75 @@
+{
+  "input": {
+    "source": {
+      "rows": [
+        {
+          "key": {
+            "id": "x"
+          },
+          "value": 20
+        }
+      ]
+    },
+    "target": {
+      "rows": [
+        {
+          "key": {
+            "id": "x"
+          },
+          "value": 10
+        },
+        {
+          "key": {
+            "id": "y"
+          },
+          "value": 5
+        }
+      ]
+    }
+  },
+  "script": [
+    {
+      "command": "merge",
+      "path": "$.source",
+      "targetPath": "$.target",
+      "settings": {
+        "arraySettings": [
+          {
+            "arrayPath": "$.target.rows",
+            "keyPaths": [
+              "@.key.id"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "result": {
+    "source": {
+      "rows": [
+        {
+          "key": {
+            "id": "x"
+          },
+          "value": 20
+        }
+      ]
+    },
+    "target": {
+      "rows": [
+        {
+          "key": {
+            "id": "x"
+          },
+          "value": 20
+        },
+        {
+          "key": {
+            "id": "y"
+          },
+          "value": 5
+        }
+      ]
+    }
+  }
+}

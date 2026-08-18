@@ -711,13 +711,15 @@ var script = new TLioScript<JToken>()
 ### merge
 
 > Deep-merges the node(s) at `fromPath` (source) into the node(s) at `toPath` (destination).
-> Objects are merged recursively; arrays follow `arrayMergeMode`.
+> Objects are merged recursively; arrays follow `arrayMergeMode` or, when configured,
+> per-array key matching from `settings`.
 
 **When to use**: combining two objects where overlapping keys should be resolved by the
 source overwriting the destination. Common for applying patches or partial updates.
+Also reconciling collections by identity via `settings.arraySettings[].keyPaths`.
 
 **When NOT to use**: when you want a simple field copy — use `copy`. When you need to
-join collections by key — use `resolve`.
+join a collection against a lookup table and project fields — use `resolve`.
 
 **Supports functions**: ❌
 
@@ -730,14 +732,38 @@ join collections by key — use `resolve`.
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | fromPath | string | yes | — | Selects the source node(s). Alias: `path`. |
-| toPath | string | yes | — | Selects the destination node(s). Alias: `targetPath`. |
-| arrayMergeMode | string | no | `"concat"` | `"concat"` appends; `"replace"` overwrites. |
+| toPath | string | yes | — | Selects the destination node(s). Alias: `targetPath`. Must differ from `fromPath`. |
+| arrayMergeMode | string | no | `"concat"` | `"concat"` appends; `"replace"` overwrites; `"mergeByKey"` appends only items not already present. |
+| settings | object | no | — | Fine-grained configuration — see below. |
+
+**`settings`**:
+
+| Sub-option | Type | Default | Description |
+|------------|------|---------|-------------|
+| strategy | string | `"fullMerge"` | `"fullMerge"` adds and overwrites; `"onlyStructure"` adds missing properties only; `"onlyValues"` updates existing properties only. |
+| arraySettings[].arrayPath | string | — | Path of the **target** array (root indicator ignored, so `$.a.items`, `a.items` and `/a/items` are equivalent). |
+| arraySettings[].keyPaths | string[] | `[]` | Fields identifying an array element; matching elements are merged, the rest appended. Plain and `@.` notation. |
+| arraySettings[].uniqueItemsWithoutKeys | bool | `false` | Without `keyPaths`, skip items already present (deep-equal) in the target array. |
+| matchSettings.keyPaths | string[] | `[]` | Objects are merged only when all these fields are equal on source and target. |
+
+```json
+{
+  "command": "merge", "fromPath": "$.incoming", "toPath": "$.current",
+  "settings": { "arraySettings": [ { "arrayPath": "$.current.items", "keyPaths": ["id"] } ] }
+}
+```
+
+XML has no native array type; array semantics apply to a repeated-element container
+only when `arraySettings.arrayPath` names its path.
 
 **C# Fluent API**:
 
 ```csharp
 var script = new TLioScript<JToken>()
     .Merge().From("$.patch").To("$.document");
+
+var keyed = new TLioScript<JToken>()
+    .Merge().From("$.incoming").WithArrayKeys("$.current.items", "id").To("$.current");
 ```
 
 ---
