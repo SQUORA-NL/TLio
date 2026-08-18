@@ -115,6 +115,7 @@ Use this decision tree to pick the command in one step.
 | Two outcomes, one condition | `ifElse` |
 | Three or more outcomes, or evolving rule sets | `decisionTable` |
 | Produce a comparison classification (equal / greater / less / different) | `compare` |
+| Produce a structural diff of two documents / sub-trees | `compare` (with `settings`) |
 
 ### Combining data
 
@@ -487,19 +488,33 @@ var script = new TLioScript<JToken>()
 
 ### compare
 
-> Compares two nodes and writes a result string (`"equal"`, `"greater"`, `"less"`, or
-> `"different"`) to a target path.
+> Compares two nodes and writes the outcome to a target path — a scalar label
+> (`"equal"`, `"greater"`, `"less"`, `"different"`) for primitive comparisons, or a
+> structured array of difference entries for objects and arrays.
 
-**When to use**: you need a classification of the relationship between two values — for
-branching logic downstream (e.g. feed the result into `ifElse` or `decisionTable`).
+**When to use**: you need a classification of the relationship between two values, or a
+structural diff describing *what* differs between two documents / sub-trees.
 
-**When NOT to use**: when you need a numeric difference or want to branch immediately —
-use `ifElse` for branching, or `dateCompare` (which returns `-1/0/1`) for date ordering.
+**When NOT to use**: when you want to branch immediately — use `ifElse` for branching, or
+`dateCompare` (which returns `-1/0/1`) for date ordering.
 
 **Supports functions**: ❌
 
 ```json
 { "command": "compare", "fromPath": "$.a", "toPath": "$.b", "resultPath": "$.result" }
+```
+
+```json
+{
+  "command": "compare",
+  "firstPath": "$.first",
+  "secondPath": "$.second",
+  "resultPath": "$.result",
+  "settings": {
+    "arraySettings": [{ "arrayPath": "$.first", "keyPaths": ["@.id"], "uniqueIndexMatching": true }],
+    "resultTypes": ["valueDifference", "structureDifference"]
+  }
+}
 ```
 
 **Options**:
@@ -508,22 +523,50 @@ use `ifElse` for branching, or `dateCompare` (which returns `-1/0/1`) for date o
 |--------|------|----------|---------|-------------|
 | fromPath | string | yes | — | Path to first node (left-hand side). Alias: `firstPath`. |
 | toPath | string | yes | — | Path to second node (right-hand side). Alias: `secondPath`. |
-| resultPath | string | yes | — | Path where result string is written (upsert). |
+| resultPath | string | yes | — | Path where the result is written (upsert). |
+| settings | object | no | — | Diff configuration. Omit for defaults. |
+| settings.arraySettings[].arrayPath | string | — | — | Absolute path of the array the rule applies to (matched against either side). |
+| settings.arraySettings[].keyPaths | string[] | no | `[]` | Relative element keys (`"id"`, `".id"`, `"@.id"`). Empty = index-based comparison. |
+| settings.arraySettings[].uniqueIndexMatching | bool | no | `false` | Also report items matched at a different index. |
+| settings.resultTypes | string[] | no | `[]` | Keep only entries with these `differenceType` values. Empty = keep all. |
 
-**Result values**:
+**Scalar result values** (default settings, both sides a single primitive):
 
 | Value | Meaning |
 |-------|---------|
 | `"equal"` | Both nodes have equal scalar values |
 | `"greater"` | First node's value > second node's value |
 | `"less"` | First node's value < second node's value |
-| `"different"` | Nodes differ and cannot be ordered (type mismatch, objects, arrays) |
+| `"different"` | Values differ and cannot be ordered |
+
+**Structured result** (objects, arrays, or any explicit `settings`) — an array of entries:
+
+```json
+{
+  "foundDifference": true,
+  "differenceType": "valueDifference",
+  "differenceSubType": "lessThan",
+  "firstPath": "$.first.a",
+  "secondPath": "$.second.a",
+  "description": "The values are different LessThan. Source: ($.first.a) --> 1 - Target:($.second.a) --> 2"
+}
+```
+
+`differenceType`: `noDifference` | `valueDifference` | `structureDifference` | `arrayDifference` | `typeDifference`.
+`differenceSubType`: `equals` | `notEquals` | `lessThan` | `greaterThan` | `indexDifference`.
+
+Entries with `foundDifference: false` document a match — an empty result array is not the
+only "no differences" outcome. Works identically over JSON, XML and YAML; only the path
+notation differs.
 
 **C# Fluent API**:
 
 ```csharp
 var script = new TLioScript<JToken>()
     .Compare().From("$.score").To("$.threshold").Result("$.verdict");
+
+var diff = new TLioScript<JToken>()
+    .Compare("$.first").With("$.second").Using(settings).SetResultOn("$.result");
 ```
 
 ---
@@ -1524,7 +1567,7 @@ Input: `{ "name": "  Alice" }` → `"name": "Alice"`
 | Command | When to use (one line) | Supports functions | Fluent | Pack |
 |---------|------------------------|-------------------|--------|------|
 | add | Create-only; noop if field exists | ✅ | `.Add(v).OnPath(p)` | built-in |
-| compare | Classify relationship between two values | ❌ | `.Compare().From(a).To(b).Result(r)` | built-in |
+| compare | Classify two values, or structurally diff two sub-trees | ❌ | `.Compare(a).With(b).Using(s).SetResultOn(r)` | built-in |
 | copy | Copy node, keep source | ❌ | `.Copy().From(a).To(b)` | built-in |
 | decisionTable | 3+ outcomes or evolving rule sets | ✅ (results only) | — | built-in |
 | flatten | Nested → flat key-value | ❌ | — | ETL |

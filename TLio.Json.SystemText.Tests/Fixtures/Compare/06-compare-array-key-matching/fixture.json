@@ -1,0 +1,64 @@
+{
+  "input": {
+    "first": [{ "id": 1, "v": "a" }, { "id": 2, "v": "b" }],
+    "second": [{ "id": 2, "v": "b" }, { "id": 1, "v": "a" }]
+  },
+  "script": [
+    {
+      "command": "compare",
+      "firstPath": "$.first",
+      "secondPath": "$.second",
+      "resultPath": "$.result",
+      "settings": {
+        "arraySettings": [{ "arrayPath": "$.first", "keyPaths": ["@.id"], "uniqueIndexMatching": true }],
+        "resultTypes": ["arrayDifference"]
+      }
+    }
+  ],
+  "result": {
+    "first": [{ "id": 1, "v": "a" }, { "id": 2, "v": "b" }],
+    "second": [{ "id": 2, "v": "b" }, { "id": 1, "v": "a" }],
+    "result": [
+      {
+        "foundDifference": false,
+        "differenceType": "arrayDifference",
+        "differenceSubType": "equals",
+        "firstPath": "$.first",
+        "secondPath": "$.second",
+        "description": "Both arrays have 2 items. Source: ($.first) - Target:($.second)"
+      },
+      {
+        "foundDifference": false,
+        "differenceType": "arrayDifference",
+        "differenceSubType": "equals",
+        "firstPath": "$.first",
+        "secondPath": "$.second",
+        "description": "Both arrays contain a matching item. Source: ($.first) - Target:($.second). Value:{\"id\":1,\"v\":\"a\"}"
+      },
+      {
+        "foundDifference": true,
+        "differenceType": "arrayDifference",
+        "differenceSubType": "indexDifference",
+        "firstPath": "$.first",
+        "secondPath": "$.second",
+        "description": "The indexes of the matched items are different. Source: ($.first)[0] - Target:($.second)[1]"
+      },
+      {
+        "foundDifference": false,
+        "differenceType": "arrayDifference",
+        "differenceSubType": "equals",
+        "firstPath": "$.first",
+        "secondPath": "$.second",
+        "description": "Both arrays contain a matching item. Source: ($.first) - Target:($.second). Value:{\"id\":2,\"v\":\"b\"}"
+      },
+      {
+        "foundDifference": true,
+        "differenceType": "arrayDifference",
+        "differenceSubType": "indexDifference",
+        "firstPath": "$.first",
+        "secondPath": "$.second",
+        "description": "The indexes of the matched items are different. Source: ($.first)[1] - Target:($.second)[0]"
+      }
+    ]
+  }
+}

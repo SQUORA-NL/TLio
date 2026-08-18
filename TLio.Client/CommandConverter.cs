@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using TLio.Commands;
 using TLio.Commands.Advanced;
 using TLio.Core.Contracts;
@@ -28,6 +29,16 @@ namespace TLio.Client;
 /// </summary>
 public class CommandConverter<TNode>
 {
+    /// <summary>
+    /// Options for the generic POCO settings fallback. Enum members are accepted as
+    /// camelCase strings ("valueDifference") as well as their PascalCase and numeric forms.
+    /// </summary>
+    private static readonly JsonSerializerOptions PocoOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: true) }
+    };
+
     private readonly ICommandsProvider<TNode> _commandsProvider;
     private readonly FunctionConverter<TNode> _functionConverter;
     private readonly INodeAdapter<TNode> _nodeAdapter;
@@ -189,13 +200,13 @@ public class CommandConverter<TNode>
         }
 
         // T002: Generic POCO fallback for non-generic, non-abstract class types
-        // (e.g., FlattenSettings, CsvSettings, RestoreSettings from TLio.Extensions.ETL)
+        // (e.g., FlattenSettings, CsvSettings, RestoreSettings from TLio.Extensions.ETL,
+        //  CompareSettings from TLio.Commands.Advanced)
         if (targetType.IsClass && !targetType.IsAbstract && !targetType.IsGenericType)
         {
             try
             {
-                return JsonSerializer.Deserialize(element.GetRawText(), targetType,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                return JsonSerializer.Deserialize(element.GetRawText(), targetType, PocoOptions);
             }
             catch { return null; }
         }

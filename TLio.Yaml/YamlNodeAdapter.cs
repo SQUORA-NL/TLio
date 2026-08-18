@@ -96,11 +96,25 @@ public class YamlNodeAdapter : INodeAdapter<YamlNode>
     public int GetArrayLength(YamlNode array) =>
         array is YamlSequenceNode seq ? seq.Children.Count : 0;
 
-    public YamlNode GetArrayElement(YamlNode array, int index) =>
-        array is YamlSequenceNode seq ? seq.Children[index] : new YamlScalarNode("null");
+    public YamlNode GetArrayElement(YamlNode array, int index)
+    {
+        if (array is not YamlSequenceNode seq) return new YamlScalarNode("null");
+        var item = seq.Children[index];
+        // YamlDotNet nodes carry no parent link — register it so IItemsFetcher.GetPath
+        // can render "$.items[0]" for elements reached without a path traversal.
+        _tracker.Track(item, seq, index);
+        return item;
+    }
 
-    public IEnumerable<YamlNode> GetArrayElements(YamlNode array) =>
-        array is YamlSequenceNode seq ? seq.Children : Enumerable.Empty<YamlNode>();
+    public IEnumerable<YamlNode> GetArrayElements(YamlNode array)
+    {
+        if (array is not YamlSequenceNode seq) yield break;
+        for (var i = 0; i < seq.Children.Count; i++)
+        {
+            _tracker.Track(seq.Children[i], seq, i);
+            yield return seq.Children[i];
+        }
+    }
 
     public YamlNode CreateNull() => new YamlScalarNode("null");
     public YamlNode CreateObject() => new YamlMappingNode();

@@ -1,0 +1,37 @@
+{
+  "input": {
+    "first": { "a": 1, "b": "x", "only": true },
+    "second": { "a": 2, "b": "x" }
+  },
+  "script": [
+    {
+      "command": "compare",
+      "firstPath": "$.first",
+      "secondPath": "$.second",
+      "resultPath": "$.result",
+      "settings": { "resultTypes": ["valueDifference", "structureDifference"] }
+    }
+  ],
+  "result": {
+    "first": { "a": 1, "b": "x", "only": true },
+    "second": { "a": 2, "b": "x" },
+    "result": [
+      {
+        "foundDifference": true,
+        "differenceType": "valueDifference",
+        "differenceSubType": "lessThan",
+        "firstPath": "$.first.a",
+        "secondPath": "$.second.a",
+        "description": "The values are different LessThan. Source: ($.first.a) --> 1 - Target:($.second.a) --> 2"
+      },
+      {
+        "foundDifference": true,
+        "differenceType": "structureDifference",
+        "differenceSubType": "notEquals",
+        "firstPath": "$.first.only",
+        "secondPath": "$.second.only",
+        "description": "The structure is different. Source: ($.first.only) --> True - Target:($.second.only) --> False"
+      }
+    ]
+  }
+}

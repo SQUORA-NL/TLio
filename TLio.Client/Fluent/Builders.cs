@@ -1,5 +1,6 @@
 using TLio.Commands;
 using TLio.Commands.Advanced;
+using TLio.Commands.Advanced.Settings;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 
@@ -125,6 +126,7 @@ public sealed class CompareResultBuilder<TNode>
     private readonly TLioScript<TNode> _script;
     private readonly string _fromPath;
     private readonly string _toPath;
+    private CompareSettings? _settings;
 
     internal CompareResultBuilder(TLioScript<TNode> script, string fromPath, string toPath)
     {
@@ -133,13 +135,21 @@ public sealed class CompareResultBuilder<TNode>
         _toPath = toPath;
     }
 
+    /// <summary>Attach diff settings (array key matching, result-type filter).</summary>
+    public CompareResultBuilder<TNode> Using(CompareSettings settings)
+    {
+        _settings = settings;
+        return this;
+    }
+
     public TLioScript<TNode> Result(string resultPath)
     {
         _script.Add(new Compare<TNode>
         {
             FirstPath  = _fromPath,
             SecondPath = _toPath,
-            ResultPath = resultPath
+            ResultPath = resultPath,
+            Settings   = _settings
         });
         return _script;
     }
