@@ -1,0 +1,75 @@
+{
+  "input": {
+    "source": {
+      "items": [
+        {
+          "id": 1,
+          "name": "one-updated"
+        },
+        {
+          "id": 3,
+          "name": "three"
+        }
+      ]
+    },
+    "target": {
+      "items": [
+        {
+          "id": 1,
+          "name": "one"
+        },
+        {
+          "id": 2,
+          "name": "two"
+        }
+      ]
+    }
+  },
+  "script": [
+    {
+      "command": "merge",
+      "path": "$.source",
+      "targetPath": "$.target",
+      "settings": {
+        "arraySettings": [
+          {
+            "arrayPath": "$.target.items",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "result": {
+    "source": {
+      "items": [
+        {
+          "id": 1,
+          "name": "one-updated"
+        },
+        {
+          "id": 3,
+          "name": "three"
+        }
+      ]
+    },
+    "target": {
+      "items": [
+        {
+          "id": 1,
+          "name": "one-updated"
+        },
+        {
+          "id": 2,
+          "name": "two"
+        },
+        {
+          "id": 3,
+          "name": "three"
+        }
+      ]
+    }
+  }
+}

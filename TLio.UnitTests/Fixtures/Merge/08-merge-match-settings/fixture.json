@@ -1,0 +1,53 @@
+{
+  "input": {
+    "source": {
+      "id": 1,
+      "extra": "added"
+    },
+    "matching": {
+      "id": 1
+    },
+    "nonMatching": {
+      "id": 2
+    }
+  },
+  "script": [
+    {
+      "command": "merge",
+      "path": "$.source",
+      "targetPath": "$.matching",
+      "settings": {
+        "matchSettings": {
+          "keyPaths": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "command": "merge",
+      "path": "$.source",
+      "targetPath": "$.nonMatching",
+      "settings": {
+        "matchSettings": {
+          "keyPaths": [
+            "id"
+          ]
+        }
+      }
+    }
+  ],
+  "result": {
+    "source": {
+      "id": 1,
+      "extra": "added"
+    },
+    "matching": {
+      "id": 1,
+      "extra": "added"
+    },
+    "nonMatching": {
+      "id": 2
+    }
+  }
+}

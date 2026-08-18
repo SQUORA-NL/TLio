@@ -1,0 +1,48 @@
+{
+  "input": {
+    "source": {
+      "tags": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    "target": {
+      "tags": [
+        "a",
+        "c"
+      ]
+    }
+  },
+  "script": [
+    {
+      "command": "merge",
+      "path": "$.source",
+      "targetPath": "$.target",
+      "settings": {
+        "arraySettings": [
+          {
+            "arrayPath": "$.target.tags",
+            "uniqueItemsWithoutKeys": true
+          }
+        ]
+      }
+    }
+  ],
+  "result": {
+    "source": {
+      "tags": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    "target": {
+      "tags": [
+        "a",
+        "c",
+        "b"
+      ]
+    }
+  }
+}

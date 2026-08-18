@@ -1,5 +1,6 @@
 using TLio.Commands;
 using TLio.Commands.Advanced;
+using TLio.Commands.Advanced.Settings;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 
@@ -163,6 +164,8 @@ public sealed class MergeToBuilder<TNode>
 {
     private readonly TLioScript<TNode> _script;
     private readonly string _fromPath;
+    private ArrayMergeMode _arrayMergeMode = ArrayMergeMode.Concat;
+    private MergeSettings _settings = MergeSettings.CreateDefault();
 
     internal MergeToBuilder(TLioScript<TNode> script, string fromPath)
     {
@@ -170,9 +173,65 @@ public sealed class MergeToBuilder<TNode>
         _fromPath = fromPath;
     }
 
+    /// <summary>Coarse array behaviour: concat (default) or replace.</summary>
+    public MergeToBuilder<TNode> WithArrayMergeMode(ArrayMergeMode mode)
+    {
+        _arrayMergeMode = mode;
+        return this;
+    }
+
+    /// <summary>Fine-grained settings: array key paths, deduplication, strategy, match keys.</summary>
+    public MergeToBuilder<TNode> WithSettings(MergeSettings settings)
+    {
+        _settings = settings ?? MergeSettings.CreateDefault();
+        return this;
+    }
+
+    /// <summary>Configure the merge strategy (fullMerge / onlyStructure / onlyValues).</summary>
+    public MergeToBuilder<TNode> WithStrategy(string strategy)
+    {
+        _settings.Strategy = strategy;
+        return this;
+    }
+
+    /// <summary>Add key-based element matching for one target array path.</summary>
+    public MergeToBuilder<TNode> WithArrayKeys(string arrayPath, params string[] keyPaths)
+    {
+        _settings.ArraySettings.Add(new MergeArraySettings
+        {
+            ArrayPath = arrayPath,
+            KeyPaths = keyPaths.ToList()
+        });
+        return this;
+    }
+
+    /// <summary>Skip source items that already exist (deep-equal) in the target array.</summary>
+    public MergeToBuilder<TNode> WithUniqueItems(string arrayPath)
+    {
+        _settings.ArraySettings.Add(new MergeArraySettings
+        {
+            ArrayPath = arrayPath,
+            UniqueItemsWithoutKeys = true
+        });
+        return this;
+    }
+
+    /// <summary>Only merge objects whose key fields all hold equal values.</summary>
+    public MergeToBuilder<TNode> WithMatchKeys(params string[] keyPaths)
+    {
+        _settings.MatchSettings.KeyPaths.AddRange(keyPaths);
+        return this;
+    }
+
     public TLioScript<TNode> To(string toPath)
     {
-        _script.Add(new Merge<TNode> { Path = _fromPath, TargetPath = toPath });
+        _script.Add(new Merge<TNode>
+        {
+            Path = _fromPath,
+            TargetPath = toPath,
+            ArrayMergeMode = _arrayMergeMode,
+            Settings = _settings
+        });
         return _script;
     }
 }
