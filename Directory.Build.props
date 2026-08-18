@@ -8,6 +8,19 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <WarningsAsErrors />
     <WarningsNotAsErrors>CS8600;CS8602;CS8604;CS8618</WarningsNotAsErrors>
+
+    <!-- Ship an XML documentation file with every library: without it the /// comments never
+         leave this repository and consumers of the NuGet packages get no IntelliSense text at
+         all, only bare signatures. The .xml is packed next to the .dll automatically.
+         Test and sample projects are skipped — nothing consumes their documentation.
+         (This has to live in .props: the SDK derives DocumentationFile from it before a
+         Directory.Build.targets would be imported.)
+
+         CS1591 (missing comment on a public member) is suppressed: undocumented members still
+         get signature IntelliSense, and the alternative is 4000+ warnings. Malformed comments
+         (CS1570/CS1573) are deliberately NOT suppressed — those break IntelliSense. -->
+    <GenerateDocumentationFile Condition="!$(MSBuildProjectName.EndsWith('Tests')) And !$(MSBuildProjectName.StartsWith('TLio.Sample'))">true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <!-- NuGet packaging defaults — library projects opt in with <IsPackable>true</IsPackable> -->

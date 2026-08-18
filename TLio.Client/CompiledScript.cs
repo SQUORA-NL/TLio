@@ -27,6 +27,7 @@ public sealed class CompiledScript<TNode>
     {
         var script = new TLioScript<TNode>();
         script.AddRange(_template.Select(cmd => cmd.Clone()));
+        script.ParseWarnings.AddRange(_template.ParseWarnings);
         return script;
     }
 

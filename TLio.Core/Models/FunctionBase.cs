@@ -9,7 +9,19 @@ public abstract class FunctionBase<TNode> : IFunction<TNode>
 {
     protected Arguments<TNode> Arguments { get; private set; } = new();
 
-    public virtual string FunctionName => GetType().Name;
+    public virtual string FunctionName => TypeName(GetType());
+
+    /// <summary>
+    /// The CLR name of a generic type carries an arity suffix (<c>Concat`1</c>), which would
+    /// leak into log messages and into <see cref="ToScript"/> output — producing script text
+    /// that cannot be parsed back. Strip it.
+    /// </summary>
+    protected static string TypeName(Type type)
+    {
+        var name = type.Name;
+        var tick = name.IndexOf('`');
+        return tick < 0 ? name : name.Substring(0, tick);
+    }
 
     public IFunction<TNode> SetArguments(Arguments<TNode> arguments)
     {

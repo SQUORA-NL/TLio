@@ -24,7 +24,22 @@ A string with all `{N}` placeholders replaced by the corresponding argument valu
 
 ## Formats
 
-Works with all adapters. Uses `string.Format` internally.
+Works with all adapters. Uses `string.Format` internally, with the **invariant culture** — output
+does not change with the machine's locale.
+
+## Format specifiers
+
+Numeric and boolean arguments keep their type, so standard .NET specifiers work:
+
+| Expression | Input | Output |
+|------------|-------|--------|
+| `=format('{0:F2}', $.price)` | `14.5` | `"14.50"` |
+| `=format('{0:00000}', $.id)` | `42` | `"00042"` |
+| `=format('{0:N2}', $.total)` | `1234.5` | `"1,234.50"` |
+| `=format('{0:P0}', $.rate)` | `0.15` | `"15 %"` |
+
+`F` rounds half to even (`{0:F0}` on `14.5` gives `"14"`). For money-style rounding use
+[toFixed](ToFixed.md), which rounds half away from zero.
 
 ## Example
 

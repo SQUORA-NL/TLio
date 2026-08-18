@@ -1,0 +1,26 @@
+{
+  "input": { "in": {} },
+  "script": [
+    { "command": "add", "path": "$.out.houseNumber", "value": "152" },
+    { "command": "add", "path": "$.out.articleCode", "value": "007" },
+    { "command": "add", "path": "$.out.version", "value": "1e3" },
+    { "command": "add", "path": "$.out.flagText", "value": "true" },
+    { "command": "add", "path": "$.out.nullText", "value": "null" },
+    { "command": "add", "path": "$.out.realNumber", "value": 152 },
+    { "command": "add", "path": "$.out.realBool", "value": true },
+    { "command": "add", "path": "$.out.realNull", "value": null }
+  ],
+  "result": {
+    "in": {},
+    "out": {
+      "houseNumber": "152",
+      "articleCode": "007",
+      "version": "1e3",
+      "flagText": "true",
+      "nullText": "null",
+      "realNumber": 152,
+      "realBool": true,
+      "realNull": null
+    }
+  }
+}

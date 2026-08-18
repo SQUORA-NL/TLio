@@ -14,7 +14,7 @@ namespace TLio.Extensions.Text;
 /// </summary>
 public abstract class TextFunctionBase<TNode> : FunctionBase<TNode>
 {
-    public override string FunctionName => GetType().Name.ToLowerInvariant();
+    public override string FunctionName => TypeName(GetType()).ToLowerInvariant();
 
     // ── Argument resolution ───────────────────────────────────────────────────
 

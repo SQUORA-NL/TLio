@@ -1,0 +1,5 @@
+{
+  "input": { "a": "Alice" },
+  "script": [{ "command": "add", "path": "$.copy", "value": "'=fetch($.a)'" }],
+  "result": { "a": "Alice", "copy": "Alice" }
+}

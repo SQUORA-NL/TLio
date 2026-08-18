@@ -11,8 +11,11 @@ namespace TLio.Extensions.Text;
 ///
 /// Registers: concat, length, substring, toupper, tolower, trim, trimstart, trimend,
 ///            startswith, endswith, contains, replace, split, join, indexof,
-///            format, parse, padleft, padright, newguid, isempty, toString,
-///            plus camelCase aliases: toLower, toUpper, trimStart, trimEnd.
+///            format, parse, padleft, padright, newguid, isempty, toString.
+///
+/// Function lookup is case-insensitive (see FunctionsProvider), so each name also matches
+/// its camelCase spelling — =toUpper(...) and =toupper(...) resolve to the same function.
+/// No separate alias registrations are needed.
 ///
 /// Ported from JLio.Extensions.Text.RegisterTextPack.RegisterText().
 /// </summary>
@@ -51,11 +54,7 @@ public static class TextRegistrar
         registrar.Register("isempty",    () => new IsEmpty<TNode>());
         // New in 008: toString function
         registrar.Register("toString",   () => new ToStringFunction<TNode>());
-        // CamelCase aliases for JLio compatibility (lowercase variants remain for backwards compatibility)
-        registrar.Register("toLower",    () => new ToLower<TNode>());
-        registrar.Register("toUpper",    () => new ToUpper<TNode>());
-        registrar.Register("trimStart",  () => new TrimStart<TNode>());
-        registrar.Register("trimEnd",    () => new TrimEnd<TNode>());
+        registrar.Register("toFixed",    () => new ToFixed<TNode>());
         return registrar;
     }
 }

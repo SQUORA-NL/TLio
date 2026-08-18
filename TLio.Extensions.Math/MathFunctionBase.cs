@@ -25,7 +25,7 @@ namespace TLio.Extensions.Math;
 public abstract class MathFunctionBase<TNode> : FunctionBase<TNode>
 {
     // Derive function name from class name (e.g. SumIfs → "sumifs")
-    public override string FunctionName => GetType().Name.ToLowerInvariant();
+    public override string FunctionName => TypeName(GetType()).ToLowerInvariant();
 
     // ── Numeric result creation ───────────────────────────────────────────────
 

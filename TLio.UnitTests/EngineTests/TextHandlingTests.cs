@@ -416,4 +416,62 @@ public class TextHandlingTests
         Assert.That(result.Success, Is.True);
         Assert.That(result.Data.SelectToken("$.out")?.Value<int?>(), Is.EqualTo(99));
     }
+
+    // ── Inner calls: the leading "=" is optional on arguments ─────────────────
+
+    [Test]
+    public void ParseValue_InnerCallWithoutEqualsPrefix_ParsesAsFunction()
+    {
+        // promote(fetch($.a), 'wrapper') — inner fetch has no "=" and must still be a call
+        var result = converter.ParseValue("=promote(fetch($.a), 'wrapper')", adapter);
+        Assert.That(result, Is.InstanceOf<FunctionSupportedValue<JToken>>());
+        Assert.That(result!.ToScript(), Does.Contain("=fetch("));
+    }
+
+    [Test]
+    public void ParseValue_InnerCallWithoutEqualsPrefix_MatchesPrefixedForm()
+    {
+        var withoutPrefix = converter.ParseValue("=promote(fetch($.a), 'wrapper')", adapter);
+        var withPrefix    = converter.ParseValue("=promote(=fetch($.a), 'wrapper')", adapter);
+        Assert.That(withoutPrefix!.ToScript(), Is.EqualTo(withPrefix!.ToScript()));
+    }
+
+    [Test]
+    public void ParseValue_InnerCallOfUnknownFunction_StaysLiteralAndWarns()
+    {
+        string? warning = null;
+        var result = converter.ParseValue("=promote(notAFunction($.a), 'wrapper')", adapter, w => warning = w);
+        Assert.That(result, Is.InstanceOf<FunctionSupportedValue<JToken>>());
+        Assert.That(result!.ToScript(), Does.Not.Contain("=notAFunction("));
+        Assert.That(warning, Is.Not.Null);
+        Assert.That(warning, Does.Contain("notAFunction"));
+    }
+
+    [Test]
+    public void ParseValue_QuotedCallLikeArgument_StaysLiteral()
+    {
+        // 'fetch($.a)' is quoted — quoting always wins over the inner-call rule
+        string? warning = null;
+        var result = converter.ParseValue("=promote('fetch($.a)', 'wrapper')", adapter, w => warning = w);
+        Assert.That(result!.ToScript(), Does.Not.Contain("=fetch("));
+        Assert.That(warning, Is.Null);
+    }
+
+    [TestCase("fetch($.a)",            true,  "fetch")]
+    [TestCase("toString(fetch($.a))",  true,  "toString")]
+    [TestCase("fetch ($.a)",           true,  "fetch")]
+    [TestCase("notAFunction($.a)",     true,  "notAFunction")]
+    [TestCase("a(1) b(2)",             false, "")]
+    [TestCase("hello (world) there",   false, "")]
+    [TestCase("fetch($.a) trailing",   false, "")]
+    [TestCase("(grouped)",             false, "")]
+    [TestCase("2(x)",                  false, "")]
+    [TestCase("plain text",            false, "")]
+    [TestCase("f('a)b')",              true,  "f")]
+    public void TryGetInnerCallName_ClassifiesArgument(string text, bool expected, string expectedName)
+    {
+        var isCall = FunctionConverter<JToken>.TryGetInnerCallName(text, out var name);
+        Assert.That(isCall, Is.EqualTo(expected));
+        if (expected) Assert.That(name, Is.EqualTo(expectedName));
+    }
 }

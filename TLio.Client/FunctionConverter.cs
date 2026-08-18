@@ -15,9 +15,20 @@ namespace TLio.Client;
 ///   - Quoted string 'value' or "value":
 ///       - Inner starts with "=" (not "==") → nested function expression (enables dynamic paths)
 ///       - Otherwise → FixedValue; @@, $$, == and doubled quote char ('' / "") decoded inside
-///   - Numeric literal → FixedValue with number node
-///   - Boolean literal true/false → FixedValue with bool node
 ///   - Otherwise → FixedValue with string node
+///
+/// JSON literals (numbers, true/false, null) are only recognised in ARGUMENT position, where
+/// there is no other way to write them: =substring($.a, 0, 3). At value level the JSON document
+/// already expresses them natively ("value": 42), so a JSON *string* stays a string — "007"
+/// must not silently become the number 7.
+///
+/// Argument parsing rules (inside "name(...)"):
+///   - Only the OUTERMOST expression must start with "=". For arguments the "=" is optional:
+///     an unquoted argument of the form knownFunction(...) is parsed as a nested call, so
+///     "=concat(fetch($.a), ' ', toString($.b))" and "=concat(=fetch($.a), ...)" are equivalent.
+///   - The name must be registered in the functions provider; unknown names keep the historic
+///     literal-string fallback (and raise a warning via warnCallback).
+///   - Quoting always wins: 'fetch($.a)' stays the literal text fetch($.a).
 ///
 /// Ported from JLio's FunctionConverter / SplitText.GetChoppedElements.
 /// </summary>
@@ -32,37 +43,35 @@ public class FunctionConverter<TNode>
     /// Parse a raw script value string into an IFunctionSupportedValue.
     /// Returns a <see cref="NotFoundFunctionValue{TNode}"/> sentinel when a function expression refers to an unknown function.
     /// <paramref name="warnCallback"/> is invoked (when provided) if a likely notation mistake is detected,
-    /// e.g. <c>@field</c> instead of the required <c>@.field</c> form.
+    /// e.g. <c>@field</c> instead of the required <c>@.field</c> form, or a nested call to an
+    /// unregistered function. Warnings raised here are collected by <see cref="CommandConverter{TNode}"/>
+    /// and logged when the script executes.
+    /// <paramref name="asArgument"/> selects argument-position parsing, where bare JSON literals
+    /// (<c>42</c>, <c>true</c>, <c>null</c>) are recognised.
     /// </summary>
     public IFunctionSupportedValue<TNode>? ParseValue(string rawValue, INodeAdapter<TNode> adapter,
-        Action<string>? warnCallback = null)
+        Action<string>? warnCallback = null, bool asArgument = false)
     {
         if (string.IsNullOrEmpty(rawValue))
-            return new FixedValue<TNode>(adapter.CreateString(""));
+            return new FixedValue<TNode>(adapter.CreateString(""), rawValue);
 
         // Escape sequences: double-prefix produces a literal string instead of triggering
         if (rawValue.StartsWith("=="))
-            return new FixedValue<TNode>(adapter.CreateString("=" + rawValue.Substring(2)));
+            return new FixedValue<TNode>(adapter.CreateString("=" + rawValue.Substring(2)), rawValue);
         if (rawValue.StartsWith("$$"))
-            return new FixedValue<TNode>(adapter.CreateString("$" + rawValue.Substring(2)));
+            return new FixedValue<TNode>(adapter.CreateString("$" + rawValue.Substring(2)), rawValue);
         if (rawValue.StartsWith("@@"))
-            return new FixedValue<TNode>(adapter.CreateString("@" + rawValue.Substring(2)));
+            return new FixedValue<TNode>(adapter.CreateString("@" + rawValue.Substring(2)), rawValue);
 
         if (rawValue.StartsWith("="))
-            return ParseFunctionExpression(rawValue.Substring(1), adapter);
+            return ParseFunctionExpression(rawValue.Substring(1), adapter, warnCallback);
 
         if (rawValue.StartsWith("$"))
             return new PathValue<TNode>(rawValue);
 
         if (rawValue.StartsWith("@"))
         {
-            // @@ was already handled above as an escape sequence.
-            // @. is the required form for relative paths in JSON/YAML.
-            // Anything else (e.g. @field) is likely a missing dot — warn and still produce PathValue.
-            if (!rawValue.StartsWith("@."))
-                warnCallback?.Invoke(
-                    $"Path '{rawValue}' is missing the required dot — did you mean '@.{rawValue.Substring(1)}'? " +
-                    "Relative paths in JSON/YAML require the '@.' prefix.");
+            WarnIfRelativePathIsMissingDot(rawValue, warnCallback);
             return new PathValue<TNode>(rawValue);
         }
 
@@ -85,7 +94,7 @@ public class FunctionConverter<TNode>
                 // Unescape only the doubled quote chars; other escapes (@@, $$, ==) are handled
                 // by the function parser for each inner argument individually.
                 var innerExpr = inner.Substring(1).Replace(escapedQuote, quoteChar.ToString());
-                return ParseFunctionExpression(innerExpr, adapter);
+                return ParseFunctionExpression(innerExpr, adapter, warnCallback);
             }
 
             // Apply escape sequences: doubled quote char → literal quote; @@, $$, == → @, $, =
@@ -94,26 +103,38 @@ public class FunctionConverter<TNode>
                 .Replace("@@", "@")
                 .Replace("$$", "$")
                 .Replace("==", "=");
-            return new FixedValue<TNode>(adapter.CreateString(content));
+            return new FixedValue<TNode>(adapter.CreateString(content), rawValue);
         }
 
+        // Bare JSON literals are argument-position only — see the class remarks.
+        if (asArgument)
+        {
+            if (bool.TryParse(rawValue, out var boolVal))
+                return new FixedValue<TNode>(adapter.CreateBoolean(boolVal), rawValue);
 
-        // Boolean
-        if (bool.TryParse(rawValue, out var boolVal))
-            return new FixedValue<TNode>(adapter.CreateBoolean(boolVal));
+            // Integral first, so =substring($.a, 0, 3) does not carry 0.0 / 3.0 around.
+            if (long.TryParse(rawValue,
+                    System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var intVal))
+                return new FixedValue<TNode>(adapter.CreateValue(intVal), rawValue);
 
-        // Numeric
-        if (double.TryParse(rawValue,
-                System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture,
-                out var numVal))
-            return new FixedValue<TNode>(adapter.CreateNumber(numVal));
+            if (double.TryParse(rawValue,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var numVal))
+                return new FixedValue<TNode>(adapter.CreateNumber(numVal), rawValue);
+
+            if (rawValue == "null")
+                return new FixedValue<TNode>(adapter.CreateNull(), rawValue);
+        }
 
         // Fall back to string literal
-        return new FixedValue<TNode>(adapter.CreateString(rawValue));
+        return new FixedValue<TNode>(adapter.CreateString(rawValue), rawValue);
     }
 
-    private IFunctionSupportedValue<TNode>? ParseFunctionExpression(string expression, INodeAdapter<TNode> adapter)
+    private IFunctionSupportedValue<TNode>? ParseFunctionExpression(string expression, INodeAdapter<TNode> adapter,
+        Action<string>? warnCallback = null)
     {
         var parenIdx = expression.IndexOf('(');
         if (parenIdx < 0)
@@ -147,15 +168,114 @@ public class FunctionConverter<TNode>
             // so that functions like fetch() and partial() can evaluate the path themselves.
             IFunctionSupportedValue<TNode>? argValue;
             if (trimmed.StartsWith("$") || trimmed.StartsWith("@"))
-                argValue = new FixedValue<TNode>(adapter.CreateString(trimmed));
+            {
+                // The path is handed to the function as a string, so ParseValue never sees it —
+                // run the same notation check here.
+                if (trimmed.StartsWith("@") && !trimmed.StartsWith("@@"))
+                    WarnIfRelativePathIsMissingDot(trimmed, warnCallback);
+                argValue = new FixedValue<TNode>(adapter.CreateString(trimmed), trimmed);
+            }
+            else if (TryGetInnerCallName(trimmed, out var innerName))
+            {
+                // Inner (nested) call: the leading "=" is optional here — only the
+                // outermost expression is required to carry it. An unknown name is not
+                // a call at all; keep the historic literal-string fallback but warn,
+                // because that silently turns a typo into text.
+                if (_functionsProvider.GetFunction(innerName) != null)
+                    argValue = ParseFunctionExpression(trimmed, adapter, warnCallback);
+                else
+                {
+                    warnCallback?.Invoke(
+                        $"Argument '{trimmed}' looks like a call to '{innerName}', but no such function is registered — " +
+                        "it is treated as a literal string. Check the spelling, or register the function pack that provides it. " +
+                        $"To keep it as text, quote it: '{trimmed}'.");
+                    argValue = ParseValue(trimmed, adapter, warnCallback, asArgument: true);
+                }
+            }
             else
-                argValue = ParseValue(trimmed, adapter);
+                argValue = ParseValue(trimmed, adapter, warnCallback, asArgument: true);
             if (argValue != null)
                 arguments.Add(argValue);
         }
 
         function.SetArguments(arguments);
         return new FunctionSupportedValue<TNode>(function);
+    }
+
+    /// <summary>
+    /// <c>@.</c> is the required form for relative paths in JSON/YAML. Anything else
+    /// (e.g. <c>@field</c>) is almost certainly a missing dot — the path is still produced,
+    /// but the author gets told why it will not resolve. XML XPath attribute selectors
+    /// (<c>@id</c>) only occur inside <c>[...]</c> predicates, which never reach here.
+    /// </summary>
+    private static void WarnIfRelativePathIsMissingDot(string path, Action<string>? warnCallback)
+    {
+        if (path.StartsWith("@.")) return;
+        warnCallback?.Invoke(
+            $"Path '{path}' is missing the required dot — did you mean '@.{path.Substring(1)}'? " +
+            "Relative paths in JSON/YAML require the '@.' prefix.");
+    }
+
+    /// <summary>
+    /// Determine whether an unquoted function argument is itself a call expression written
+    /// without the optional leading "=" — e.g. <c>fetch($.a)</c> inside <c>=concat(fetch($.a), ' ')</c>.
+    ///
+    /// The whole argument must be a single balanced call: an identifier, then "(" … ")" where the
+    /// closing paren is the last character. That excludes text that merely contains parentheses
+    /// (<c>hello (world)</c>) or two calls side by side (<c>a(1) b(2)</c>), which stay literals.
+    /// The caller still checks that <paramref name="functionName"/> is registered before treating
+    /// it as a call, so plain text is never silently reinterpreted.
+    /// </summary>
+    internal static bool TryGetInnerCallName(string text, out string functionName)
+    {
+        functionName = string.Empty;
+
+        var parenIdx = text.IndexOf('(');
+        if (parenIdx <= 0 || !text.EndsWith(")")) return false;
+
+        var name = text.Substring(0, parenIdx).TrimEnd();
+        if (name.Length == 0) return false;
+        if (!char.IsLetter(name[0]) && name[0] != '_') return false;
+        foreach (var c in name)
+            if (!char.IsLetterOrDigit(c) && c != '_') return false;
+
+        // The '(' at parenIdx must be closed by the final ')' — quotes are skipped so a
+        // paren inside a string argument does not affect the balance.
+        var depth = 0;
+        var inQuote = false;
+        var quoteChar = '\0';
+        for (int i = parenIdx; i < text.Length; i++)
+        {
+            var c = text[i];
+
+            if (!inQuote && (c == '\'' || c == '"'))
+            {
+                inQuote = true;
+                quoteChar = c;
+            }
+            else if (inQuote && c == quoteChar)
+            {
+                // Doubled quote char is an escaped literal quote — stay in-quote.
+                if (i + 1 < text.Length && text[i + 1] == quoteChar) i++;
+                else inQuote = false;
+            }
+            else if (!inQuote && c == '(')
+            {
+                depth++;
+            }
+            else if (!inQuote && c == ')')
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    if (i != text.Length - 1) return false;
+                    functionName = name;
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

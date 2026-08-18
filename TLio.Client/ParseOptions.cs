@@ -2,6 +2,7 @@ using TLio.Commands;
 using TLio.Commands.Advanced;
 using TLio.Core.Contracts;
 using TLio.Functions;
+using TLio.Functions.Logic;
 
 namespace TLio.Client;
 
@@ -67,6 +68,27 @@ public class ParseOptions<TNode>
         options.FunctionsProvider.Register("datetime",   () => new Datetime<TNode>());
         options.FunctionsProvider.Register("newGuid",    () => new NewGuid<TNode>());
         options.FunctionsProvider.Register("path",       () => new ScriptPath<TNode>());
+
+        // Predicates — built in rather than packaged, because ifElse and decisionTable
+        // are core commands and a condition needs something that returns a boolean.
+        options.FunctionsProvider.Register("equals",         () => new EqualsFunction<TNode>());
+        options.FunctionsProvider.Register("notEquals",      () => new NotEqualsFunction<TNode>());
+        options.FunctionsProvider.Register("greaterThan",    () => new GreaterThanFunction<TNode>());
+        options.FunctionsProvider.Register("greaterOrEqual", () => new GreaterOrEqualFunction<TNode>());
+        options.FunctionsProvider.Register("lessThan",       () => new LessThanFunction<TNode>());
+        options.FunctionsProvider.Register("lessOrEqual",    () => new LessOrEqualFunction<TNode>());
+        options.FunctionsProvider.Register("and",            () => new AndFunction<TNode>());
+        options.FunctionsProvider.Register("or",             () => new OrFunction<TNode>());
+        options.FunctionsProvider.Register("not",            () => new NotFunction<TNode>());
+        options.FunctionsProvider.Register("exists",         () => new ExistsFunction<TNode>());
+        options.FunctionsProvider.Register("isNull",         () => new IsNullFunction<TNode>());
+        options.FunctionsProvider.Register("isString",       () => new IsStringFunction<TNode>());
+        options.FunctionsProvider.Register("isNumber",       () => new IsNumberFunction<TNode>());
+        options.FunctionsProvider.Register("isBoolean",      () => new IsBooleanFunction<TNode>());
+        options.FunctionsProvider.Register("isArray",        () => new IsArrayFunction<TNode>());
+        options.FunctionsProvider.Register("isObject",       () => new IsObjectFunction<TNode>());
+        options.FunctionsProvider.Register("in",             () => new InFunction<TNode>());
+        options.FunctionsProvider.Register("matches",        () => new MatchesFunction<TNode>());
 
         return options;
     }

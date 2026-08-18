@@ -56,6 +56,15 @@ Function calls are string values prefixed with `=`:
 { "command": "set", "path": "$.target", "value": "=fetch($.source)" }
 ```
 
+Only the outermost call needs the `=`. Nested calls may carry it or not — these are the same:
+
+```json
+{ "value": "=concat(fetch($.first), ' ', fetch($.last))" }
+{ "value": "=concat(=fetch($.first), ' ', =fetch($.last))" }
+```
+
+See [notation-reference.md](notation-reference.md) §3a.
+
 ### Default Setup
 
 ```csharp
@@ -231,7 +240,21 @@ transformation.
 ### 2. Function value syntax
 
 Functions are written as string values: `"value": "=functionName(arg1, arg2)"`. NOT as
-objects. The `=` prefix triggers function evaluation.
+objects. The `=` prefix triggers function evaluation — on the outermost call only; nested
+calls may omit it (`=concat(fetch($.a), '!')`).
+
+### 2a. A JSON string value stays a string
+
+`"value": "007"` writes the string `007`; `"value": "true"` writes the string `true`. Write
+the JSON literal itself for other types: `"value": 7`, `"value": true`, `"value": null`.
+Bare literals are typed only inside an argument list, where JSON cannot carry the type:
+`=substring($.a, 0, 3)`.
+
+### 2b. Notation problems are logged, not silent
+
+Unresolvable paths, `@field` written without the dot, and nested calls to unregistered
+functions all produce warnings on the execution log. Check `context.GetLogEntries()` when a
+command writes nothing.
 
 ### 3. add vs set vs put
 
@@ -1631,3 +1654,34 @@ Input: `{ "name": "  Alice" }` → `"name": "Alice"`
 | trim | `=trim(str)` | Both-end whitespace removal | Text |
 | trimEnd | `=trimEnd(str)` | Trailing whitespace removal | Text |
 | trimStart | `=trimStart(str)` | Leading whitespace removal | Text |
+| toFixed | `=toFixed(v,n)` / `=toFixed(v,n,sep)` | Money-style text with exactly n decimals | Text |
+
+### Predicate Summary (conditions)
+
+All built in — no pack registration needed, because `ifElse` and `decisionTable` are core commands.
+Every one returns a boolean node; a path that matches nothing is an answer, not an error.
+
+| Function | Syntax | When to use (one line) |
+|----------|--------|------------------------|
+| equals | `=equals(a,b)` | Value equality, bridging number/text |
+| notEquals | `=notEquals(a,b)` | Everything except one value |
+| greaterThan | `=greaterThan(a,b)` | Exclusive lower threshold |
+| greaterOrEqual | `=greaterOrEqual(a,b)` | Inclusive lower threshold / range start |
+| lessThan | `=lessThan(a,b)` | Exclusive upper threshold |
+| lessOrEqual | `=lessOrEqual(a,b)` | Inclusive upper threshold / range end |
+| and | `=and(c1,c2,...)` | All conditions must hold |
+| or | `=or(c1,c2,...)` | Any condition may hold |
+| not | `=not(c)` | Invert a predicate that has no negative twin |
+| exists | `=exists(path)` | Path matched something (null still counts) |
+| isNull | `=isNull(v)` | Value is null, or path matched nothing |
+| isString | `=isString(v)` | Document type is text |
+| isNumber | `=isNumber(v)` | Document type is numeric |
+| isBoolean | `=isBoolean(v)` | Document type is boolean |
+| isArray | `=isArray(v)` | Value is a list |
+| isObject | `=isObject(v)` | Value has named properties |
+| in | `=in(v,o1,o2,...)` | Membership in a set or an array from the document |
+| matches | `=matches(v,regex)` | Format validation by regular expression |
+| isEmpty | `=isEmpty(v)` | Null, empty string, or empty array (Text pack) |
+
+**Truthiness**: only a boolean, or the text `"true"`/`"false"`, is true. A number or a non-empty
+string is **not** — wrap it in a predicate: `=greaterThan($.count, 0)`, not `=and($.count)`.

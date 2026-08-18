@@ -17,6 +17,22 @@ public interface INodeAdapter<TNode>
     bool IsPrimitive(TNode node);
     bool IsNull(TNode node);
 
+    /// <summary>
+    /// The kind of value the node holds. The default implementation derives it from the
+    /// other type queries, which is the correct answer for untyped formats (XML, YAML).
+    /// Adapters over a typed format (JSON) should override this to report the document's
+    /// own type, so that the string "42" is reported as <see cref="NodeKind.String"/>.
+    /// </summary>
+    NodeKind GetNodeKind(TNode node)
+    {
+        if (IsNull(node)) return NodeKind.Null;
+        if (IsObject(node)) return NodeKind.Object;
+        if (IsArray(node)) return NodeKind.Array;
+        if (TryGetBoolean(node).HasValue) return NodeKind.Boolean;
+        if (TryGetDouble(node).HasValue) return NodeKind.Number;
+        return NodeKind.String;
+    }
+
     // ── Object operations ─────────────────────────────────────────────────────
 
     bool HasProperty(TNode node, string propertyName);

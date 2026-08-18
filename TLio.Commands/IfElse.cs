@@ -68,15 +68,7 @@ public class IfElse<TNode> : CommandBase<TNode>
         if (!result.Success || result.Data.First == null)
             return false;
 
-        var node = result.Data.First;
-
-        var boolVal = context.NodeAdapter.TryGetBoolean(node);
-        if (boolVal.HasValue) return boolVal.Value;
-
-        var strVal = context.NodeAdapter.TryGetString(node);
-        if (strVal != null) return string.Equals(strVal, "true", StringComparison.OrdinalIgnoreCase);
-
-        return false;
+        return NodeComparison.IsTruthy(result.Data.First, context.NodeAdapter);
     }
 
     public override ValidationResult ValidateCommandInstance()

@@ -19,6 +19,34 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     public bool IsPrimitive(JsonNode node) => node is JsonValue;
     public bool IsNull(JsonNode node) => node == null || (node is JsonValue v && v.TryGetValue<object>(out var o) && o == null);
 
+    /// <summary>JSON carries its own types, so report the value kind rather than guessing.</summary>
+    public NodeKind GetNodeKind(JsonNode node)
+    {
+        if (IsNull(node)) return NodeKind.Null;
+        if (node is JsonObject) return NodeKind.Object;
+        if (node is JsonArray) return NodeKind.Array;
+        if (node is not JsonValue value) return NodeKind.Null;
+
+        // A JsonValue is backed either by a JsonElement (parsed document) or a CLR value
+        // (constructed node); both have to be inspected without coercion.
+        if (value.TryGetValue<JsonElement>(out var element))
+            return element.ValueKind switch
+            {
+                JsonValueKind.Object                          => NodeKind.Object,
+                JsonValueKind.Array                           => NodeKind.Array,
+                JsonValueKind.Number                          => NodeKind.Number,
+                JsonValueKind.True or JsonValueKind.False      => NodeKind.Boolean,
+                JsonValueKind.Null or JsonValueKind.Undefined  => NodeKind.Null,
+                _                                             => NodeKind.String
+            };
+
+        if (value.TryGetValue<string>(out _)) return NodeKind.String;
+        if (value.TryGetValue<bool>(out _)) return NodeKind.Boolean;
+        if (value.TryGetValue<double>(out _) || value.TryGetValue<long>(out _) ||
+            value.TryGetValue<decimal>(out _)) return NodeKind.Number;
+        return NodeKind.String;
+    }
+
     // ── Object operations ─────────────────────────────────────────────────────
 
     public bool HasProperty(JsonNode node, string propertyName) =>
@@ -91,6 +119,9 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
         {
             if (v.TryGetValue<string>(out var s)) return s;
             if (v.TryGetValue<double>(out var d)) return d;
+            // A JsonValue created from a CLR long (e.g. an integral script literal) is not
+            // convertible to double by TryGetValue — read it in its own type.
+            if (v.TryGetValue<long>(out var l)) return l;
             if (v.TryGetValue<bool>(out var b)) return b;
             return null;
         }
@@ -122,6 +153,7 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     {
         if (node is not JsonValue v) return null;
         if (v.TryGetValue<double>(out var d)) return d;
+        if (v.TryGetValue<long>(out var l)) return l;
         if (v.TryGetValue<decimal>(out var dec)) return (double)dec;
         if (v.TryGetValue<string>(out var s) && double.TryParse(s, out var parsed)) return parsed;
         return null;
@@ -138,6 +170,7 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
         if (v.TryGetValue<string>(out var s)) return s;
         if (v.TryGetValue<bool>(out var b)) return b.ToString();   // "True" / "False"
         if (v.TryGetValue<double>(out var d)) return d.ToString();
+        if (v.TryGetValue<long>(out var l)) return l.ToString();
         if (v.TryGetValue<decimal>(out var dec)) return dec.ToString();
         // Fallback for any other boxed type
         try
