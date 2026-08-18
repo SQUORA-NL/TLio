@@ -33,9 +33,11 @@ The outer JSON string uses `"..."`. Inside a function expression, literal argume
 - `' '` — a literal space → **single quotes required**
 - The function expression itself (`=concat(...)`) → **no outer single quotes**
 
-**Wrong** — outer-quoting a function call:
+**Careful** — outer-quoting does *not* make a function literal (corrected 2026-08-18; this
+document previously claimed the opposite, which never matched the implementation):
 ```json
-{ "value": "'=concat($.a, $.b)'" }   ← treated as a literal string, NOT a function
+{ "value": "'=concat($.a, $.b)'" }   ← still evaluated: '...' whose content starts with = is an expression
+{ "value": "'==concat($.a, $.b)'" }  ← literal string "=concat($.a, $.b)" — double the = to escape
 ```
 
 ### Relative Paths (`@.`)

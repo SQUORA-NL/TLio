@@ -24,7 +24,7 @@
 
 **Decision**: The 22 unique function *implementations* (ignoring camelCase aliases) are: concat, length, substring, toupper, tolower, trim, trimstart, trimend, startswith, endswith, contains, replace, split, join, indexof, format, parse, padleft, padright, newguid, isempty, toString.
 
-**Rationale**: `RegisterTextPack` registers 26 names but only 22 unique implementations (4 are camelCase aliases for toupper/tolower/trimstart/trimend). Tests target the implementation classes.
+**Rationale**: `RegisterTextPack` used to register 26 names for 22 unique implementations (4 camelCase aliases for toupper/tolower/trimstart/trimend). The aliases were removed on 2026-08-18 — function lookup is case-insensitive, so `=toUpper(...)` resolves to `toupper` without a separate registration. Tests target the implementation classes.
 
 **Alternatives considered**: Testing aliases separately — unnecessary since they resolve to the same class.
 

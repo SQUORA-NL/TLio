@@ -21,7 +21,15 @@
 
 ## Returns
 
-A string node containing the extracted substring.
+A **string** node containing the extracted substring — always, even when the source was a number
+and even when the result looks numeric. `=substring(20260818, 0, 4)` gives the string `"2026"`,
+so leading zeros survive: `=substring(20260818, 4, 2)` gives `"08"`, not `8`.
+
+The input is read as text too, so a number, boolean or date value can be sliced directly without
+converting it first.
+
+Only the index arguments are numeric. Everything text functions consume and produce is text;
+`length` and `indexOf` are the exceptions, since they answer "how many" and "where".
 
 ## Formats
 

@@ -26,8 +26,25 @@ inside JSON string delimiters `"..."`.
 | **PathValue** (relative) | Starts with `@.` | `"@.child"` |
 | **FixedValue** (escape) | `@@` / `$$` / `==` prefix | `"@@admin"` → `@admin` |
 | **FixedValue** (quoted) | Wrapped in `'...'` | `"'hello'"` → `hello` |
-| **FixedValue** (JSON) | JSON boolean / number / null | `true`, `42`, `null` |
+| **FixedValue** (JSON) | JSON boolean / number / null — **unquoted** | `true`, `42`, `null` |
 | **FixedValue** (plain) | Anything else | `"Alice"` |
+
+### Strings stay strings
+
+At value level a JSON **string** is never re-interpreted as another JSON type. Write the
+JSON literal itself when you want a number, a boolean or null:
+
+```json
+{ "value": "007" }   → the string "007"      { "value": 7 }     → the number 7
+{ "value": "1e3" }   → the string "1e3"      { "value": 14.5 }  → the number 14.5
+{ "value": "true" }  → the string "true"     { "value": true }  → the boolean true
+{ "value": "null" }  → the string "null"     { "value": null }  → null
+```
+
+Integral literals stay integral: `"value": 152` writes `152`, not `152.0`.
+
+Inside a function's argument list there is no JSON layer to carry the type, so bare
+literals *are* typed there: `=substring($.a, 0, 3)` passes the numbers 0 and 3.
 
 ## 3. Function Expressions
 
@@ -36,14 +53,47 @@ Function expressions start with `=`. The `=` prefix is the only marker required 
 evaluated as a nested function expression (see Section 4a).
 
 ```json
-{ "value": "=fetch($.source)" }         ✅ correct — = marks the function
+{ "value": "=fetch($.source)" }          ✅ correct — = marks the function
 { "value": "=fetch('$.source')" }        ✅ also correct — quoted path, same result
-{ "value": "'=fetch($.source)'" }        ✅ evaluates fetch as a nested expression
+{ "value": "'=fetch($.source)'" }        ⚠️ still evaluated — quotes do NOT make it literal
+{ "value": "'==fetch($.source)'" }       ✅ literal text "=fetch($.source)"
 ```
+
+> Quoting protects an argument (`'fetch($.a)'` is text), but a quoted string whose content
+> begins with `=` is an expression everywhere — that is the rule that makes dynamic paths
+> work (§4a). Double the `=` when you want the text.
 
 Syntax: `=functionName(<arg1>, <arg2>, ...)`
 
-Arguments are comma-separated; each argument is a path reference or a single-quoted literal.
+Arguments are comma-separated; each argument is a path reference, a single-quoted literal,
+or a nested function call.
+
+### 3a. Inner (nested) calls — the `=` is optional
+
+Only the **outermost** expression must start with `=`. Inside an argument list, a call may be
+written with or without the prefix — both forms parse to the same thing:
+
+```json
+{ "value": "=concat(fetch($.first), ' ', fetch($.last))" }    ✅ inner = omitted
+{ "value": "=concat(=fetch($.first), ' ', =fetch($.last))" }  ✅ inner = present — identical
+{ "value": "=concat(toUpper(fetch($.first)), '!')" }          ✅ nests to any depth
+```
+
+An unquoted argument is read as a nested call when it is a single balanced
+`identifier(...)` expression **and** the identifier is a registered function. Everything
+else keeps its literal meaning:
+
+| Argument | Read as |
+|----------|---------|
+| `fetch($.a)` | Call to `fetch` (assuming it is registered) |
+| `'fetch($.a)'` | Literal text `fetch($.a)` — quoting always wins |
+| `notRegistered($.a)` | Literal text — plus a parser warning about the unknown name |
+| `a(1) b(2)` | Literal text — not a single balanced call |
+| `newGuid` | Literal text — a bare name without `()` is never a call inside an argument |
+
+> Because `fetch(...)` inside a function resolves the path itself, most nesting is
+> unnecessary: `=concat($.first, ' ', $.last)` is equivalent to
+> `=concat(fetch($.first), ' ', fetch($.last))` and is the preferred form.
 
 ## 4. Quoting Rules
 
@@ -98,6 +148,12 @@ After `''` → `'` unescape, the inner expression is `concat('$.', $.fieldname, 
 which builds a path string at runtime. This also prevents commas inside the doubled-quoted
 content from being interpreted as argument separators.
 
+## 4b. Function Names
+
+Function names are matched case-insensitively: `=toUpper(...)`, `=toupper(...)` and
+`=TOUPPER(...)` all resolve to the same function. Packs therefore register each name once —
+there are no separate camelCase aliases.
+
 ## 5. Path References
 
 | Form | Meaning | Valid in |
@@ -108,7 +164,11 @@ content from being interpreted as argument separators.
 | `@.<--.sibling` | Sibling via parent | JSON, YAML |
 
 > **Rule**: Relative paths in JSON/YAML always use `@.` (with the dot).
-> `@field` (no dot) is invalid in JSON/YAML context and triggers a parser warning.
+> `@field` (no dot) is invalid in JSON/YAML context and triggers a parser warning —
+> at value level and inside function arguments alike.
+
+A path that matches nothing produces no value and logs a warning naming the path, so a
+typo shows up in the execution log instead of silently writing nothing.
 
 ```json
 { "command": "set", "path": "$.items[*].full", "value": "=concat(@.first, ' ', @.last)" }

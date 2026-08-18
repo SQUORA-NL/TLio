@@ -121,9 +121,13 @@ options.CommandsProvider.RegisterETL<JToken>();
 
 // Text functions: concat, format, substring, toLower, toUpper, trim, split, join,
 //   contains, startsWith, endsWith, indexOf, isEmpty, replace, parse, toString,
-//   newguid, padleft, padright, length
+//   toFixed, newguid, padleft, padright, length
 options.FunctionsProvider.RegisterText<JToken>();
 ```
+
+Predicates for `ifElse` / `decisionTable` conditions — equals, notEquals, greaterThan,
+greaterOrEqual, lessThan, lessOrEqual, and, or, not, exists, isNull, isString, isNumber,
+isBoolean, isArray, isObject, in, matches — are built in and need no registration.
 
 ### Minimal script example
 

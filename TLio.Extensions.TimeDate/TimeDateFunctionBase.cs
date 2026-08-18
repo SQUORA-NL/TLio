@@ -19,7 +19,7 @@ namespace TLio.Extensions.TimeDate;
 /// </summary>
 public abstract class TimeDateFunctionBase<TNode> : FunctionBase<TNode>
 {
-    public override string FunctionName => GetType().Name.ToLowerInvariant();
+    public override string FunctionName => TypeName(GetType()).ToLowerInvariant();
 
     private static readonly string[] DateFormats =
     {

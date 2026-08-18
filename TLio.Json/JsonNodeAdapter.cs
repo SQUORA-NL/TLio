@@ -16,6 +16,17 @@ public class JsonNodeAdapter : INodeAdapter<JToken>
     public bool IsPrimitive(JToken node) => node is JValue;
     public bool IsNull(JToken node) => node.Type == JTokenType.Null;
 
+    /// <summary>JSON carries its own types, so report the token type rather than guessing.</summary>
+    public NodeKind GetNodeKind(JToken node) => node.Type switch
+    {
+        JTokenType.Object                             => NodeKind.Object,
+        JTokenType.Array                              => NodeKind.Array,
+        JTokenType.Integer or JTokenType.Float        => NodeKind.Number,
+        JTokenType.Boolean                            => NodeKind.Boolean,
+        JTokenType.Null or JTokenType.Undefined or JTokenType.None => NodeKind.Null,
+        _                                             => NodeKind.String
+    };
+
     // ── Object operations ─────────────────────────────────────────────────────
 
     public bool HasProperty(JToken node, string propertyName) =>

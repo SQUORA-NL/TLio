@@ -43,6 +43,13 @@ public class CommandConverter<TNode>
     private readonly FunctionConverter<TNode> _functionConverter;
     private readonly INodeAdapter<TNode> _nodeAdapter;
 
+    /// <summary>
+    /// Notation warnings raised by <see cref="FunctionConverter{TNode}"/> while parsing.
+    /// Parsing has no execution context, so they are handed to the parsed
+    /// <see cref="TLioScript{TNode}"/> and logged when it executes.
+    /// </summary>
+    private readonly List<string> _parseWarnings = new();
+
     public CommandConverter(
         ICommandsProvider<TNode> commandsProvider,
         IFunctionsProvider<TNode> functionsProvider,
@@ -57,6 +64,7 @@ public class CommandConverter<TNode>
     public TLioScript<TNode> ParseScript(string scriptJson)
     {
         var script = new TLioScript<TNode>();
+        _parseWarnings.Clear();
 
         JsonDocument doc;
         try { doc = JsonDocument.Parse(scriptJson); }
@@ -75,6 +83,7 @@ public class CommandConverter<TNode>
             }
         }
 
+        script.ParseWarnings.AddRange(_parseWarnings);
         return script;
     }
 
@@ -138,7 +147,8 @@ public class CommandConverter<TNode>
         if (targetType == typeof(IFunctionSupportedValue<TNode>))
         {
             if (element.ValueKind == JsonValueKind.String)
-                return _functionConverter.ParseValue(element.GetString() ?? string.Empty, _nodeAdapter);
+                return _functionConverter.ParseValue(
+                    element.GetString() ?? string.Empty, _nodeAdapter, _parseWarnings.Add);
 
             // Object/array values may contain embedded "=func()" strings — use
             // ExpandingFixedValue so those are evaluated lazily at GetValue time.
@@ -159,6 +169,10 @@ public class CommandConverter<TNode>
             {
                 JsonValueKind.True  => new FixedValue<TNode>(_nodeAdapter.CreateBoolean(true)),
                 JsonValueKind.False => new FixedValue<TNode>(_nodeAdapter.CreateBoolean(false)),
+                // Integral literals go through CreateValue so they stay integers —
+                // CreateNumber(double) would turn "value": 152 into 152.0.
+                JsonValueKind.Number when element.TryGetInt64(out var l)
+                    => new FixedValue<TNode>(_nodeAdapter.CreateValue(l)),
                 JsonValueKind.Number when element.TryGetDouble(out var d)
                     => new FixedValue<TNode>(_nodeAdapter.CreateNumber(d)),
                 JsonValueKind.Null  => new FixedValue<TNode>(_nodeAdapter.CreateNull()),

@@ -10,7 +10,7 @@ namespace TLio.UnitTests.Fixtures;
 /// fixture triplets.  Each fixture runs through ParseOptions.CreateDefault() +
 /// ScriptEngine so the same files can be reused against any adapter (Phase 7).
 ///
-/// Fixture folders live under TLio.UnitTests/Fixtures/<CommandName>/.
+/// Fixture folders live under TLio.UnitTests/Fixtures/&lt;CommandName&gt;/.
 /// </summary>
 [TestFixture]
 public class FixtureTests

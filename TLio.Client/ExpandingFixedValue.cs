@@ -92,7 +92,10 @@ internal class ExpandingFixedValue<TNode> : IFunctionSupportedValue<TNode>
         var str = _adapter.TryGetString(node);
         if (str == null || !str.StartsWith("=")) return false;
 
-        var valueParsed = _converter.ParseValue(str, _adapter);
+        // Embedded expressions are parsed lazily, so unlike CommandConverter this one does
+        // have a context to warn into directly.
+        var valueParsed = _converter.ParseValue(str, _adapter,
+            w => context.LogWarning(TLio.Core.CoreConstants.ScriptParsing, w));
         if (valueParsed == null) return false;
 
         var result = valueParsed.GetValue(currentNode, dataContext, context);

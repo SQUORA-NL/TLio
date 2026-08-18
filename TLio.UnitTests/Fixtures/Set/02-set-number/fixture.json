@@ -1,5 +1,5 @@
 {
   "input": { "score": 0 },
   "script": [{ "command": "set", "path": "$.score", "value": 42 }],
-  "result": { "score": 42.0 }
+  "result": { "score": 42 }
 }

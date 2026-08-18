@@ -103,4 +103,6 @@ Required scenarios (see research.md §3):
 - `@dotpath-valid` — `@.field` relative path works correctly
 - `escape-at-value` — `@@` at value level produces literal `@`
 - `escape-in-quoted-arg` — `'user@@example.com'` inside a function arg
-- `outer-quoted-function` — `"'=concat(...)'"` treated as a literal string, not a function
+- `outer-quoted-function` — `"'==concat(...)'"` (doubled `=`) treated as a literal string
+- `quoted-expression-evaluates` — `"'=fetch($.a)'"` is evaluated, not literal (corrected 2026-08-18)
+- `value-level-literals` — a JSON string stays a string: `"152"`, `"007"`, `"true"` are not coerced
