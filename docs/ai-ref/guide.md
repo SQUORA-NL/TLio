@@ -32,6 +32,7 @@
 | Two outcomes, one condition | Simple | `ifElse` |
 | Three or more outcomes | May grow | `decisionTable` |
 | Produce equal/greater/less/different label | Classification | `compare` |
+| Produce a structural diff of two sub-trees | Classification | `compare` (with `settings`) |
 
 ### Combining data
 
