@@ -241,6 +241,29 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
         return false;
     }
 
+    /// <summary>
+    /// A JSON value is named by the JsonObject key that holds it, so renaming rewrites that
+    /// key. JsonObject has no rename primitive and re-adding a key appends it, so the object
+    /// is rebuilt in its original order. Nodes are detached by Clear() and re-added, never
+    /// cloned, so every existing node reference stays valid. A root node has no key.
+    /// </summary>
+    public bool RenameNode(JsonNode node, string newName)
+    {
+        if (string.IsNullOrEmpty(newName)) return false;
+        if (node?.Parent is not JsonObject obj) return false;
+
+        var key = FindKeyInObject(obj, node);
+        if (key == null) return false;
+        if (key == newName) return true;
+
+        var entries = obj.Select(e => (e.Key, e.Value)).ToList();
+        obj.Clear();
+        foreach (var (existingKey, value) in entries)
+            obj[existingKey == key ? newName : existingKey] = value;
+
+        return true;
+    }
+
     // ── Deep merge ────────────────────────────────────────────────────────────
 
     /// <summary>

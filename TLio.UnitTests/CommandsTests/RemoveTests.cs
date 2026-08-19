@@ -110,6 +110,20 @@ public class RemoveTests
     }
 
     [Test]
+    public void Remove_MissingPath_WarnsAndContinues()
+    {
+        var before = data.DeepClone();
+
+        var result = new Remove<JToken>("$.does.not.exist").Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True, "a missing path is a no-op, not a failure");
+        Assert.That(JToken.DeepEquals(data, before), Is.True);
+        Assert.That(executeOptions.GetLogEntries().Any(e =>
+                e.Level == LogLevel.Warning && e.Message.Contains("no nodes matched")), Is.True,
+            "the no-op must be reported as a warning rather than passing silently");
+    }
+
+    [Test]
     public void CanUseScriptApi()
     {
         var scriptData = JObject.Parse("{ \"demo\" : \"old value\", \"demo2\" : \"old value\" }");

@@ -38,7 +38,8 @@ With settings:
 | includeArrayIndices | boolean | false | Whether to include array indices in flattened keys. |
 | preserveTypes | boolean | false | Preserve type information alongside values. |
 
-**Supports functions**: ❌
+**Functions in the value**: — no value field  
+**Functions in the path**: — not resolved here; resolve it in a preceding step
 
 ## Formats
 

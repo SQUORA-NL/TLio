@@ -56,10 +56,21 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
-        // Resolve indirect path expressions in ToPath
-        var resolvedToPath = context.ItemsFetcher.ProcessIndirectPath(ToPath!, dataContext) ?? ToPath!;
+        // Resolve indirect path expressions on both sides. An unresolved expression cannot be
+        // handed to the fetcher — the raw '=' is not legal in any path language.
+        var resolvedFromPath = IndirectPath.TryResolve(FromPath!, dataContext, context, CommandName, "FromPath");
+        var resolvedToPath = resolvedFromPath == null
+            ? null
+            : IndirectPath.TryResolve(ToPath!, dataContext, context, CommandName, "ToPath");
+        if (resolvedFromPath == null || resolvedToPath == null)
+        {
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, $"{FromPath} → {ToPath}", TraceOutcome.NoOp, 0,
+                $"{CommandName}: an =indirect() path expression could not be resolved; nothing {(IsMove ? "moved" : "copied")}."));
+            return TLioExecutionResult<TNode>.Successful(dataContext);
+        }
 
-        var sources = context.ItemsFetcher.SelectNodes(FromPath!, dataContext);
+        var sources = context.ItemsFetcher.SelectNodes(resolvedFromPath, dataContext);
         if (sources.Count == 0)
         {
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes found at FromPath '{FromPath}'");

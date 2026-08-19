@@ -40,6 +40,9 @@ public class XmlMergeTests
         </root>
         """;
 
+    /// <summary>Parses through the adapter so paths resolve from the document node.</summary>
+    private static XElement Doc(string xml) => new XmlNodeAdapter().Parse(xml);
+
     private static MergeSettings ArrayKeys(string arrayPath, params string[] keys) =>
         new()
         {
@@ -52,14 +55,14 @@ public class XmlMergeTests
     [Test]
     public void MergeObjects_AddsMissingElements()
     {
-        var data = XElement.Parse("""
+        var data = Doc("""
             <root>
               <source><name>Alice</name></source>
               <target><id>1</id></target>
             </root>
             """);
 
-        var result = new Merge<XElement>("/source", "/target").Execute(data, _context);
+        var result = new Merge<XElement>("/root/source", "/root/target").Execute(data, _context);
 
         Assert.That(result.Success, Is.True);
         Assert.That(data.Element("target")!.Element("name")!.Value, Is.EqualTo("Alice"));
@@ -69,9 +72,9 @@ public class XmlMergeTests
     [Test]
     public void KeyPaths_MergeMatchingElementsAndAppendNewOnes()
     {
-        var data = XElement.Parse(ItemsDocument);
+        var data = Doc(ItemsDocument);
 
-        var result = new Merge<XElement>("/source", "/target", ArrayKeys("/target/items", "id"))
+        var result = new Merge<XElement>("/root/source", "/root/target", ArrayKeys("/root/target/items", "id"))
             .Execute(data, _context);
 
         Assert.That(result.Success, Is.True);
@@ -87,9 +90,9 @@ public class XmlMergeTests
     {
         // Backwards compatible: without array settings XML repeated elements are
         // merged as objects (first matching child), exactly as before.
-        var data = XElement.Parse(ItemsDocument);
+        var data = Doc(ItemsDocument);
 
-        new Merge<XElement>("/source", "/target").Execute(data, _context);
+        new Merge<XElement>("/root/source", "/root/target").Execute(data, _context);
 
         var items = data.Element("target")!.Element("items")!.Elements("item").ToList();
         Assert.That(items.Count, Is.EqualTo(2));
@@ -99,7 +102,7 @@ public class XmlMergeTests
     [Test]
     public void UniqueItemsWithoutKeys_SkipsDuplicateElements()
     {
-        var data = XElement.Parse("""
+        var data = Doc("""
             <root>
               <source><tags><tag>a</tag><tag>b</tag></tags></source>
               <target><tags><tag>a</tag></tags></target>
@@ -110,11 +113,11 @@ public class XmlMergeTests
         {
             ArraySettings =
             {
-                new MergeArraySettings { ArrayPath = "/target/tags", UniqueItemsWithoutKeys = true }
+                new MergeArraySettings { ArrayPath = "/root/target/tags", UniqueItemsWithoutKeys = true }
             }
         };
 
-        new Merge<XElement>("/source", "/target", settings).Execute(data, _context);
+        new Merge<XElement>("/root/source", "/root/target", settings).Execute(data, _context);
 
         var tags = data.Element("target")!.Element("tags")!.Elements("tag")
             .Select(t => t.Value).ToList();
@@ -124,7 +127,7 @@ public class XmlMergeTests
     [Test]
     public void OnlyStructure_KeepsExistingValues()
     {
-        var data = XElement.Parse("""
+        var data = Doc("""
             <root>
               <source><a>from-source</a><c>new</c></source>
               <target><a>keep-me</a></target>
@@ -132,7 +135,7 @@ public class XmlMergeTests
             """);
 
         var settings = new MergeSettings { Strategy = MergeSettings.StrategyOnlyStructure };
-        new Merge<XElement>("/source", "/target", settings).Execute(data, _context);
+        new Merge<XElement>("/root/source", "/root/target", settings).Execute(data, _context);
 
         Assert.That(data.Element("target")!.Element("a")!.Value, Is.EqualTo("keep-me"));
         Assert.That(data.Element("target")!.Element("c")!.Value, Is.EqualTo("new"));
@@ -141,7 +144,7 @@ public class XmlMergeTests
     [Test]
     public void OnlyValues_AddsNoNewElements()
     {
-        var data = XElement.Parse("""
+        var data = Doc("""
             <root>
               <source><a>from-source</a><c>new</c></source>
               <target><a>overwrite-me</a></target>
@@ -149,7 +152,7 @@ public class XmlMergeTests
             """);
 
         var settings = new MergeSettings { Strategy = MergeSettings.StrategyOnlyValues };
-        new Merge<XElement>("/source", "/target", settings).Execute(data, _context);
+        new Merge<XElement>("/root/source", "/root/target", settings).Execute(data, _context);
 
         Assert.That(data.Element("target")!.Element("a")!.Value, Is.EqualTo("from-source"));
         Assert.That(data.Element("target")!.Element("c"), Is.Null);
@@ -158,7 +161,7 @@ public class XmlMergeTests
     [Test]
     public void MatchSettings_SkipMergeWhenKeysDiffer()
     {
-        var data = XElement.Parse("""
+        var data = Doc("""
             <root>
               <source><id>1</id><extra>added</extra></source>
               <target><id>2</id></target>
@@ -166,7 +169,7 @@ public class XmlMergeTests
             """);
 
         var settings = new MergeSettings { MatchSettings = { KeyPaths = { "id" } } };
-        new Merge<XElement>("/source", "/target", settings).Execute(data, _context);
+        new Merge<XElement>("/root/source", "/root/target", settings).Execute(data, _context);
 
         Assert.That(data.Element("target")!.Element("extra"), Is.Null);
     }
@@ -175,9 +178,9 @@ public class XmlMergeTests
     public void NativeXPathContext_SupportsKeyPaths()
     {
         var context = XmlExecutionContext.CreateWithNativeXPath();
-        var data = XElement.Parse(ItemsDocument);
+        var data = Doc(ItemsDocument);
 
-        var result = new Merge<XElement>("source", "target", ArrayKeys("target/items", "id"))
+        var result = new Merge<XElement>("/root/source", "/root/target", ArrayKeys("/root/target/items", "id"))
             .Execute(data, context);
 
         Assert.That(result.Success, Is.True);

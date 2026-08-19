@@ -37,7 +37,8 @@ With settings:
 | strictMode | boolean | false | Fail if metadata is absent; otherwise use best-effort inference. |
 | removeMetadata | boolean | false | Delete the metadata node after restoration. |
 
-**Supports functions**: ❌
+**Functions in the value**: — no value field  
+**Functions in the path**: — not resolved here; resolve it in a preceding step
 
 ## Formats
 

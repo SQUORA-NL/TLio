@@ -22,12 +22,17 @@ public static class XmlFixtureLoader
                 continue;
 
             var fixture  = XElement.Parse(File.ReadAllText(fixturePath));
-            XElement input    = fixture.Element("input")!.Elements().First();
+            // Re-parse into its own document: paths are absolute from the document node, so
+            // the input must be a document element, not an element still nested in <fixture>.
+            XElement input    = Detach(fixture.Element("input")!.Elements().First());
             string script     = fixture.Element("script")!.ToString(SaveOptions.DisableFormatting);
-            XElement expected = fixture.Element("result")!.Elements().First();
+            XElement expected = Detach(fixture.Element("result")!.Elements().First());
 
             yield return new TestCaseData(input, script, expected)
                 .SetName(Path.GetFileName(dir));
         }
     }
+
+    private static XElement Detach(XElement element) =>
+        XDocument.Parse(element.ToString(SaveOptions.DisableFormatting)).Root!;
 }

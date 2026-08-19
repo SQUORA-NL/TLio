@@ -42,6 +42,9 @@ public class XmlFixtureTests
     [TestCaseSource(typeof(XmlFixtureLoader), nameof(XmlFixtureLoader.Load), new object[] { "XmlRemove" })]
     public void Remove(XElement input, string script, XElement expected) => Run(input, script, expected);
 
+    [TestCaseSource(typeof(XmlFixtureLoader), nameof(XmlFixtureLoader.Load), new object[] { "XmlRename" })]
+    public void Rename(XElement input, string script, XElement expected) => Run(input, script, expected);
+
     [TestCaseSource(typeof(XmlFixtureLoader), nameof(XmlFixtureLoader.Load), new object[] { "XmlCopy" })]
     public void Copy(XElement input, string script, XElement expected) => Run(input, script, expected);
 

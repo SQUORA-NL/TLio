@@ -1,0 +1,1 @@
+<fixture><input><order><customer>Ada</customer></order></input><script><rename path="/order" name="opdracht"/></script><result><opdracht><customer>Ada</customer></opdracht></result></fixture>

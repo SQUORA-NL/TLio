@@ -1,0 +1,1 @@
+<fixture><input><root><customer>Ada</customer><total>10</total></root></input><script><rename path="/root/customer" name="client"/></script><result><root><client>Ada</client><total>10</total></root></result></fixture>

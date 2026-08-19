@@ -1,1 +1,1 @@
-<fixture><input><root><name>old</name></root></input><script><set path="name">new</set></script><result><root><name>new</name></root></result></fixture>
+<fixture><input><root><name>old</name></root></input><script><set path="/root/name">new</set></script><result><root><name>new</name></root></result></fixture>

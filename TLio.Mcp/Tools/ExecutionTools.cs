@@ -49,7 +49,7 @@ public sealed class ExecutionTools
         [Description("Raw document text to transform")] string document,
         [Description("Document format: 'json', 'xml', or 'yaml'")] string format,
         [Description("TLio script as a JSON array of command objects")] string script,
-        [Description("XML path style: 'slash' (default) or 'xpath'. Only applies when format is 'xml'.")] string? xmlPathStyle = null)
+        [Description("XML path style: 'slash' (default, simple hierarchies) or 'xpath' (predicates and axes). Both anchor on the document node, so paths name the document element: '/order/customer', never '/customer'. Only applies when format is 'xml'.")] string? xmlPathStyle = null)
     {
         if (!_rateLimiter.TryAcquire(out var retryAfter))
             return RateLimitError(retryAfter);

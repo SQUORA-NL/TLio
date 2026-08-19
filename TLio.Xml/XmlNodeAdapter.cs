@@ -21,14 +21,26 @@ public class XmlNodeAdapter : INodeAdapter<XElement>
         node.Attribute("nil")?.Value == "true" ||
         (!node.HasElements && string.IsNullOrEmpty(node.Value));
 
+    /// <summary>
+    /// Not every path leaf is usable as an element name — a wildcard or predicate segment
+    /// reaches these methods as-is. XName.Get would throw on those, taking the whole script
+    /// down, so such a name is reported as simply not present and the command no-ops instead.
+    /// </summary>
+    private static bool IsUsableElementName(string propertyName) =>
+        !string.IsNullOrEmpty(propertyName) &&
+        System.Xml.XmlConvert.EncodeLocalName(propertyName) == propertyName;
+
     public bool HasProperty(XElement node, string propertyName) =>
-        node.Element(propertyName) != null;
+        IsUsableElementName(propertyName) && node.Element(propertyName) != null;
 
     public XElement? GetProperty(XElement node, string propertyName) =>
-        node.Element(propertyName);
+        IsUsableElementName(propertyName) ? node.Element(propertyName) : null;
 
     public void SetProperty(XElement node, string propertyName, XElement value)
     {
+        if (!IsUsableElementName(propertyName))
+            return;
+
         var existing = node.Element(propertyName);
         var newEl = new XElement(propertyName,
             value.Attributes().Where(a => a.Name.LocalName != "nil"),
@@ -39,8 +51,11 @@ public class XmlNodeAdapter : INodeAdapter<XElement>
             node.Add(newEl);
     }
 
-    public void RemoveProperty(XElement node, string propertyName) =>
-        node.Element(propertyName)?.Remove();
+    public void RemoveProperty(XElement node, string propertyName)
+    {
+        if (IsUsableElementName(propertyName))
+            node.Element(propertyName)?.Remove();
+    }
 
     public IEnumerable<string> GetPropertyNames(XElement node) =>
         node.Elements().Select(e => e.Name.LocalName);
@@ -116,16 +131,39 @@ public class XmlNodeAdapter : INodeAdapter<XElement>
 
     public void Replace(XElement target, XElement replacement)
     {
-        var renamed = new XElement(target.Name,
-            replacement.Attributes().Where(a => a.Name.LocalName != "nil"),
-            replacement.Nodes());
-        target.ReplaceWith(renamed);
+        var attributes = replacement.Attributes().Where(a => a.Name.LocalName != "nil").ToList();
+        var nodes = replacement.Nodes().ToList();
+
+        // The document element now has an XDocument above it, so ReplaceWith would succeed
+        // and swap it out — orphaning the reference the engine hands back to the caller.
+        // Rebuild its contents in place instead so that reference stays the live document.
+        if (target.Parent == null)
+        {
+            target.RemoveAll();
+            target.Add(attributes);
+            target.Add(nodes);
+            return;
+        }
+
+        target.ReplaceWith(new XElement(target.Name, attributes, nodes));
     }
 
     public bool RemoveFromParent(XElement node)
     {
         if (node.Parent == null) return false;
         node.Remove();
+        return true;
+    }
+
+    /// <summary>
+    /// An XElement carries its own name, so this is a true in-place rename: attributes,
+    /// children and document position all survive, and no parent is required. That is what
+    /// makes the document element renameable where a JSON root object is not.
+    /// </summary>
+    public bool RenameNode(XElement node, string newName)
+    {
+        if (!IsUsableElementName(newName)) return false;
+        node.Name = node.Name.Namespace + newName;
         return true;
     }
 
@@ -171,7 +209,13 @@ public class XmlNodeAdapter : INodeAdapter<XElement>
 
     public bool DeepEquals(XElement a, XElement b) => XNode.DeepEquals(a, b);
 
-    public XElement Parse(string content) => XElement.Parse(content);
+    /// <summary>
+    /// Parses into an element that is still attached to its XDocument, so the document node
+    /// above it exists and absolute XPath (<c>/order/customer</c>) resolves the way XPath
+    /// defines it. XElement.Parse would hand back a detached element whose only reachable
+    /// context is itself, which is what made bare <c>customer</c> match the root's children.
+    /// </summary>
+    public XElement Parse(string content) => XDocument.Parse(content).Root!;
 
     public string Serialize(XElement node, bool pretty = false) =>
         pretty ? node.ToString(SaveOptions.None) : node.ToString(SaveOptions.DisableFormatting);

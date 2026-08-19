@@ -73,7 +73,20 @@ public class Merge<TNode> : CommandBase<TNode>
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
-        var sources = context.ItemsFetcher.SelectNodes(Path!, dataContext);
+        // A path may be an =indirect() expression; the raw '=' would throw out of the fetcher.
+        var resolvedPath = IndirectPath.TryResolve(Path!, dataContext, context, CommandName);
+        var resolvedTargetPath = resolvedPath == null
+            ? null
+            : IndirectPath.TryResolve(TargetPath!, dataContext, context, CommandName, "targetPath");
+        if (resolvedPath == null || resolvedTargetPath == null)
+        {
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path ?? "", TraceOutcome.NoOp, 0,
+                $"{CommandName}: an =indirect() path expression could not be resolved; nothing merged."));
+            return TLioExecutionResult<TNode>.Successful(dataContext);
+        }
+
+        var sources = context.ItemsFetcher.SelectNodes(resolvedPath, dataContext);
         if (sources.Count == 0)
         {
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes at source path '{Path}'");
@@ -83,7 +96,7 @@ public class Merge<TNode> : CommandBase<TNode>
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 
-        var targets = context.ItemsFetcher.SelectNodes(TargetPath!, dataContext);
+        var targets = context.ItemsFetcher.SelectNodes(resolvedTargetPath, dataContext);
         if (targets.Count == 0)
         {
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes at target path '{TargetPath}'");

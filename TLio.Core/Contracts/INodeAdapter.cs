@@ -100,6 +100,17 @@ public interface INodeAdapter<TNode>
     /// </summary>
     bool RemoveFromParent(TNode node);
 
+    /// <summary>
+    /// Change the name under which <paramref name="node"/> is known, keeping its value,
+    /// children and position. Where the name lives is format-specific: an XML element
+    /// carries its own name (so even the document element can be renamed), while a JSON
+    /// or YAML node is named by the parent that holds it (so a root object has no name).
+    ///
+    /// Returns false when the node has no name to change or the new name is unusable —
+    /// the Rename command turns that into a warning rather than a failure.
+    /// </summary>
+    bool RenameNode(TNode node, string newName) => false;
+
     // ── Deep merge ────────────────────────────────────────────────────────────
     // Required by CopyMove (root merge) and the Merge command.
 

@@ -32,6 +32,9 @@ public class XPathFixtureTests
     [TestCaseSource(typeof(XPathFixtureLoader), nameof(XPathFixtureLoader.Load), new object[] { "XPathRemove" })]
     public void Remove(XElement input, string script, XElement expected) => Run(input, script, expected);
 
+    [TestCaseSource(typeof(XPathFixtureLoader), nameof(XPathFixtureLoader.Load), new object[] { "XPathRename" })]
+    public void Rename(XElement input, string script, XElement expected) => Run(input, script, expected);
+
     [TestCaseSource(typeof(XPathFixtureLoader), nameof(XPathFixtureLoader.Load), new object[] { "XPathCopy" })]
     public void Copy(XElement input, string script, XElement expected) => Run(input, script, expected);
 

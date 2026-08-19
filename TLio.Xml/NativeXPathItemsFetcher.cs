@@ -7,18 +7,21 @@ using TLio.Core.Models;
 namespace TLio.Xml;
 
 /// <summary>
-/// IItemsFetcher implementation for XElement using genuine XPath expressions.
+/// IItemsFetcher implementation for XElement using genuine XPath expressions, anchored
+/// where XPath anchors them: on the <b>document node</b>, not on the document element.
 ///
 /// Path conventions:
-///   .             = root element (context node / self)
-///   name          = direct child element named "name"
-///   address/city  = nested path
-///   //name        = any descendant named "name" (recursive descent)
-///   items/item[1] = first item child of items
-///   *             = any child element
+///   /                  = the document node (represented by the root element, since the
+///                        node model is element-based)
+///   /order             = the document element
+///   /order/customer    = a child of the document element
+///   //customer         = a customer element at any depth (recursive descent)
+///   /order/item[1]     = the first item child
+///   /order/*           = every child of the document element
 ///
-/// Paths are relative XPath expressions — nothing is stripped or rewritten.
-/// The root indicator is "." (current node), not "/".
+/// A bare relative step such as <c>customer</c> is <c>child::customer</c> of the document
+/// node, which matches nothing — the document node's only element child is the document
+/// element. Nothing here skips a level; write the full path or use <c>//</c>.
 /// </summary>
 public class NativeXPathItemsFetcher : IItemsFetcher<XElement>
 {
@@ -26,40 +29,58 @@ public class NativeXPathItemsFetcher : IItemsFetcher<XElement>
     private static readonly Regex SplitPattern =
         new(@"/(?![^\[]*\])", RegexOptions.Compiled | RegexOptions.RightToLeft);
 
-    public string RootPathIndicator => ".";
+    public string RootPathIndicator => "/";
     public string PathDelimiter => "/";
     public string CurrentItemPathIndicator => ".";
     public string ParentPathIndicator => "..";
     public string ArrayCloseChar => "]";
 
+    /// <summary>
+    /// XPath evaluates against the document node when the element is attached, which is
+    /// what makes <c>/order/customer</c> resolve. A detached element (one built by hand
+    /// rather than parsed) has no document, so it stands in as its own context.
+    /// </summary>
+    internal static XNode EvaluationContext(XElement data) => (XNode?)data.Document ?? data;
+
     public SelectedNodes<XElement> SelectNodes(string path, XElement data)
     {
-        if (string.IsNullOrEmpty(path) || path == RootPathIndicator)
+        if (string.IsNullOrEmpty(path))
             return new SelectedNodes<XElement>(new[] { data });
 
-        return new SelectedNodes<XElement>(data.XPathSelectElements(path));
+        // "/" is the document node. It is not an element, so it selects nothing: commands
+        // that write properties must not see it as an object whose children are addressable
+        // without naming the document element. Copy/move to root are handled by path string.
+        if (path == RootPathIndicator)
+            return new SelectedNodes<XElement>(Array.Empty<XElement>());
+
+        return new SelectedNodes<XElement>(EvaluationContext(data).XPathSelectElements(path));
     }
 
     public XElement? SelectNode(string path, XElement data)
     {
-        if (string.IsNullOrEmpty(path) || path == RootPathIndicator)
+        if (string.IsNullOrEmpty(path))
             return data;
 
-        return data.XPathSelectElement(path);
+        if (path == RootPathIndicator)
+            return null;
+
+        return EvaluationContext(data).XPathSelectElement(path);
     }
 
+    /// <summary>
+    /// The absolute path of a node, including the document element: <c>/order/customer</c>.
+    /// The document element itself is <c>/order</c>; only the document node is <c>/</c>.
+    /// </summary>
     public string GetPath(XElement node)
     {
         var segments = new List<string>();
-        var current = node;
-        while (current.Parent != null)
+        XElement? current = node;
+        while (current != null)
         {
             segments.Insert(0, current.Name.LocalName);
             current = current.Parent;
         }
-        if (segments.Count == 0)
-            return RootPathIndicator;
-        return string.Join("/", segments);
+        return segments.Count == 0 ? RootPathIndicator : "/" + string.Join("/", segments);
     }
 
     public XElement? GetParent(XElement node, int levels = 1)
@@ -80,7 +101,7 @@ public class NativeXPathItemsFetcher : IItemsFetcher<XElement>
             var after = relativePath[(CurrentItemPathIndicator.Length + PathDelimiter.Length)..];
             var currentPath = GetPath(currentNode);
             return currentPath == RootPathIndicator
-                ? after
+                ? "/" + after
                 : currentPath + "/" + after;
         }
 
@@ -95,7 +116,9 @@ public class NativeXPathItemsFetcher : IItemsFetcher<XElement>
     }
 
     /// <summary>
-    /// Creates missing elements along a simple <c>a/b/c</c> path.
+    /// Creates missing elements along a simple <c>/order/a/b</c> path.
+    /// The first segment names the document element, which already exists and cannot be
+    /// swapped for a differently named one — a path that starts elsewhere builds nothing.
     /// Paths containing XPath predicates or axes are skipped (read-only).
     /// </summary>
     public void EnsurePath(string path, XElement root, INodeAdapter<XElement> adapter)
@@ -107,11 +130,17 @@ public class NativeXPathItemsFetcher : IItemsFetcher<XElement>
         if (path.Contains('[') || path.Contains("::") || path.Contains("//"))
             return;
 
-        var segments = path.Split('/');
+        var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 0)
+            return;
+
+        // XML has exactly one document element; only paths rooted at it can be created.
+        if (segments[0] != root.Name.LocalName)
+            return;
+
         var current = root;
-        foreach (var seg in segments)
+        foreach (var seg in segments.Skip(1))
         {
-            if (string.IsNullOrEmpty(seg)) continue;
             var child = current.Element(seg);
             if (child == null)
             {

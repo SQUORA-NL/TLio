@@ -19,7 +19,8 @@
 | toPath | string | yes | — | Destination path where nodes are written. |
 | destinationAsArray | boolean | no | false | When true, aligns multiple results by array index. |
 
-**Supports functions**: ❌
+**Functions in the value**: — no value field  
+**Functions in the path**: ✅ `=indirect()` in `path`
 
 ## Formats
 
@@ -63,7 +64,7 @@ var script = new TLioScript<JToken>()
 | Source after operation | **Kept** | **Deleted** |
 | `toPath: "$"` | Additive merge — existing keys survive | Replaces root entirely |
 | Downstream steps need source? | Yes — safe to use | No — source is gone |
-| Rename a field | Leaves old field behind (requires extra remove) | Clean rename in one step |
+| Rename a field | Leaves old field behind (requires extra remove) | Clean rename in one step — but see [Rename.md](Rename.md), which keeps position and XML attributes and can rename the XML document element |
 | Duplicate / fan-out | Correct choice | Wrong — destroys source |
 
 ## Common mistakes

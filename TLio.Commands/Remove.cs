@@ -1,3 +1,4 @@
+using TLio.Commands.Logic;
 using TLio.Core;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
@@ -28,9 +29,22 @@ public class Remove<TNode> : CommandBase<TNode>
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
-        var targets = context.ItemsFetcher.SelectNodes(Path!, dataContext);
+        var resolvedPath = IndirectPath.TryResolve(Path!, dataContext, context, CommandName);
+        if (resolvedPath == null)
+        {
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, Path ?? "", TraceOutcome.NoOp, 0,
+                $"{CommandName}: the =indirect() expression in path '{Path}' could not be resolved; nothing removed."));
+            return new TLioExecutionResult<TNode>(IsSuccessful, dataContext);
+        }
+
+        var targets = context.ItemsFetcher.SelectNodes(resolvedPath, dataContext);
         // Enumerate to a list first so removal doesn't invalidate the iterator
         var targetList = targets.ToList();
+
+        if (targetList.Count == 0)
+            context.LogWarning(CoreConstants.CommandExecution,
+                $"{CommandName}: no nodes matched path '{Path}' — nothing removed");
 
         foreach (var target in targetList)
         {

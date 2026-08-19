@@ -31,7 +31,7 @@ public class SetTests
     }
 
     [TestCase("$.myObject.myArray", "newData")]
-    [TestCase("$.NewObject.newItem.NewSubItem", "newData")]
+    [TestCase("$.NewObject.newItem.NewSubItem", "newData")]  // missing path → no-op, still reports success
     [TestCase("$.myArray", "newData")]
     [TestCase("$.myNull", "newData")]
     [TestCase("$..myArray", "newData")]
@@ -116,6 +116,41 @@ public class SetTests
 
         Assert.That(result.Success, Is.True);
         Assert.That(executeOptions.GetLogEntries().Any(e => e.Level == LogLevel.Warning && e.Message.Contains("not found")), Is.True);
+    }
+
+    // ── Missing paths: warn and continue, never fabricate structure ──────────
+
+    [TestCase("$.NewObject.newItem.NewSubItem")]
+    [TestCase("$.myObject.missing.deeper")]
+    public void Set_MissingPath_WarnsAndLeavesDataUntouched(string path)
+    {
+        var before = data.DeepClone();
+
+        var result = new Set<JToken>(path, new FixedValue<JToken>(new JValue("newData")))
+            .Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True, "a missing path is a no-op, not a failure — the script continues");
+        Assert.That(JToken.DeepEquals(data, before), Is.True,
+            $"set must not create the path it could not find. Got: {data}");
+        Assert.That(executeOptions.GetLogEntries().Any(e =>
+                e.Level == LogLevel.Warning && e.Message.Contains("no nodes matched")), Is.True,
+            "the no-op must be reported as a warning");
+    }
+
+    [Test]
+    public void Set_MissingPath_DoesNotStopTheRestOfTheScript()
+    {
+        var script = new TLioScript<JToken>
+        {
+            new Set<JToken>("$.does.not.exist", new FixedValue<JToken>(new JValue("ignored"))),
+            new Set<JToken>("$.myString", new FixedValue<JToken>(new JValue("newData")))
+        };
+
+        var result = script.Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.SelectToken("$.myString")?.Value<string>(), Is.EqualTo("newData"));
+        Assert.That(result.Data.SelectToken("$.does"), Is.Null);
     }
 
     [Test]

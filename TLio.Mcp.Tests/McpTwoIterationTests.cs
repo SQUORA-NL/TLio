@@ -624,7 +624,7 @@ public sealed class McpTwoIterationTests
         // ── Iteration 1:
         //   • correctly sets department and manager_id
         //   • uses 'set' (not 'add') for new nested transfer.* fields → noops
-        //     (EnsurePath creates transfer:{} but ReplaceProperty noops because property absent)
+        //     ('set' only updates nodes that already exist; it never scaffolds the path)
         //   • forgets title and salary_band mutations entirely
         const string attempt1 = """
             [
@@ -641,12 +641,11 @@ public sealed class McpTwoIterationTests
 
         Assert.That(exec1.Success, Is.True, "Iteration 1 does not fail");
 
-        // The first 'set transfer.from_department' SUCCEEDS: EnsurePath creates transfer:{from_department:{}}
-        // so the property exists and is replaced. The remaining two noop because only from_department
-        // was scaffolded — effective_date and approved_by are absent from the now-existing transfer object.
+        // All three 'set $.transfer.*' commands noop: the transfer object does not exist and
+        // 'set' never creates it. Each warns and the script continues with the document untouched.
         var noops = exec1.Trace.Where(t => t.Outcome == "noop").ToList();
-        Assert.That(noops.Count, Is.EqualTo(2),
-            "effective_date and approved_by noop — only from_department was scaffolded by EnsurePath");
+        Assert.That(noops.Count, Is.EqualTo(3),
+            "from_department, effective_date and approved_by all noop — 'set' does not scaffold a missing path");
 
         // Suggestions must expose the two noops with clear guidance
         // (+1 for the trailing tlio_guide hint appended to all non-empty suggestion lists)
@@ -659,17 +658,17 @@ public sealed class McpTwoIterationTests
                 "Suggestion must guide toward 'add' for creating new fields");
         }
 
-        // Partial document: department and manager_id are updated; transfer:{} exists but is empty
+        // Partial document: department and manager_id are updated; no transfer object was invented
         var partial = JObject.Parse(exec1.Output);
         Assert.That(partial["department"]!.ToString(), Is.EqualTo("product"));
         Assert.That(partial["manager_id"]!.ToString(), Is.EqualTo("EMP-2005"));
-        Assert.That(partial["transfer"], Is.Not.Null,
-            "EnsurePath scaffolded transfer with from_department set; effective_date and approved_by still missing");
+        Assert.That(partial["transfer"], Is.Null,
+            "'set' left the document untouched — no half-built transfer object to clean up afterwards");
 
         // ── Refined gap: operate on exec1 output; prior trace marks noops as unresolved
         var traceJson1 = JsonSerializer.Serialize(exec1.Trace);
         var refinedGap = Analyze(exec1.Output, EmployeeTarget,
-            intent: "fix title and salary_band; use 'add' for transfer fields; clean up empty transfer object",
+            intent: "fix title and salary_band; use 'add' for the missing transfer fields",
             priorTraceJson: traceJson1);
         PrintGap(refinedGap, "F | Refined gap — all remaining issues visible");
 
@@ -679,7 +678,7 @@ public sealed class McpTwoIterationTests
         Assert.That(refinedGap.Changes.Any(c => c.ChangeType == "Mutate" && c.SourcePath.Contains("salary_band")),
             Is.True, "Refined gap must expose salary_band Mutate (was omitted from iteration 1)");
 
-        // Must detect the transfer.* fields still missing (the empty container must be removed + re-added properly)
+        // Must detect the transfer.* fields still missing
         Assert.That(refinedGap.Changes.Any(c => c.TargetPath.Contains("transfer")),
             Is.True, "Refined gap must expose transfer fields still missing");
 

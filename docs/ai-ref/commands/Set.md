@@ -25,7 +25,8 @@ Two-argument form (select parent, name child property):
 | property | string | no | — | Name of the child key to set on each matched parent. |
 | value | TLioValue | yes | — | Literal value or `=function()` expression to assign. |
 
-**Supports functions**: ✅
+**Functions in the value**: ✅ value  
+**Functions in the path**: ✅ `=indirect()` in `path`
 
 ## Formats
 
@@ -74,14 +75,14 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 - **Using `set` to create a new field**: the command silently noops; the field is never created. Switch to `add` or `put`.
 - **Treating a noop trace as success**: if `set` produces `outcome: "noop"` with `"property not found"`, the field was absent. This is not an error by default — but it means your path is wrong or the document is missing the expected field.
 - **Using `set` on a wildcard path where some elements lack the property**: matching elements that have the property are updated; those without it silently noop. If all elements must be updated, verify the schema or use `put`.
-- **Forgetting that `set` does not create parent paths**: if the parent object is missing, the result is `"failure"`, not a noop.
+- **Forgetting that `set` does not create parent paths**: if the parent object is missing the whole command noops with a warning — the parent is *not* scaffolded into existence. Use `put` when the path may not exist yet.
 
 ## Failure modes and what the trace tells you
 
 | Situation | Trace outcome | Trace detail | Action |
 |---|---|---|---|
 | Target property is absent | `noop` | contains `"property not found"` | The path is wrong or the field does not exist. Fix the path, or switch to `put` if the field should be created. |
-| Parent path is missing | `failure` | path resolution error | The parent object/array does not exist. Insert an `EnsurePath` or `put` step to create it first. |
+| Parent path is missing | `noop` | contains `"no nodes matched"` | The parent object/array does not exist and `set` will not create it. Fix the path, or use `put` to create it. |
 | Path resolves and field exists | `success` | — | Field was updated as expected. |
 
 ## C# Fluent API

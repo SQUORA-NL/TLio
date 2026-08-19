@@ -46,6 +46,43 @@ Integral literals stay integral: `"value": 152` writes `152`, not `152.0`.
 Inside a function's argument list there is no JSON layer to carry the type, so bare
 literals *are* typed there: `=substring($.a, 0, 3)` passes the numbers 0 and 3.
 
+### Decimal separator: `.` only
+
+**TLio reads `.` as the decimal separator, and only `.`.** There is no locale setting, and
+there is nowhere in a document to declare one.
+
+This is not a TLio choice — it is what the formats mandate:
+
+| Format | Rule |
+|---|---|
+| JSON | RFC 8259 §6: `decimal-point = %x2E` — the period. JSON has **no locale mechanism** at all. |
+| XML | XML Schema `xs:decimal` / `xs:double` use the period likewise. |
+| YAML 1.2 | The core schema's number production is JSON-compatible. |
+
+So a *native* number can never carry a comma. `{"n": 3,5}` is not one number written the
+European way — it is a syntax error, and the document never parses:
+
+```json
+{ "value": 3.5 }    ✅ the number 3.5
+{ "value": 3,5 }    ❌ invalid JSON — this is not "3,5", it is two things
+```
+
+The question only arises for a number carried **as a string**, which is valid JSON and
+therefore does reach TLio:
+
+```json
+{ "n": "3.5" }  → 3.5 ✅
+{ "n": "3,5" }  → 35  ⚠️  the comma is read as a THOUSANDS separator, not a decimal point
+{ "n": "1,234" } → 1234
+```
+
+`"3,5"` becoming `35` is a tenfold error with no warning, and `=calculate('2,5+3,7')` rejects
+the same notation outright — the two disagree. See
+[behaviour-decisions.md](../behaviour-decisions.md#a1-35-becomes-35-in-every-math-function).
+
+**Practical rule:** if numbers reach you as strings from a comma-decimal source, normalise them
+before the arithmetic (`=replace($.n, ',', '.')`) rather than relying on the coercion.
+
 ## 3. Function Expressions
 
 Function expressions start with `=`. The `=` prefix is the only marker required —

@@ -39,7 +39,8 @@
 | settings.arraySettings[].uniqueIndexMatching | bool | no | `false` | When true, an element matched at a different index also produces an `indexDifference` entry. |
 | settings.resultTypes | string[] | no | `[]` | Keep only entries with these `differenceType` values. Empty = keep everything. |
 
-**Supports functions**: ❌
+**Functions in the value**: — no value field  
+**Functions in the path**: ✅ `=indirect()` in `firstPath`, `secondPath` and `resultPath`
 
 ## Result shapes
 
