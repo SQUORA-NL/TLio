@@ -40,6 +40,12 @@ public static class TLioScriptExtensions
     public static RemoveOnPathBuilder<TNode> Remove<TNode>(this TLioScript<TNode> script)
         => new(script);
 
+    // ── Rename ────────────────────────────────────────────────────────────────
+
+    /// <summary>Start a Rename command. Call .OnPath(path) to complete.</summary>
+    public static RenameOnPathBuilder<TNode> Rename<TNode>(this TLioScript<TNode> script, string newName)
+        => new(script, newName);
+
     // ── Copy / Move ───────────────────────────────────────────────────────────
 
     /// <summary>Start a Copy command. Call .From(path).To(path).</summary>

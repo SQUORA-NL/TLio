@@ -1,1 +1,1 @@
-<fixture><input><root><source>Alice</source></root></input><script><move fromPath="source" toPath="destination"/></script><result><root><destination>Alice</destination></root></result></fixture>
+<fixture><input><root><source>Alice</source></root></input><script><move fromPath="/root/source" toPath="/root/destination"/></script><result><root><destination>Alice</destination></root></result></fixture>

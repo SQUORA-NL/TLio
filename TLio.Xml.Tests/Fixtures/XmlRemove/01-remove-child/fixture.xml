@@ -1,1 +1,1 @@
-<fixture><input><root><keep>1</keep><remove-me>2</remove-me></root></input><script><remove path="/remove-me"/></script><result><root><keep>1</keep></root></result></fixture>
+<fixture><input><root><keep>1</keep><remove-me>2</remove-me></root></input><script><remove path="/root/remove-me"/></script><result><root><keep>1</keep></root></result></fixture>

@@ -13,14 +13,19 @@ namespace TLio.Xml;
 /// Script format:
 /// <code>
 /// &lt;script&gt;
-///   &lt;set path="/name"&gt;Alice&lt;/set&gt;
-///   &lt;add path="/address/city"&gt;Amsterdam&lt;/add&gt;
-///   &lt;remove path="/obsolete"/&gt;
-///   &lt;copy fromPath="/src" toPath="/dst"/&gt;
-///   &lt;move fromPath="/old" toPath="/new"/&gt;
-///   &lt;put path="/key"&gt;value&lt;/put&gt;
+///   &lt;set path="/order/name"&gt;Alice&lt;/set&gt;
+///   &lt;add path="/order/address/city"&gt;Amsterdam&lt;/add&gt;
+///   &lt;remove path="/order/obsolete"/&gt;
+///   &lt;rename path="/order" name="opdracht"/&gt;
+///   &lt;copy fromPath="/order/src" toPath="/order/dst"/&gt;
+///   &lt;move fromPath="/order/old" toPath="/order/new"/&gt;
+///   &lt;put path="/order/key"&gt;value&lt;/put&gt;
 /// &lt;/script&gt;
 /// </code>
+///
+/// Paths are absolute from the document node, as XPath defines it: <c>/order</c> is the
+/// document element and <c>/order/name</c> a child of it. The document element is always
+/// named in the path — a bare <c>name</c> is a child of the document node and matches nothing.
 ///
 /// Rules:
 /// - Root element name is ignored (it is the script container)

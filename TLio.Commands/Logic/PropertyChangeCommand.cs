@@ -107,6 +107,19 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
 
     private void ExecuteLegacySyntax(TNode dataContext, IExecutionContext<TNode> context)
     {
+        // The root has no leaf to split off: SplitParentAndLeaf yields an empty name (XML "/")
+        // or echoes the root indicator back (JSON "$"), and both are meaningless as property
+        // names — treating them as one produced an invalid-XML-name crash or a literal "$"
+        // property. The root is reachable through the 'property' field or a copy/move to root.
+        if (string.IsNullOrEmpty(Path) || Path == context.ItemsFetcher.RootPathIndicator)
+        {
+            context.LogWarning(CoreConstants.CommandExecution,
+                $"{CommandName}: path '{Path}' targets the document root, which has no property name to " +
+                $"{CommandName} — name a child via the 'property' field, or use copy/move with " +
+                $"toPath '{context.ItemsFetcher.RootPathIndicator}' to replace the whole document");
+            return;
+        }
+
         var (parentPath, propertyName) = context.ItemsFetcher.SplitParentAndLeaf(Path!);
 
         // When the leaf is reached directly via recursive descent (e.g. "$..myArray"),
@@ -125,16 +138,28 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             return;
         }
 
-        // Resolve any =indirect() in parentPath
-        var resolvedParentPath = context.ItemsFetcher.ProcessIndirectPath(parentPath, dataContext) ?? parentPath;
+        // Resolve any =indirect() in parentPath. An unresolved expression must not be passed on:
+        // the raw '=' is not legal in any path language and would throw out of the whole script.
+        var resolvedParentPath = IndirectPath.TryResolve(parentPath, dataContext, context, CommandName);
+        if (resolvedParentPath == null)
+            return;
 
         var parents = context.ItemsFetcher.SelectNodes(resolvedParentPath, dataContext);
         if (parents.Count == 0)
         {
+            if (!CreatesMissingPath)
+            {
+                // Set never invents structure: a path that does not exist is a no-op.
+                // Warn and continue so the rest of the script still runs.
+                context.LogWarning(CoreConstants.CommandExecution,
+                    $"{CommandName}: no nodes matched path '{Path}' — nothing changed");
+                return;
+            }
+
             // Add uses the parent path so EnsurePath stops at the parent, leaving the leaf
             // absent — Add.ApplyValueToTarget will then create it via SetProperty.
-            // Set/Put use the full path so EnsurePath also creates the leaf placeholder,
-            // which ReplaceProperty can find and Replace() with the actual value.
+            // Put uses the full path so EnsurePath also creates the leaf placeholder,
+            // which UpsertProperty can find and Replace() with the actual value.
             var ensurePath = EnsureFullPathForLeaf ? Path! : resolvedParentPath;
             context.ItemsFetcher.EnsurePath(ensurePath, dataContext, context.NodeAdapter);
             parents = context.ItemsFetcher.SelectNodes(resolvedParentPath, dataContext);
@@ -162,6 +187,15 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     /// remains absent and AddProperty can create it via SetProperty without skipping.
     /// </summary>
     protected virtual bool EnsureFullPathForLeaf => true;
+
+    /// <summary>
+    /// When true (default), a path whose parent matches no nodes is created via EnsurePath
+    /// before the value is applied — the upsert behaviour of Add and Put.
+    /// Set overrides this to false: it only ever updates nodes that already exist, so a
+    /// missing path logs a warning and leaves the document untouched instead of
+    /// fabricating the structure the path describes.
+    /// </summary>
+    protected virtual bool CreatesMissingPath => true;
 
     /// <summary>
     /// Apply <paramref name="value"/> to <paramref name="propertyName"/> on

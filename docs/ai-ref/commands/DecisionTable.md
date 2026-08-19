@@ -57,7 +57,8 @@
 | mode | `"firstMatch"`, `"bestMatch"`, `"allMatches"` | `"firstMatch"` | How many matching rules to apply. |
 | conflictResolution | `"priority"`, `"lastWins"`, `"merge"` | `"priority"` | How to resolve multiple matches. |
 
-**Supports functions**: ✅ (rule result values only)
+**Functions in the value**: ✅ rule result values only  
+**Functions in the path**: ✅ via the commands the rules execute
 
 ## Notes
 

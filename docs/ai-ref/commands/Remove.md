@@ -17,7 +17,8 @@
 |--------|------|----------|---------|-------------|
 | path | string | yes | — | Selects the node(s) to remove. Wildcards remove multiple nodes. |
 
-**Supports functions**: ❌
+**Functions in the value**: — no value field  
+**Functions in the path**: ✅ `=indirect()` in `path`
 
 ## Formats
 

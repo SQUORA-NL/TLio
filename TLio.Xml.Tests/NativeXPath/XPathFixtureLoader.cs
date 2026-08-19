@@ -22,15 +22,18 @@ public static class XPathFixtureLoader
                 continue;
 
             var fixture  = XElement.Parse(File.ReadAllText(fixturePath));
-            // Deep-copy to detach from the fixture document — XPath `//` axes navigate to the
-            // document root, so leaving the element attached causes `//city` to search the
-            // entire fixture (including the <result> section) rather than just the input tree.
-            XElement input    = new XElement(fixture.Element("input")!.Elements().First());
+            // Re-parse into a document of its own. Paths are absolute from the document node,
+            // so the input has to be a document element; leaving it attached to <fixture>
+            // would also let `//city` search the <result> section alongside the input.
+            XElement input    = Detach(fixture.Element("input")!.Elements().First());
             string script     = fixture.Element("script")!.ToString(SaveOptions.DisableFormatting);
-            XElement expected = new XElement(fixture.Element("result")!.Elements().First());
+            XElement expected = Detach(fixture.Element("result")!.Elements().First());
 
             yield return new TestCaseData(input, script, expected)
                 .SetName(Path.GetFileName(dir));
         }
     }
+
+    private static XElement Detach(XElement element) =>
+        XDocument.Parse(element.ToString(SaveOptions.DisableFormatting)).Root!;
 }

@@ -211,6 +211,32 @@ public class YamlNodeAdapter : INodeAdapter<YamlNode>
         return false;
     }
 
+    /// <summary>
+    /// A YAML node is named by the mapping key that holds it, so renaming rewrites that key.
+    /// The mapping is rebuilt in its original order because YamlDotNet appends new keys, and
+    /// the values are re-attached rather than cloned so existing node references stay valid.
+    /// A sequence element or the document root has no key to rename.
+    /// </summary>
+    public bool RenameNode(YamlNode node, string newName)
+    {
+        if (string.IsNullOrEmpty(newName)) return false;
+        if (!_tracker.TryGetParent(node, out var info)) return false;
+        if (info.Parent is not YamlMappingNode map || info.Key == null) return false;
+        if (info.Key == newName) return true;
+
+        var entries = map.Children.ToList();
+        map.Children.Clear();
+        foreach (var (key, value) in entries)
+        {
+            var keyText = (key as YamlScalarNode)?.Value ?? key.ToString();
+            var newKey = keyText == info.Key ? newName : keyText!;
+            map.Children[new YamlScalarNode(newKey)] = value;
+            _tracker.Track(value, map, newKey);
+        }
+
+        return true;
+    }
+
     public void DeepMergeInto(YamlNode source, YamlNode target,
         ArrayMergeMode arrayMergeMode = ArrayMergeMode.Concat)
     {

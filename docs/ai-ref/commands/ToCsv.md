@@ -38,7 +38,8 @@ With settings:
 | quoteAllFields | boolean | false | Force quoting of every field, not just fields with special characters. |
 | escapeQuoteChar | string | `"\""` | Character used to escape quotes within field values. |
 
-**Supports functions**: ❌
+**Functions in the value**: — no value field  
+**Functions in the path**: — not resolved here; resolve it in a preceding step
 
 ## Formats
 

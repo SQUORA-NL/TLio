@@ -1,1 +1,1 @@
-<fixture><input><root><address><city>Amsterdam</city><temp>to-delete</temp></address></root></input><script><remove path="/address/temp"/></script><result><root><address><city>Amsterdam</city></address></root></result></fixture>
+<fixture><input><root><address><city>Amsterdam</city><temp>to-delete</temp></address></root></input><script><remove path="/root/address/temp"/></script><result><root><address><city>Amsterdam</city></address></root></result></fixture>

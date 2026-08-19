@@ -1,0 +1,1 @@
+<fixture><input><root><item>a</item><lines><item>b</item></lines></root></input><script><rename path="//item" name="line"/></script><result><root><line>a</line><lines><line>b</line></lines></root></result></fixture>

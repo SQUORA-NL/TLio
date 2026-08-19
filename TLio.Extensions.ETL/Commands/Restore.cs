@@ -1,3 +1,4 @@
+using System.Globalization;
 namespace TLio.Extensions.ETL.Commands;
 
 /// <summary>
@@ -158,47 +159,106 @@ public class Restore<TNode> : CommandBase<TNode>
         return result;
     }
 
+    /// <summary>
+    /// Walks the flattened key one segment at a time, creating each container as an array or an
+    /// object according to the metadata, and places the value at the final segment.
+    ///
+    /// The final segment is the point of the whole method: when it is an array index — which is
+    /// the case for every array of scalars, since a scalar has no property name after its
+    /// index — the value belongs AT that position. Treating it as a property name is what turned
+    /// ["a","b"] into [{"0":"a"},{"1":"b"}].
+    /// </summary>
     private static void SetNestedValue(
         TNode root, string[] path, TNode value,
         FlattenMetadata? metadata, INodeAdapter<TNode> adapter)
     {
-        var current = root;
         var delimiter = metadata?.Delimiter ?? ".";
+        var current = root;
+        var currentIsArray = false;   // the restored root is always an object
 
-        for (int i = 0; i < path.Length - 1; i++)
+        for (int i = 0; i < path.Length; i++)
         {
             var segment = path[i];
-            var currentPath = string.Join(delimiter, path.Take(i + 1));
-            var shouldBeArray = metadata?.OriginalStructure?.ContainsKey(currentPath) == true
-                             && metadata.OriginalStructure[currentPath].StartsWith("array");
 
-            if (shouldBeArray)
+            if (i == path.Length - 1)
             {
-                if (!adapter.HasProperty(current, segment))
-                    adapter.SetProperty(current, segment, adapter.CreateArray());
+                PlaceChild(current, currentIsArray, segment, value, adapter);
+                return;
+            }
 
-                var array = adapter.GetProperty(current, segment)!;
-                if (i + 1 < path.Length && int.TryParse(path[i + 1], out int idx))
-                {
-                    while (adapter.GetArrayLength(array) <= idx)
-                        adapter.AppendToArray(array, adapter.CreateObject());
-                    current = adapter.GetArrayElement(array, idx);
-                    i++; // consumed the index segment
-                }
-                else
-                {
-                    adapter.AppendToArray(array, value);
-                    return;
-                }
-            }
-            else
-            {
-                if (!adapter.HasProperty(current, segment))
-                    adapter.SetProperty(current, segment, adapter.CreateObject());
-                current = adapter.GetProperty(current, segment)!;
-            }
+            var childPath = string.Join(delimiter, path.Take(i + 1));
+            var childIsArray = metadata?.OriginalStructure != null
+                            && metadata.OriginalStructure.TryGetValue(childPath, out var kind)
+                            && kind.StartsWith("array", StringComparison.Ordinal);
+
+            current = DescendOrCreate(current, currentIsArray, segment, childIsArray, adapter);
+            currentIsArray = childIsArray;
         }
-        adapter.SetProperty(current, path[^1], value);
+    }
+
+    // ── Container navigation ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the child of <paramref name="container"/> at <paramref name="segment"/>, creating
+    /// it as an array or object first when it is not there yet. The segment addresses an array
+    /// position or an object property depending on what the container is.
+    /// </summary>
+    private static TNode DescendOrCreate(
+        TNode container, bool containerIsArray, string segment,
+        bool childIsArray, INodeAdapter<TNode> adapter)
+    {
+        var existing = GetChild(container, containerIsArray, segment, adapter);
+        if (existing != null) return existing;
+
+        var child = childIsArray ? adapter.CreateArray() : adapter.CreateObject();
+        PlaceChild(container, containerIsArray, segment, child, adapter);
+
+        // Re-read rather than reusing the local: an adapter may attach a copy.
+        return GetChild(container, containerIsArray, segment, adapter)!;
+    }
+
+    private static TNode? GetChild(
+        TNode container, bool containerIsArray, string segment, INodeAdapter<TNode> adapter)
+    {
+        if (containerIsArray)
+        {
+            if (!int.TryParse(segment, NumberStyles.Integer, CultureInfo.InvariantCulture, out var index))
+                return default;
+            return index < adapter.GetArrayLength(container)
+                ? adapter.GetArrayElement(container, index)
+                : default;
+        }
+
+        return adapter.HasProperty(container, segment) ? adapter.GetProperty(container, segment) : default;
+    }
+
+    /// <summary>
+    /// Writes <paramref name="value"/> into <paramref name="container"/> under
+    /// <paramref name="segment"/> — as an array element when the container is an array, and as a
+    /// named property otherwise.
+    /// </summary>
+    private static void PlaceChild(
+        TNode container, bool containerIsArray, string segment, TNode value, INodeAdapter<TNode> adapter)
+    {
+        if (!containerIsArray)
+        {
+            adapter.SetProperty(container, segment, value);
+            return;
+        }
+
+        if (!int.TryParse(segment, NumberStyles.Integer, CultureInfo.InvariantCulture, out var index))
+        {
+            // A non-numeric segment under an array key — the metadata and the keys disagree.
+            // Appending keeps the value rather than dropping it on the floor.
+            adapter.AppendToArray(container, value);
+            return;
+        }
+
+        while (adapter.GetArrayLength(container) <= index)
+            adapter.AppendToArray(container, adapter.CreateNull());
+
+        adapter.RemoveFromArray(container, index);
+        adapter.InsertIntoArray(container, index, value);
     }
 
     // ── Restore without metadata (best-effort) ────────────────────────────────
@@ -217,30 +277,33 @@ public class Restore<TNode> : CommandBase<TNode>
         return result;
     }
 
+    /// <summary>
+    /// The same walk without metadata to consult, so array-ness is inferred from the keys: a
+    /// container is an array when the next segment is a number. Types are lost in this mode,
+    /// but the shape — including arrays of scalars — is not.
+    /// </summary>
     private static void SetNestedValueBasic(
         TNode root, string[] path, TNode value, INodeAdapter<TNode> adapter)
     {
         var current = root;
-        for (int i = 0; i < path.Length - 1; i++)
+        var currentIsArray = false;
+
+        for (int i = 0; i < path.Length; i++)
         {
             var segment = path[i];
-            if (int.TryParse(segment, out _)) continue; // handled via parent array
 
-            bool nextIsIndex = i + 1 < path.Length && int.TryParse(path[i + 1], out _);
-            if (nextIsIndex)
+            if (i == path.Length - 1)
             {
-                if (!adapter.HasProperty(current, segment))
-                    adapter.SetProperty(current, segment, adapter.CreateArray());
-                // navigate into array element below
+                PlaceChild(current, currentIsArray, segment, value, adapter);
+                return;
             }
-            else
-            {
-                if (!adapter.HasProperty(current, segment))
-                    adapter.SetProperty(current, segment, adapter.CreateObject());
-                current = adapter.GetProperty(current, segment)!;
-            }
+
+            var childIsArray = int.TryParse(
+                path[i + 1], NumberStyles.Integer, CultureInfo.InvariantCulture, out _);
+
+            current = DescendOrCreate(current, currentIsArray, segment, childIsArray, adapter);
+            currentIsArray = childIsArray;
         }
-        adapter.SetProperty(current, path[^1], value);
     }
 
     public override ValidationResult ValidateCommandInstance()

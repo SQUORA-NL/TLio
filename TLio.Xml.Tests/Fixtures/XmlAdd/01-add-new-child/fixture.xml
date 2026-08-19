@@ -1,1 +1,1 @@
-<fixture><input><root><existing>value</existing></root></input><script><add path="/newProp">added</add></script><result><root><existing>value</existing><newProp>added</newProp></root></result></fixture>
+<fixture><input><root><existing>value</existing></root></input><script><add path="/root/newProp">added</add></script><result><root><existing>value</existing><newProp>added</newProp></root></result></fixture>

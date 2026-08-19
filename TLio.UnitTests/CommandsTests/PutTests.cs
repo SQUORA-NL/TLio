@@ -135,6 +135,29 @@ public class PutTests
     }
 
     [Test]
+    public void Put_MissingPath_StillCreatesIt_UnlikeSet()
+    {
+        var result = new Put<JToken>("$.NewObject.newItem.NewSubItem", new FixedValue<JToken>(new JValue("newData")))
+            .Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(data.SelectToken("$.NewObject.newItem.NewSubItem")?.Value<string>(), Is.EqualTo("newData"),
+            "put is the upsert command — path creation stays its job after set stopped doing it");
+    }
+
+    [Test]
+    public void Put_OnTheRootPath_WarnsInsteadOfCreatingALiteralDollarProperty()
+    {
+        var result = new Put<JToken>("$", new FixedValue<JToken>(new JValue("newData")))
+            .Execute(data, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(data["$"], Is.Null, "'$' is the root indicator, never a property name");
+        Assert.That(executeOptions.GetLogEntries().Any(e =>
+            e.Level == LogLevel.Warning && e.Message.Contains("document root")), Is.True);
+    }
+
+    [Test]
     public void CanUseScriptApi()
     {
         var scriptData = JObject.Parse("{ \"demo\" : \"old value\" , \"demo2\" : \"old value\" }");

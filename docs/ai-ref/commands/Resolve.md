@@ -47,7 +47,8 @@
 
 > See [Notation Reference](../notation-reference.md) for relative-path rules. Use `@.property` (with dot) in all JSON/YAML contexts.
 
-**Supports functions**: ❌
+**Functions in the value**: — no value field  
+**Functions in the path**: — not resolved here; resolve it in a preceding step
 
 ## Notes
 

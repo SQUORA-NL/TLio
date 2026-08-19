@@ -24,7 +24,8 @@
 | ifScript | array | yes | — | Script executed when condition is truthy. |
 | elseScript | array | no | — | Script executed when condition is falsy. Omit to do nothing on false. |
 
-**Supports functions**: ✅ (condition only)
+**Functions in the value**: ✅ condition only  
+**Functions in the path**: ✅ via the commands inside `then` / `else`
 
 ## Formats
 

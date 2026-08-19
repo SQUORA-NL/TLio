@@ -32,7 +32,8 @@
 | arraySettings[].uniqueItemsWithoutKeys | bool | `false` | When no `keyPaths` are set, skip source items that already exist (deep-equal) in the target array. |
 | matchSettings.keyPaths | string[] | `[]` | Objects are only merged when all these fields hold equal values on both source and target. Applied at every object level, so a nested object with a different key is left untouched. |
 
-**Supports functions**: ❌
+**Functions in the value**: — no value field  
+**Functions in the path**: ✅ `=indirect()` in `path` and `targetPath`
 
 ## Formats
 

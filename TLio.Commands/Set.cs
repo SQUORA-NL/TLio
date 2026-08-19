@@ -26,6 +26,8 @@ public class Set<TNode> : PropertyChangeCommand<TNode>
         Value = value;
     }
 
+    protected override bool CreatesMissingPath => false;
+
     protected override void ApplyValueToTarget(
         string propertyName, TNode targetNode, TNode value,
         TNode dataContext, IExecutionContext<TNode> context)

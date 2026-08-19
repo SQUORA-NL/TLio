@@ -12,11 +12,13 @@ YAML documents by swapping the execution context — no script changes needed.
 |--------|----------------|--------------------------|------------|-------------|-----------------|
 | JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` | Default JSON choice; scripts with filter or script expressions `()`, Goessner JSONPath features | When strict RFC 9535 compliance is required |
 | JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` (RFC 9535) | RFC 9535 strict compliance; Newtonsoft excluded from dependencies | When scripts use script expressions `()` — not supported |
-| XML — slash paths | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths()` | `/root/child` | Simple hierarchical XML with no predicates | When XPath predicates, `//` recursive descent, or positional indexing is needed |
-| XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `//child`, `item[@id='1']` | Full XPath 1.0: predicates, axes, recursive descent | When simple slash paths are sufficient — prefer slash-path for simplicity |
+| XML — slash paths | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths()` | `/order/customer` | Simple hierarchical XML with no predicates | When XPath predicates, `//` recursive descent, or positional indexing is needed |
+| XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `//child`, `/order/item[@id='1']` | Full XPath 1.0: predicates, axes, recursive descent | When simple slash paths are sufficient — prefer slash-path for simplicity |
 | YAML | `TLio.Yaml` | `YamlExecutionContext.CreateDefault()` | Dot-notation `$.a.b` | YAML source documents; multi-doc YAML (`---`) parsed as array root | When you need array-index path syntax identical to JSON filter expressions |
 
-**XML XPath note**: indexing is **1-based** (`item[1]` = first item, not `item[0]`).
+**XML path note**: both XML modes anchor on the document node, so the document element is
+part of every path — `/order/customer`, never `/customer`. XPath indexing is **1-based**
+(`item[1]` = first item, not `item[0]`).
 
 ### JSONPath: Newtonsoft vs System.Text.Json
 
@@ -106,7 +108,7 @@ Use this decision tree to pick the command in one step.
 | Situation | Command | Behaviour |
 |-----------|---------|-----------|
 | Field must NOT already exist (create-only) | `add` | Skips silently if field is present — never overwrites |
-| Field MUST already exist (update-only) | `set` | Logs warning and skips if field is absent — never creates |
+| Field MUST already exist (update-only) | `set` | Logs warning and skips if field is absent — never creates, and never scaffolds the parent path |
 | Don't know / don't care (safe default) | `put` | Upsert: creates if absent, updates if present |
 
 ### Node transfer and deletion
@@ -116,6 +118,8 @@ Use this decision tree to pick the command in one step.
 | Copy a node, keep the source | `copy` |
 | Move a node, delete the source | `move` |
 | Delete a node entirely | `remove` |
+| Change a node's **name**, keeping value, children and position | `rename` |
+| Rename the XML document element | `rename` (nothing else can — the root has no parent) |
 
 ### Conditional logic
 
@@ -266,6 +270,10 @@ command writes nothing.
 
 When uncertain, use `put`.
 
+`set` also refuses to build a **missing parent path**: `set $.a.b` where `a` does not exist
+is a noop with `"no nodes matched"`, not a scaffolded `{"a":{"b":…}}`. `add` and `put` do
+create the path. To change a *name* rather than a value, use `rename`.
+
 ### 4. Trace outcome meanings
 
 | Outcome | Meaning | Agent action |
@@ -385,16 +393,20 @@ var engine  = new ScriptEngine<XElement>(options.CommandsProvider, options.Funct
 var result  = engine.Execute(scriptJson, data, XmlExecutionContext.CreateWithSlashPaths());
 ```
 
-**Path syntax**:
+**Path syntax** — anchored on the document node, as XPath defines it. The document
+element is always named in the path:
 
 | Pattern | Example | Matches |
 |---------|---------|---------|
-| Root | `/` | Document root element |
-| Child | `/name` | Direct child element |
-| Nested | `/address/city` | Nested element |
-| Wildcard | `/items/*` | All children of `items` |
+| Document node | `/` | Not an element — selects nothing |
+| Document element | `/order` | The root element itself |
+| Child | `/order/name` | Direct child element |
+| Nested | `/order/address/city` | Nested element |
+| Wildcard | `/order/items/*` | All children of `items` |
 
-Notes: root is `/`; no predicate support; element names are case-sensitive.
+Notes: no predicate support; element names are case-sensitive. `/name` and `name` mean
+"a `name` child of the document node" and match nothing — a relative step never skips a
+level. Use `//name` for "at any depth".
 
 ---
 
@@ -419,15 +431,17 @@ var result = engine.Execute(scriptJson, data, XmlExecutionContext.CreateWithNati
 
 | Pattern | Example | Matches |
 |---------|---------|---------|
-| Root | `.` | Document root element |
-| Child | `name` | Direct child element |
-| Nested | `address/city` | Nested element |
+| Document node | `/` | Not an element — selects nothing |
+| Document element | `/order` | The root element itself |
+| Child | `/order/name` | Direct child element |
+| Nested | `/order/address/city` | Nested element |
 | Recursive | `//name` | All `name` at any depth |
-| Indexed | `items/item[1]` | First `item` (1-based) |
-| Attribute predicate | `items/item[@id='1']` | `item` with `id='1'` |
-| Wildcard | `*` | All child elements |
+| Indexed | `/order/items/item[1]` | First `item` (1-based) |
+| Attribute predicate | `/order/items/item[@id='1']` | `item` with `id='1'` |
+| Wildcard | `/order/*` | All children of the document element |
 
-Notes: root is `.` (dot), not `/`; XPath indexing is **1-based**.
+Notes: `/` is the document node and `/order` the document element, so every path names it.
+A bare `name` is a child of the document node and matches nothing. XPath indexing is **1-based**.
 
 ---
 
@@ -928,6 +942,51 @@ no-match produces a `"noop"` trace, not a failure.
 ```csharp
 var script = new TLioScript<JToken>()
     .Remove().OnPath("$.tempId");
+```
+
+---
+
+### rename
+
+> Changes the name under which a node is known, keeping its value, children and position.
+> Logs a warning if no nodes match or the node has no name; does not error.
+
+**When to use**: renaming a field while keeping its position, or renaming an XML element —
+including the document element, which nothing else can reach. Preserves XML attributes and
+sibling order, which `copy` + `remove` does not.
+
+**When NOT to use**: when the node should change *place* — use `move`. When its *value*
+should change — use `set` or `put`. The `name` option is a literal; functions are not
+evaluated there.
+
+**Supports functions**: ❌
+
+```json
+{ "command": "rename", "path": "/order", "name": "opdracht" }
+```
+
+**Options**:
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| path | string | yes | Selects the node(s) to rename. Wildcards and `//` rename every match. |
+| name | string | yes | The new name, as a literal. |
+
+**What can be renamed** — a node's name lives in a different place per format:
+
+| Format | Name belongs to | Root renameable? |
+|--------|-----------------|------------------|
+| XML | the element itself | ✅ `<order>` → `<opdracht>` |
+| JSON / YAML | the parent property, key, or mapping entry | ❌ — a root has no name |
+
+Renaming a JSON/YAML root, or an array element (named by position), warns and changes
+nothing. It is a noop, not a failure.
+
+**C# Fluent API**:
+
+```csharp
+var script = new TLioScript<XElement>()
+    .Rename("opdracht").OnPath("/order");
 ```
 
 ---

@@ -32,8 +32,8 @@ script (JSON array)  +  document (JSON / XML / YAML)  +  execution context
 |--------|----------------|--------------------------|------------|-------------|
 | JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` | Default JSON choice; Goessner JSONPath; filter and script expressions |
 | JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` (RFC 9535) | RFC 9535 strict; Newtonsoft excluded; no script expressions `()` |
-| XML — slash paths | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths()` | `/root/child` | Simple hierarchies; no predicates needed |
-| XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `//child`, `item[@id='1']` | Predicates, recursive descent, axes; indexing is 1-based |
+| XML — slash paths | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths()` | `/order/customer` | Simple hierarchies; no predicates needed |
+| XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `/order/customer`, `//child`, `/order/item[@id='1']` | Predicates, recursive descent, axes; indexing is 1-based |
 | YAML | `TLio.Yaml` | `YamlExecutionContext.CreateDefault()` | Dot-notation `$.a.b` | YAML source documents; multi-doc `---` parsed as array root |
 
 Full adapter details, path-syntax tables, and "When NOT to use" guidance:
@@ -135,7 +135,8 @@ isBoolean, isArray, isObject, in, matches — are built in and need no registrat
 [
   { "command": "put",    "path": "$.status",    "value": "active" },
   { "command": "add",    "path": "$.createdAt", "value": "=datetime()" },
-  { "command": "remove", "path": "$.tempId" }
+  { "command": "remove", "path": "$.tempId" },
+  { "command": "rename", "path": "$.oldName",   "name": "newName" }
 ]
 ```
 
@@ -145,7 +146,9 @@ isBoolean, isArray, isObject, in, matches — are built in and need no registrat
 
 Full details in [TLio_AI_Reference.md — Critical Rules Every Agent Must Know](TLio_AI_Reference.md#critical-rules-every-agent-must-know).
 
-1. **add / set / put**: `add` = create-only (noop if exists); `set` = update-only (noop if absent); `put` = upsert (always writes). When uncertain, use `put`.
+1. **add / set / put**: `add` = create-only (noop if exists); `set` = update-only (noop if absent, and it never creates the path); `put` = upsert (always writes, creating the path). When uncertain, use `put`.
+1b. **Changing a name, not a value, is `rename`** — it keeps position and XML attributes, and is the only way to rename an XML document element.
+1c. **XML paths start at the document node**: `/order/customer`, never `/customer`. See [xml-xpath.md](adapters/xml-xpath.md).
 2. **Function path resolution uses ROOT**: inside a function call, paths resolve against `$`, not the current array element.
 3. **dateCompare returns long** (`-1` / `0` / `1`), never a string.
 4. **decisionTable results must be plain primitives** — not objects.

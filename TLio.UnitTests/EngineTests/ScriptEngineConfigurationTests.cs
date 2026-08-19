@@ -56,11 +56,16 @@ public class ScriptEngineConfigurationTests
     // ── GetRegisteredCommandNames ─────────────────────────────────────────────
 
     [Test]
-    public void CommandsProvider_GetRegisteredCommandNames_ReturnsAllTen()
+    public void CommandsProvider_GetRegisteredCommandNames_ReturnsEveryBuiltIn()
     {
         var options = ParseOptions<JToken>.CreateDefault();
         var names = options.CommandsProvider.GetRegisteredCommandNames().ToList();
-        Assert.That(names.Count, Is.EqualTo(10));
+
+        Assert.That(names, Is.EquivalentTo(new[]
+        {
+            "set", "add", "put", "remove", "rename", "copy", "move",
+            "ifElse", "compare", "merge", "decisionTable"
+        }));
     }
 
     // ── Unknown command resilience ────────────────────────────────────────────

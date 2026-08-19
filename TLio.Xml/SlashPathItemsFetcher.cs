@@ -6,16 +6,18 @@ using TLio.Core.Models;
 namespace TLio.Xml;
 
 /// <summary>
-/// IItemsFetcher implementation using slash-path conventions (leading / stripped to relative XPath) against XElement documents.
+/// IItemsFetcher implementation for plain slash paths — the simple-hierarchy subset of
+/// <see cref="NativeXPathItemsFetcher"/>, with no predicates or axes.
 ///
-/// Path conventions (mirrors XML's natural addressing):
-///   /           = root element (data itself)
-///   /name       = child element named "name"
-///   /a/b/c      = nested path
-///   /items/*    = all children of /items
+/// It anchors exactly where XPath does, on the <b>document node</b>:
+///   /                = the document node (represented by the root element)
+///   /order           = the document element
+///   /order/customer  = a child of the document element
+///   /order/*         = all children of the document element
 ///
-/// Paths are stored with a leading /. When forwarded to XPathSelectElements the
-/// leading / is stripped so the expression becomes relative to the root element.
+/// Paths are passed to XPath unchanged. Earlier versions stripped the leading <c>/</c> and
+/// evaluated relative to the document element, which made <c>/customer</c> — a path that
+/// skipped the document element — the working form. It no longer is: write the full path.
 /// </summary>
 public class SlashPathItemsFetcher : IItemsFetcher<XElement>
 {
@@ -27,40 +29,43 @@ public class SlashPathItemsFetcher : IItemsFetcher<XElement>
 
     public SelectedNodes<XElement> SelectNodes(string path, XElement data)
     {
-        if (string.IsNullOrEmpty(path) || path == RootPathIndicator)
+        if (string.IsNullOrEmpty(path))
             return new SelectedNodes<XElement>(new[] { data });
 
-        var xPath = path.StartsWith("/") ? path[1..] : path;
-        if (string.IsNullOrEmpty(xPath))
-            return new SelectedNodes<XElement>(new[] { data });
+        // "/" is the document node. It is not an element, so it selects nothing: commands
+        // that write properties must not see it as an object whose children are addressable
+        // without naming the document element. Copy/move to root are handled by path string.
+        if (path == RootPathIndicator)
+            return new SelectedNodes<XElement>(Array.Empty<XElement>());
 
-        return new SelectedNodes<XElement>(data.XPathSelectElements(xPath));
+        return new SelectedNodes<XElement>(
+            NativeXPathItemsFetcher.EvaluationContext(data).XPathSelectElements(path));
     }
 
     public XElement? SelectNode(string path, XElement data)
     {
-        if (string.IsNullOrEmpty(path) || path == RootPathIndicator)
+        if (string.IsNullOrEmpty(path))
             return data;
 
-        var xPath = path.StartsWith("/") ? path[1..] : path;
-        if (string.IsNullOrEmpty(xPath))
-            return data;
+        if (path == RootPathIndicator)
+            return null;
 
-        return data.XPathSelectElement(xPath);
+        return NativeXPathItemsFetcher.EvaluationContext(data).XPathSelectElement(path);
     }
 
+    /// <summary>
+    /// The absolute path of a node, including the document element: <c>/order/customer</c>.
+    /// </summary>
     public string GetPath(XElement node)
     {
         var segments = new List<string>();
-        var current = node;
-        while (current.Parent != null)
+        XElement? current = node;
+        while (current != null)
         {
             segments.Insert(0, current.Name.LocalName);
             current = current.Parent;
         }
-        if (segments.Count == 0)
-            return RootPathIndicator;
-        return "/" + string.Join("/", segments);
+        return segments.Count == 0 ? RootPathIndicator : "/" + string.Join("/", segments);
     }
 
     public XElement? GetParent(XElement node, int levels = 1)
@@ -99,18 +104,24 @@ public class SlashPathItemsFetcher : IItemsFetcher<XElement>
         return relativePath;
     }
 
+    /// <summary>
+    /// Creates ALL segments including the leaf, so SelectNodes can find the destination
+    /// afterwards (mirrors the JSON EnsureConstructionPath behaviour). The first segment
+    /// names the document element, which already exists and cannot be replaced by a
+    /// differently named one, so a path rooted elsewhere builds nothing.
+    /// </summary>
     public void EnsurePath(string path, XElement root, INodeAdapter<XElement> adapter)
     {
         if (string.IsNullOrEmpty(path) || path == RootPathIndicator)
             return;
 
-        // Create ALL segments including the leaf so that SelectNodes can find the
-        // destination after EnsurePath (mirrors JSON EnsureConstructionPath behaviour).
-        var segments = path.TrimStart('/').Split('/');
+        var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 0 || segments[0] != root.Name.LocalName)
+            return;
+
         var current = root;
-        foreach (var seg in segments)
+        foreach (var seg in segments.Skip(1))
         {
-            if (string.IsNullOrEmpty(seg)) continue;
             var child = current.Element(seg);
             if (child == null)
             {
@@ -134,6 +145,10 @@ public class SlashPathItemsFetcher : IItemsFetcher<XElement>
         var leaf = path[(idx + 1)..];
         return (parent, leaf);
     }
+
+    public bool IsLeafRecursiveDescentSearch(string path) =>
+        path.StartsWith("//", StringComparison.Ordinal) &&
+        !path.AsSpan(2).Contains('/');
 
     public string? ProcessIndirectPath(string path, XElement data) =>
         path.Contains("=indirect(") ? null : path;

@@ -49,6 +49,25 @@ public sealed class RemoveOnPathBuilder<TNode>
     }
 }
 
+/// <summary>Returned by Rename(newName). Call OnPath(path).</summary>
+public sealed class RenameOnPathBuilder<TNode>
+{
+    private readonly TLioScript<TNode> _script;
+    private readonly string _name;
+
+    internal RenameOnPathBuilder(TLioScript<TNode> script, string name)
+    {
+        _script = script;
+        _name = name;
+    }
+
+    public TLioScript<TNode> OnPath(string path)
+    {
+        _script.Add(new Rename<TNode> { Path = path, Name = _name });
+        return _script;
+    }
+}
+
 // ── Copy / Move builders ──────────────────────────────────────────────────────
 
 /// <summary>Returned by Copy()/Move(). Call From(path).</summary>

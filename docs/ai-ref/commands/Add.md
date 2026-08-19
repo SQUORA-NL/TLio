@@ -25,7 +25,8 @@ Two-argument form (add child to matched parent):
 | property | string | no | — | Name of the child key to create on each matched parent. |
 | value | TLioValue | yes | — | Literal value or `=function()` expression to assign. |
 
-**Supports functions**: ✅
+**Functions in the value**: ✅ value  
+**Functions in the path**: ✅ `=indirect()` in `path`
 
 ## Formats
 

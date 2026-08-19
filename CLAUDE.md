@@ -55,12 +55,25 @@ specs/
 
 ## XML Path Formats (TLio.Xml)
 
-| Fetcher | Class | Path style | Root |
+Both fetchers anchor on the **document node**, exactly as XPath defines it: `/` is the
+document node (not an element — it selects nothing), `/order` is the document element, and
+`/order/customer` a child of it. **The document element is always named in the path.**
+A bare `customer` is `child::customer` of the document node and matches nothing — relative
+steps never skip a level; use `//customer` for "at any depth".
+
+| Fetcher | Class | Path style | Supports |
 |---|---|---|---|
-| Slash-path (existing) | `SlashPathItemsFetcher` | `/address/city` | `/` |
-| Native XPath (003) | `NativeXPathItemsFetcher` | `address/city`, `//name`, `item[@id='1']` | `.` |
+| Slash-path | `SlashPathItemsFetcher` | `/order/address/city` | simple hierarchies, `*`, `//` |
+| Native XPath | `NativeXPathItemsFetcher` | `/order/address/city`, `//name`, `/order/item[@id='1']` | full XPath 1.0 |
 
 Choose via `XmlExecutionContext.CreateWithSlashPaths()` or `CreateWithNativeXPath()`.
+
+`XmlNodeAdapter.Parse` returns an element still attached to its `XDocument` — that document
+node is what makes absolute paths resolve. Any `XElement` handed to the engine must be a
+document element; a hand-built detached `XElement` will not resolve absolute paths.
+
+Renaming the document element (`<order>` → `<opdracht>`) is the `rename` command; `move` with
+`toPath: "/"` replaces the document body but keeps the element's name.
 
 ## Commands
 

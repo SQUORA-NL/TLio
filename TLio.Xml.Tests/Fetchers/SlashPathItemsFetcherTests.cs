@@ -4,6 +4,11 @@ using TLio.Xml;
 
 namespace TLio.Xml.Tests.Fetchers;
 
+/// <summary>
+/// The slash fetcher is the simple-hierarchy subset of XPath and anchors identically:
+/// <c>/</c> is the document node and <c>/root</c> the document element, so every path
+/// starts with the document element's own name.
+/// </summary>
 [TestFixture]
 public class SlashPathItemsFetcherTests
 {
@@ -14,7 +19,8 @@ public class SlashPathItemsFetcherTests
     public void SetUp()
     {
         _fetcher = new SlashPathItemsFetcher();
-        _doc = XElement.Parse(
+        // Parsed through the adapter so the document node above the element exists.
+        _doc = new XmlNodeAdapter().Parse(
             """
             <root>
               <address>
@@ -32,11 +38,11 @@ public class SlashPathItemsFetcherTests
     }
 
     [Test]
-    public void SelectNodes_RootPath_ReturnsRootElement()
+    public void SelectNodes_RootPath_SelectsNothingBecauseTheDocumentNodeIsNotAnElement()
     {
-        var result = _fetcher.SelectNodes("/", _doc);
-        Assert.That(result.ToList(), Has.Count.EqualTo(1));
-        Assert.That(result.First().Name.LocalName, Is.EqualTo("root"));
+        // "/" names the document node, which has no element to hand back. Addressing the
+        // document element means naming it: "/root".
+        Assert.That(_fetcher.SelectNodes("/", _doc).ToList(), Is.Empty);
     }
 
     [Test]
@@ -47,9 +53,18 @@ public class SlashPathItemsFetcherTests
     }
 
     [Test]
+    public void SelectNodes_DocumentElement_ReturnsRoot()
+    {
+        var result = _fetcher.SelectNodes("/root", _doc);
+        var list = result.ToList();
+        Assert.That(list, Has.Count.EqualTo(1));
+        Assert.That(list[0].Name.LocalName, Is.EqualTo("root"));
+    }
+
+    [Test]
     public void SelectNodes_SingleSegment_ReturnsMatchingChild()
     {
-        var result = _fetcher.SelectNodes("/address", _doc);
+        var result = _fetcher.SelectNodes("/root/address", _doc);
         var list = result.ToList();
         Assert.That(list, Has.Count.EqualTo(1));
         Assert.That(list[0].Name.LocalName, Is.EqualTo("address"));
@@ -58,7 +73,7 @@ public class SlashPathItemsFetcherTests
     [Test]
     public void SelectNodes_DeepPath_ReturnsDeepChild()
     {
-        var result = _fetcher.SelectNodes("/address/city", _doc);
+        var result = _fetcher.SelectNodes("/root/address/city", _doc);
         var list = result.ToList();
         Assert.That(list, Has.Count.EqualTo(1));
         Assert.That(list[0].Value, Is.EqualTo("Amsterdam"));
@@ -67,7 +82,7 @@ public class SlashPathItemsFetcherTests
     [Test]
     public void SelectNodes_RepeatedChildName_ReturnsAllMatches()
     {
-        var result = _fetcher.SelectNodes("/items/item", _doc);
+        var result = _fetcher.SelectNodes("/root/items/item", _doc);
         var list = result.ToList();
         Assert.That(list, Has.Count.EqualTo(3));
         Assert.That(list.Select(e => e.Value), Is.EquivalentTo(new[] { "alpha", "beta", "gamma" }));
@@ -76,21 +91,21 @@ public class SlashPathItemsFetcherTests
     [Test]
     public void SelectNodes_NonExistentPath_ReturnsEmptyCollection()
     {
-        var result = _fetcher.SelectNodes("/nonexistent/child", _doc);
+        var result = _fetcher.SelectNodes("/root/nonexistent/child", _doc);
         Assert.That(result.ToList(), Is.Empty);
     }
 
     [Test]
     public void SelectNodes_WildcardStar_ReturnsAllChildren()
     {
-        var result = _fetcher.SelectNodes("/items/*", _doc);
+        var result = _fetcher.SelectNodes("/root/items/*", _doc);
         Assert.That(result.ToList(), Has.Count.EqualTo(3));
     }
 
     [Test]
     public void SelectNode_SingleResult_ReturnsSingleElement()
     {
-        var node = _fetcher.SelectNode("/score", _doc);
+        var node = _fetcher.SelectNode("/root/score", _doc);
         Assert.That(node, Is.Not.Null);
         Assert.That(node!.Value, Is.EqualTo("42"));
     }
@@ -98,23 +113,23 @@ public class SlashPathItemsFetcherTests
     [Test]
     public void SelectNode_NonExistent_ReturnsNull()
     {
-        var node = _fetcher.SelectNode("/missing", _doc);
+        var node = _fetcher.SelectNode("/root/missing", _doc);
         Assert.That(node, Is.Null);
     }
 
     [Test]
-    public void GetPath_NestedElement_ReturnsCorrctSlashPath()
+    public void GetPath_NestedElement_IncludesTheDocumentElement()
     {
         var city = _doc.Element("address")!.Element("city")!;
-        Assert.That(_fetcher.GetPath(city), Is.EqualTo("/address/city"));
+        Assert.That(_fetcher.GetPath(city), Is.EqualTo("/root/address/city"));
     }
 
     [Test]
-    public void SelectNodes_PathWithoutLeadingSlash_TreatedAsRelativeXPath()
+    public void SelectNodes_PathThatSkipsTheDocumentElement_MatchesNothing()
     {
-        var result = _fetcher.SelectNodes("score", _doc);
-        var list = result.ToList();
-        Assert.That(list, Has.Count.EqualTo(1));
-        Assert.That(list[0].Value, Is.EqualTo("42"));
+        // '/score' used to work, because the leading slash was stripped and the path
+        // evaluated against <root>. It now means "a score child of the document node".
+        Assert.That(_fetcher.SelectNodes("/score", _doc).ToList(), Is.Empty);
+        Assert.That(_fetcher.SelectNodes("score", _doc).ToList(), Is.Empty);
     }
 }

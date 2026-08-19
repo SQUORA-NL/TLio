@@ -1,6 +1,7 @@
 using System.Globalization;
 using TLio.Commands.Advanced.Models;
 using TLio.Commands.Advanced.Settings;
+using TLio.Commands.Logic;
 using TLio.Core;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
@@ -75,8 +76,21 @@ public class Compare<TNode> : CommandBase<TNode>
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
-        var firstNodes = context.ItemsFetcher.SelectNodes(FirstPath!, dataContext);
-        var secondNodes = context.ItemsFetcher.SelectNodes(SecondPath!, dataContext);
+        // A path may be an =indirect() expression; the raw '=' would throw out of the fetcher.
+        var resolvedFirst = IndirectPath.TryResolve(FirstPath!, dataContext, context, CommandName, "firstPath");
+        var resolvedSecond = resolvedFirst == null
+            ? null
+            : IndirectPath.TryResolve(SecondPath!, dataContext, context, CommandName, "secondPath");
+        if (resolvedFirst == null || resolvedSecond == null)
+        {
+            context.TraceCollector?.Record(new TraceEntry(
+                CommandName, $"{FirstPath} vs {SecondPath}", TraceOutcome.NoOp, 0,
+                $"{CommandName}: an =indirect() path expression could not be resolved; comparison skipped."));
+            return TLioExecutionResult<TNode>.Successful(dataContext);
+        }
+
+        var firstNodes = context.ItemsFetcher.SelectNodes(resolvedFirst, dataContext);
+        var secondNodes = context.ItemsFetcher.SelectNodes(resolvedSecond, dataContext);
 
         if (firstNodes.Count == 0)
         {
@@ -141,8 +155,14 @@ public class Compare<TNode> : CommandBase<TNode>
 
     private void WriteResult(TNode dataContext, TNode resultNode, IExecutionContext<TNode> context)
     {
-        var (parentPath, leafName) = context.ItemsFetcher.SplitParentAndLeaf(ResultPath!);
-        context.ItemsFetcher.EnsurePath(ResultPath!, dataContext, context.NodeAdapter);
+        // resultPath may be an =indirect() expression too; an unresolved one cannot be written to.
+        var resolvedResultPath = IndirectPath.TryResolve(
+            ResultPath!, dataContext, context, CommandName, "resultPath");
+        if (resolvedResultPath == null)
+            return;
+
+        var (parentPath, leafName) = context.ItemsFetcher.SplitParentAndLeaf(resolvedResultPath);
+        context.ItemsFetcher.EnsurePath(resolvedResultPath, dataContext, context.NodeAdapter);
         var parents = context.ItemsFetcher.SelectNodes(parentPath, dataContext);
 
         foreach (var parent in parents)

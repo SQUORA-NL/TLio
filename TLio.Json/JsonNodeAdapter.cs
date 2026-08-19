@@ -144,6 +144,21 @@ public class JsonNodeAdapter : INodeAdapter<JToken>
     public void Replace(JToken target, JToken replacement) => target.Replace(replacement);
 
     /// <summary>
+    /// A JSON value is named by the JProperty that holds it, so renaming swaps that
+    /// property for one with the new name. JProperty.Replace keeps the original position,
+    /// so key order is preserved. A root token has no JProperty and cannot be renamed.
+    /// </summary>
+    public bool RenameNode(JToken node, string newName)
+    {
+        if (string.IsNullOrEmpty(newName)) return false;
+        if (node.Parent is not JProperty property) return false;
+        if (property.Name == newName) return true;
+
+        property.Replace(new JProperty(newName, property.Value));
+        return true;
+    }
+
+    /// <summary>
     /// Remove <paramref name="node"/> from its parent container.
     /// Handles both property values (removes the JProperty) and array elements.
     /// Returns false if the node has no removable parent (e.g. it is the document root).

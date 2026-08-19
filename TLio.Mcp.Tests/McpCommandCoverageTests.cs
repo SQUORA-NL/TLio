@@ -10,8 +10,8 @@ using TLio.Mcp.Tools;
 namespace TLio.Mcp.Tests;
 
 /// <summary>
-/// MCP-level trace-quality coverage for the 9 commands not exercised by McpTwoIterationTests:
-///   put, move, ifElse, decisionTable, compare, merge, flatten, restore, resolve
+/// MCP-level trace-quality coverage for the commands not exercised by McpTwoIterationTests:
+///   put, move, rename, ifElse, decisionTable, compare, merge, flatten, restore, resolve
 ///
 /// For each command, at minimum:
 ///   - Wrong path → trace shows noop with actionable detail
@@ -160,6 +160,62 @@ public sealed class McpCommandCoverageTests
         var output = JToken.Parse(result.Output);
         Assert.That(output["result"]!["reference"]!.ToString(), Is.EqualTo("XYZ"));
         Assert.That(output["data"]!["temp_ref"], Is.Null, "moved field must not exist at source");
+    }
+
+
+    // ── RENAME ───────────────────────────────────────────────────────────────────
+    // rename changes a node's name; over JSON the root has no name of its own
+
+    [Test]
+    public void Rename_Property_TraceConfirmsTheNewName()
+    {
+        const string doc = """{"old_name":"Alice","keep":1}""";
+        const string script = """[{"command":"rename","path":"$.old_name","name":"name"}]""";
+
+        var result = Execute(doc, script);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Trace[0].Outcome, Is.EqualTo("success"));
+        Assert.That(result.Trace[0].Detail, Does.Contain("name"),
+            "trace must name what the node was renamed to");
+
+        var output = JToken.Parse(result.Output);
+        Assert.That(output["name"]!.ToString(), Is.EqualTo("Alice"));
+        Assert.That(output["old_name"], Is.Null);
+
+        Console.WriteLine($"[rename success] {result.Trace[0].Detail}");
+    }
+
+    [Test]
+    public void Rename_WrongPath_TraceShowsNoopWithActionableDetail()
+    {
+        const string doc = """{"name":"Alice"}""";
+        const string script = """[{"command":"rename","path":"$.nope","name":"other"}]""";
+
+        var result = Execute(doc, script);
+
+        Assert.That(result.Success, Is.True, "a missing path must not fail the script");
+        Assert.That(result.Trace[0].Outcome, Is.EqualTo("noop"));
+        Assert.That(result.Trace[0].Detail, Does.Contain("0 nodes"),
+            "an agent needs to see that the path matched nothing");
+
+        Console.WriteLine($"[rename noop] {result.Trace[0].Detail}");
+    }
+
+    [Test]
+    public void Rename_JsonRoot_TraceExplainsTheRootHasNoName()
+    {
+        const string doc = """{"name":"Alice"}""";
+        const string script = """[{"command":"rename","path":"$","name":"opdracht"}]""";
+
+        var result = Execute(doc, script);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Trace[0].Outcome, Is.EqualTo("noop"));
+        Assert.That(result.Trace[0].Detail, Does.Contain("no name"),
+            "the agent must learn why, not just that nothing happened");
+
+        Console.WriteLine($"[rename root noop] {result.Trace[0].Detail}");
     }
 
     // ── IFELSE ───────────────────────────────────────────────────────────────────

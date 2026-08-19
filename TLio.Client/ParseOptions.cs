@@ -52,6 +52,7 @@ public class ParseOptions<TNode>
         options.CommandsProvider.Register("add",     () => new Add<TNode>());
         options.CommandsProvider.Register("put",     () => new Put<TNode>());
         options.CommandsProvider.Register("remove",  () => new Remove<TNode>());
+        options.CommandsProvider.Register("rename",  () => new Rename<TNode>());
         options.CommandsProvider.Register("copy",    () => new Copy<TNode>());
         options.CommandsProvider.Register("move",    () => new Move<TNode>());
         options.CommandsProvider.Register("ifElse",  () => new IfElse<TNode>());

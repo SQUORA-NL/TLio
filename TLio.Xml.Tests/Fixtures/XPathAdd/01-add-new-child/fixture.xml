@@ -1,1 +1,1 @@
-<fixture><input><root><address><street>Main St</street></address></root></input><script><add path="address/email">test@example.com</add></script><result><root><address><street>Main St</street><email>test@example.com</email></address></root></result></fixture>
+<fixture><input><root><address><street>Main St</street></address></root></input><script><add path="/root/address/email">test@example.com</add></script><result><root><address><street>Main St</street><email>test@example.com</email></address></root></result></fixture>

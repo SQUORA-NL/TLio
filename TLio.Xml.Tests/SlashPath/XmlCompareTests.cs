@@ -19,6 +19,9 @@ public class XmlCompareTests
     [SetUp]
     public void SetUp() => _context = XmlExecutionContext.CreateWithSlashPaths();
 
+    /// <summary>Parses through the adapter so paths resolve from the document node.</summary>
+    private static XElement Doc(string xml) => new XmlNodeAdapter().Parse(xml);
+
     private static List<XElement> Results(XElement data)
     {
         var result = data.Element("result");
@@ -33,9 +36,9 @@ public class XmlCompareTests
     [Test]
     public void Primitives_WriteScalarResult()
     {
-        var data = XElement.Parse("<root><a>2</a><b>1</b></root>");
+        var data = Doc("<root><a>2</a><b>1</b></root>");
 
-        var result = new Compare<XElement>("/a", "/b", "/result").Execute(data, _context);
+        var result = new Compare<XElement>("/root/a", "/root/b", "/root/result").Execute(data, _context);
 
         Assert.That(result.Success, Is.True);
         Assert.That(data.Element("result")?.Value, Is.EqualTo("greater"));
@@ -44,9 +47,9 @@ public class XmlCompareTests
     [Test]
     public void Primitives_WithEqualTextUnderDifferentElementNames_AreEqual()
     {
-        var data = XElement.Parse("<root><a>hello</a><b>hello</b></root>");
+        var data = Doc("<root><a>hello</a><b>hello</b></root>");
 
-        new Compare<XElement>("/a", "/b", "/result").Execute(data, _context);
+        new Compare<XElement>("/root/a", "/root/b", "/root/result").Execute(data, _context);
 
         Assert.That(data.Element("result")?.Value, Is.EqualTo("equal"));
     }
@@ -56,27 +59,27 @@ public class XmlCompareTests
     [Test]
     public void ObjectDiff_ReportsValueDifferenceWithXmlPaths()
     {
-        var data = XElement.Parse(
+        var data = Doc(
             "<root><first><a>1</a><b>x</b></first><second><a>2</a><b>x</b></second></root>");
 
-        var result = new Compare<XElement>("/first", "/second", "/result").Execute(data, _context);
+        var result = new Compare<XElement>("/root/first", "/root/second", "/root/result").Execute(data, _context);
 
         Assert.That(result.Success, Is.True);
         var entries = Results(data);
         var valueDiffs = entries.Where(e => Field(e, "differenceType") == "valueDifference").ToList();
         Assert.That(valueDiffs, Has.Count.EqualTo(1));
-        Assert.That(Field(valueDiffs[0], "firstPath"), Is.EqualTo("/first/a"));
-        Assert.That(Field(valueDiffs[0], "secondPath"), Is.EqualTo("/second/a"));
+        Assert.That(Field(valueDiffs[0], "firstPath"), Is.EqualTo("/root/first/a"));
+        Assert.That(Field(valueDiffs[0], "secondPath"), Is.EqualTo("/root/second/a"));
         Assert.That(Field(valueDiffs[0], "foundDifference"), Is.EqualTo("true"));
     }
 
     [Test]
     public void ObjectDiff_EqualContentUnderDifferentElementNames_ReportsNoDifference()
     {
-        var data = XElement.Parse(
+        var data = Doc(
             "<root><first><a>1</a><b>x</b></first><second><a>1</a><b>x</b></second></root>");
 
-        new Compare<XElement>("/first", "/second", "/result").Execute(data, _context);
+        new Compare<XElement>("/root/first", "/root/second", "/root/result").Execute(data, _context);
 
         var entries = Results(data);
         Assert.That(entries.All(e => Field(e, "foundDifference") == "false"), Is.True,
@@ -86,41 +89,41 @@ public class XmlCompareTests
     [Test]
     public void ObjectDiff_ElementOnOneSideOnly_ReportsStructureDifference()
     {
-        var data = XElement.Parse(
+        var data = Doc(
             "<root><first><a>1</a><only>y</only></first><second><a>1</a><b>x</b></second></root>");
 
-        new Compare<XElement>("/first", "/second", "/result").Execute(data, _context);
+        new Compare<XElement>("/root/first", "/root/second", "/root/result").Execute(data, _context);
 
         var structureDiffs = Results(data)
             .Where(e => Field(e, "differenceType") == "structureDifference").ToList();
         Assert.That(structureDiffs, Has.Count.EqualTo(2));
         Assert.That(structureDiffs.Select(e => Field(e, "firstPath")),
-            Is.EquivalentTo(new[] { "/first/only", "/first/b" }));
+            Is.EquivalentTo(new[] { "/root/first/only", "/root/first/b" }));
     }
 
     [Test]
     public void ArrayDiff_RepeatedElementsAreComparedPositionally()
     {
-        var data = XElement.Parse(
+        var data = Doc(
             "<root>" +
             "<first><item><id>1</id><v>a</v></item><item><id>2</id><v>b</v></item></first>" +
             "<second><item><id>1</id><v>a</v></item><item><id>2</id><v>z</v></item></second>" +
             "</root>");
 
-        new Compare<XElement>("/first", "/second", "/result").Execute(data, _context);
+        new Compare<XElement>("/root/first", "/root/second", "/root/result").Execute(data, _context);
 
         var entries = Results(data);
         Assert.That(entries.Any(e => Field(e, "differenceType") == "arrayDifference" &&
                                      Field(e, "description")!.Contains("2 items")), Is.True);
         var valueDiffs = entries.Where(e => Field(e, "differenceType") == "valueDifference").ToList();
         Assert.That(valueDiffs, Has.Count.EqualTo(1));
-        Assert.That(Field(valueDiffs[0], "firstPath"), Is.EqualTo("/first/item/v"));
+        Assert.That(Field(valueDiffs[0], "firstPath"), Is.EqualTo("/root/first/item/v"));
     }
 
     [Test]
     public void ArrayDiff_KeyBasedMatchingWorksOverXml()
     {
-        var data = XElement.Parse(
+        var data = Doc(
             "<root>" +
             "<first><item><id>1</id><v>a</v></item><item><id>2</id><v>b</v></item></first>" +
             "<second><item><id>2</id><v>b</v></item><item><id>1</id><v>a</v></item></second>" +
@@ -128,10 +131,10 @@ public class XmlCompareTests
 
         var settings = new CompareSettings
         {
-            ArraySettings = { new CompareArraySettings { ArrayPath = "/first", KeyPaths = { "id" } } }
+            ArraySettings = { new CompareArraySettings { ArrayPath = "/root/first", KeyPaths = { "id" } } }
         };
 
-        new Compare<XElement>("/first", "/second", "/result", settings).Execute(data, _context);
+        new Compare<XElement>("/root/first", "/root/second", "/root/result", settings).Execute(data, _context);
 
         Assert.That(Results(data).All(e => Field(e, "foundDifference") == "false"), Is.True,
             $"Expected reordered items to match by key. Got: {data.Element("result")}");
@@ -140,12 +143,12 @@ public class XmlCompareTests
     [Test]
     public void ResultTypes_FilterAppliesOverXml()
     {
-        var data = XElement.Parse(
+        var data = Doc(
             "<root><first><a>1</a><only>y</only></first><second><a>2</a><b>x</b></second></root>");
 
         var settings = new CompareSettings { ResultTypes = { DifferenceType.ValueDifference } };
 
-        new Compare<XElement>("/first", "/second", "/result", settings).Execute(data, _context);
+        new Compare<XElement>("/root/first", "/root/second", "/root/result", settings).Execute(data, _context);
 
         var entries = Results(data);
         Assert.That(entries, Has.Count.EqualTo(1));
