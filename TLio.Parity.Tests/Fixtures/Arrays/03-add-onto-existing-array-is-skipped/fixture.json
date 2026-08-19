@@ -1,0 +1,26 @@
+{
+  "why": "add refuses to overwrite an existing property, an array included. Appending is what copy into an array does \u2014 see Copy/05.",
+  "input": {
+    "items": [
+      {
+        "n": 1
+      }
+    ]
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.items",
+      "value": {
+        "n": 2
+      }
+    }
+  ],
+  "result": {
+    "items": [
+      {
+        "n": 1
+      }
+    ]
+  }
+}

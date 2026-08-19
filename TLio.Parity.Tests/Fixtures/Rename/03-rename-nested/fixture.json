@@ -1,0 +1,21 @@
+{
+  "input": {
+    "o": {
+      "a": 1,
+      "b": 2
+    }
+  },
+  "script": [
+    {
+      "command": "rename",
+      "path": "$.o.a",
+      "name": "z"
+    }
+  ],
+  "result": {
+    "o": {
+      "z": 1,
+      "b": 2
+    }
+  }
+}

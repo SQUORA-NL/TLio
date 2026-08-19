@@ -1,0 +1,18 @@
+{
+  "input": {
+    "a": "x",
+    "b": "y"
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.c",
+      "value": "=concat($.a,$.b)"
+    }
+  ],
+  "result": {
+    "a": "x",
+    "b": "y",
+    "c": "xy"
+  }
+}

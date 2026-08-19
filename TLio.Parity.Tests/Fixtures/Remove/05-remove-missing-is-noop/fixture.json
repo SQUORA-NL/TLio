@@ -1,0 +1,14 @@
+{
+  "input": {
+    "a": 1
+  },
+  "script": [
+    {
+      "command": "remove",
+      "path": "$.absent"
+    }
+  ],
+  "result": {
+    "a": 1
+  }
+}

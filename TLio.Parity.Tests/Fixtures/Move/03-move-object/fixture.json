@@ -1,0 +1,21 @@
+{
+  "input": {
+    "a": {
+      "x": 1
+    },
+    "keep": 1
+  },
+  "script": [
+    {
+      "command": "move",
+      "fromPath": "$.a",
+      "toPath": "$.b"
+    }
+  ],
+  "result": {
+    "keep": 1,
+    "b": {
+      "x": 1
+    }
+  }
+}

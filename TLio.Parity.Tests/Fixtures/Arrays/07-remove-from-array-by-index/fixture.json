@@ -1,0 +1,21 @@
+{
+  "input": {
+    "items": [
+      "a",
+      "b",
+      "c"
+    ]
+  },
+  "script": [
+    {
+      "command": "remove",
+      "path": "$.items[0]"
+    }
+  ],
+  "result": {
+    "items": [
+      "b",
+      "c"
+    ]
+  }
+}

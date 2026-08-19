@@ -1,0 +1,20 @@
+{
+  "input": {
+    "items": [
+      1
+    ]
+  },
+  "script": [
+    {
+      "command": "copy",
+      "fromPath": "$.items[0]",
+      "toPath": "$.items"
+    }
+  ],
+  "result": {
+    "items": [
+      1,
+      1
+    ]
+  }
+}

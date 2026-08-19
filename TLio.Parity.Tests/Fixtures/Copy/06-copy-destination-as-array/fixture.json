@@ -1,0 +1,21 @@
+{
+  "input": {
+    "a": "v",
+    "b": "w"
+  },
+  "script": [
+    {
+      "command": "copy",
+      "fromPath": "$.a",
+      "toPath": "$.b",
+      "destinationAsArray": true
+    }
+  ],
+  "result": {
+    "a": "v",
+    "b": [
+      "w",
+      "v"
+    ]
+  }
+}

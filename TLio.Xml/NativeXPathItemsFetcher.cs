@@ -42,6 +42,16 @@ public class NativeXPathItemsFetcher : IItemsFetcher<XElement>
     /// </summary>
     internal static XNode EvaluationContext(XElement data) => (XNode?)data.Document ?? data;
 
+    /// <summary>
+    /// An XPath path expression starts at the document node (<c>/order</c>), searches from it
+    /// (<c>//city</c>), or is written relative to the current node (<c>./city</c>). Bare
+    /// relative steps (<c>customer</c>) are legal XPath but indistinguishable from ordinary
+    /// text, so they are not auto-detected: a function argument meant as a path is written
+    /// anchored, and a bare word stays a value.
+    /// </summary>
+    public bool IsPathExpression(string text) =>
+        text.Length > 1 && (text[0] == '/' || text.StartsWith("./", StringComparison.Ordinal));
+
     public SelectedNodes<XElement> SelectNodes(string path, XElement data)
     {
         if (string.IsNullOrEmpty(path))

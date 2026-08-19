@@ -1,0 +1,18 @@
+{
+  "input": {
+    "a": 1
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.address.city",
+      "value": "Amsterdam"
+    }
+  ],
+  "result": {
+    "a": 1,
+    "address": {
+      "city": "Amsterdam"
+    }
+  }
+}

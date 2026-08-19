@@ -1,0 +1,24 @@
+{
+  "why": "A trailing [n] stays part of the leaf name, which matches no property, so set finds nothing and warns. All three formats agree; the fixture pins that they keep agreeing.",
+  "input": {
+    "items": [
+      1,
+      2,
+      3
+    ]
+  },
+  "script": [
+    {
+      "command": "set",
+      "path": "$.items[1]",
+      "value": 9
+    }
+  ],
+  "result": {
+    "items": [
+      1,
+      2,
+      3
+    ]
+  }
+}

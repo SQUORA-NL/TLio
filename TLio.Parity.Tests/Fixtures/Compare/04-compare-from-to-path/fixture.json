@@ -1,0 +1,19 @@
+{
+  "input": {
+    "a": 10,
+    "b": 20
+  },
+  "script": [
+    {
+      "command": "compare",
+      "fromPath": "$.a",
+      "toPath": "$.b",
+      "resultPath": "$.result"
+    }
+  ],
+  "result": {
+    "a": 10,
+    "b": 20,
+    "result": "less"
+  }
+}

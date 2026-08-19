@@ -34,7 +34,7 @@ public abstract class PredicateFunctionBase<TNode> : FunctionBase<TNode>
         // Paths inside an argument list arrive as plain strings; resolve them here rather
         // than through ResolveArg, which cannot distinguish "no match" from "failed".
         var str = context.NodeAdapter.TryGetString(first);
-        if (result.Data.Count == 1 && str != null && str.Length > 1 && (str[0] == '$' || str[0] == '@'))
+        if (result.Data.Count == 1 && str != null && context.ItemsFetcher.IsPathExpression(str))
         {
             var nodes = context.ItemsFetcher.SelectNodes(str, dataContext);
             if (nodes.Count == 0) return false;

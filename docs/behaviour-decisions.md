@@ -192,6 +192,70 @@ The two areas that were behind have been closed:
 
 ---
 
+## E. Cross-format behaviour still not aligned
+
+The XML/YAML alignment work (020) brought the three adapters onto one data model — see
+`docs/ai-ref/adapters/document-shape.md` — and `TLio.Parity.Tests` now runs one fixture corpus
+against all three. These are what it does **not** cover, because they are decisions rather than
+bugs.
+
+### E1. The empty XML element cannot say which empty thing it is
+
+`<k/>` is `null`, `""`, `{}` and `[]` at once, and no attribute-free encoding separates them.
+Each predicate answers its own question and `GetNodeKind` settles on `Null` (see the adapter
+remarks). The visible consequence: `remove` emptying an object leaves `{}` in JSON and `<a/>`
+in XML, and re-reading that XML gives `null`.
+
+Pinned: `XmlShapeTests.AnEmptyElement_IsAlsoNull_BecauseXmlCannotTellTheTwoApart`
+
+Setting shape: an explicit type marker (`xsi:nil`, or a TLio-owned attribute) — which means
+deciding that attributes are in scope for the data model, currently they are not.
+
+### E2. A single-element XML array is indistinguishable from a one-property object
+
+`<items><item>1</item></items>` reads as an array only because the item is named `item`. In a
+document TLio did not write, `<lines><line>1</line></lines>` is a one-property object.
+
+Pinned: `XmlShapeTests.ASingleItemElement_IsAOneElementArray`,
+`XmlShapeTests.AnObjectWithOneProperty_IsAnObjectNotAOneElementArray`
+
+Setting shape: a configurable item name per array path, or a document-level convention.
+
+### E3. Writing through an array subscript does not work in any format
+
+`set $.items[1]` keeps `items[1]` as the leaf name, matches no property, and no-ops with a
+warning. `put $.items[0]` goes further in JSON and creates a property literally named
+`items[0]`. All three formats share the first behaviour, so it is not a divergence — but it is
+also not what the path says.
+
+Pinned: `TLio.Parity.Tests/Fixtures/Arrays/01-set-element-by-index-is-a-noop`
+
+Setting shape: teach `SplitParentAndLeaf` that a trailing subscript addresses a position rather
+than naming a property. This is a command-layer change, deliberately out of scope for 020.
+
+### E4. A bare path is not a value in XML
+
+`"value": "$.a"` is a path expression in JSON. In XML `/order/a` written as text stays text,
+because a leading `/` is not distinctive enough to override at parse time, where no fetcher is
+available to ask. `=fetch(/order/a)` works — path detection inside function arguments *is*
+format-aware (`IItemsFetcher.IsPathExpression`).
+
+### E5. `decisionTable` config is JSON-notation only
+
+The XML and YAML script parsers convert settings objects through their generic POCO path, which
+`DecisionTableConfig<TNode>` (generic, with node-typed members) does not go through.
+
+### E6. A quoted YAML `'null'` is still read as null downstream
+
+The script parser honours the quoting and writes the four-character string, but
+`YamlNodeAdapter.IsNull` tests the text rather than the scalar style, so every function that
+asks still sees null. Telling them apart end to end needs a styled scalar in the adapter's
+value model.
+
+Pinned: `YamlScriptNotationTests.AQuotedNullValue_IsParsedAsTheString`
+
+---
+
 ## Resolved
 
 Findings from the same sweep that were plain bugs rather than decisions, and have been fixed.

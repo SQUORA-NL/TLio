@@ -24,6 +24,19 @@ public interface IItemsFetcher<TNode>
     /// <summary>Character that closes an array/index subscript.</summary>
     string ArrayCloseChar { get; }
 
+    /// <summary>
+    /// True when <paramref name="text"/> reads as a path expression in this format rather than
+    /// as a plain value. Functions use it to decide whether an argument such as
+    /// <c>=fetch(…)</c>'s should be resolved against the document or returned as-is.
+    ///
+    /// The default is the JSONPath rule — a leading <c>$</c> or <c>@</c> — which is also what
+    /// the YAML dot-notation uses. Formats with a different path language (XPath) override it.
+    /// A lone <c>$</c> or <c>@</c> is not a useful path, so at least one more character is
+    /// required.
+    /// </summary>
+    bool IsPathExpression(string text) =>
+        text.Length > 1 && (text[0] == '$' || text[0] == '@');
+
     /// <summary>Select zero or more nodes matching the given path expression.</summary>
     SelectedNodes<TNode> SelectNodes(string path, TNode data);
 

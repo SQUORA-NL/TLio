@@ -36,6 +36,13 @@ script (JSON array)  +  document (JSON / XML / YAML)  +  execution context
 | XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `/order/customer`, `//child`, `/order/item[@id='1']` | Predicates, recursive descent, axes; indexing is 1-based |
 | YAML | `TLio.Yaml` | `YamlExecutionContext.CreateDefault()` | Dot-notation `$.a.b` | YAML source documents; multi-doc `---` parsed as array root |
 
+**Cross-format behaviour.** The commands are written against the JSON data model, and each
+adapter answers "which kind of node is this?" on its format's behalf.
+[adapters/document-shape.md](adapters/document-shape.md) is that mapping — what an object, an
+array, a scalar and a null look like in each format, and the one case XML cannot represent.
+[adapters/script-notation.md](adapters/script-notation.md) is the same script written three
+ways. `TLio.Parity.Tests` runs one fixture corpus against all three and fails when they drift.
+
 Full adapter details, path-syntax tables, and "When NOT to use" guidance:
 [TLio_AI_Reference.md — Adapters](TLio_AI_Reference.md#adapters)
 

@@ -1,0 +1,20 @@
+{
+  "input": {
+    "address": {
+      "city": "Amsterdam"
+    }
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.address.zip",
+      "value": "1011"
+    }
+  ],
+  "result": {
+    "address": {
+      "city": "Amsterdam",
+      "zip": "1011"
+    }
+  }
+}

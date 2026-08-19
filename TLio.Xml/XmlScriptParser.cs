@@ -1,7 +1,10 @@
-using System.Globalization;
 using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using TLio.Client;
+using TLio.Commands.Advanced;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 
@@ -17,9 +20,13 @@ namespace TLio.Xml;
 ///   &lt;add path="/order/address/city"&gt;Amsterdam&lt;/add&gt;
 ///   &lt;remove path="/order/obsolete"/&gt;
 ///   &lt;rename path="/order" name="opdracht"/&gt;
-///   &lt;copy fromPath="/order/src" toPath="/order/dst"/&gt;
+///   &lt;copy fromPath="/order/src" toPath="/order/dst" destinationAsArray="true"/&gt;
 ///   &lt;move fromPath="/order/old" toPath="/order/new"/&gt;
-///   &lt;put path="/order/key"&gt;value&lt;/put&gt;
+///   &lt;put path="/order/key"&gt;&lt;value&gt;&lt;a&gt;1&lt;/a&gt;&lt;/value&gt;&lt;/put&gt;
+///   &lt;ifElse condition="=equals(/order/n, 5)"&gt;
+///     &lt;ifScript&gt;&lt;put path="/order/r"&gt;yes&lt;/put&gt;&lt;/ifScript&gt;
+///     &lt;elseScript&gt;&lt;put path="/order/r"&gt;no&lt;/put&gt;&lt;/elseScript&gt;
+///   &lt;/ifElse&gt;
 /// &lt;/script&gt;
 /// </code>
 ///
@@ -30,11 +37,29 @@ namespace TLio.Xml;
 /// Rules:
 /// - Root element name is ignored (it is the script container)
 /// - Each child element name = command name (case-insensitive)
-/// - Attributes = string properties (path, fromPath, toPath, property, ...)
-/// - Text content (or first child element) = "Value" property as IFunctionSupportedValue
+/// - Attributes = scalar properties, converted to the target property's type: string, bool,
+///   enum, or a value expression (<c>condition="=equals(…)"</c>)
+/// - Child elements named after a command property carry the values an attribute cannot hold:
+///   a nested script (<c>&lt;ifScript&gt;</c>), a structured value (<c>&lt;value&gt;</c>), or a
+///   settings object (<c>&lt;settings&gt;</c>)
+/// - Text content = the <c>Value</c> property, same as a <c>value</c> attribute would be
+///
+/// The property set is the same one the JSON notation accepts — the two notations describe the
+/// same commands, so a script that works against JSON has an XML spelling that does the same
+/// thing. See <see cref="CommandConverter{TNode}"/> for the JSON side.
 /// </summary>
 public class XmlScriptParser<TNode>
 {
+    /// <summary>
+    /// Options for the settings-object fallback, matching <see cref="CommandConverter{TNode}"/>
+    /// so the same setting is spelled the same way in both notations.
+    /// </summary>
+    private static readonly JsonSerializerOptions PocoOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: true) }
+    };
+
     private readonly ICommandsProvider<TNode> _commandsProvider;
     private readonly FunctionConverter<TNode> _functionConverter;
     private readonly INodeAdapter<TNode> _nodeAdapter;
@@ -73,40 +98,194 @@ public class XmlScriptParser<TNode>
 
         var commandType = command.GetType();
 
-        // Map attributes to string properties
         foreach (var attr in el.Attributes())
         {
-            var propName = ToPascalCase(attr.Name.LocalName);
-            var prop = commandType.GetProperty(propName, BindingFlags.Public | BindingFlags.Instance);
-            if (prop == null || !prop.CanWrite) continue;
-
-            if (prop.PropertyType == typeof(string))
-                prop.SetValue(command, attr.Value);
+            var prop = FindProperty(commandType, attr.Name.LocalName);
+            if (prop == null) continue;
+            var converted = ConvertScalar(attr.Value, prop.PropertyType);
+            if (converted != null) prop.SetValue(command, converted);
         }
 
-        // Text content → Value property
-        var valueProp = commandType.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance);
-        if (valueProp != null)
+        // Child elements name the properties an attribute cannot express. Anything that does
+        // not name a property is content for Value — that keeps <set><a>1</a></set> working
+        // alongside the explicit <set><value><a>1</a></value></set> form.
+        var valueContent = new List<XElement>();
+        foreach (var child in el.Elements())
         {
-            if (!el.HasElements && !string.IsNullOrEmpty(el.Value))
+            var prop = FindProperty(commandType, child.Name.LocalName);
+            if (prop == null) { valueContent.Add(child); continue; }
+
+            var converted = ConvertElement(child, prop.PropertyType);
+            if (converted != null) prop.SetValue(command, converted);
+        }
+
+        var valueProp = FindProperty(commandType, "value");
+        if (valueProp != null && valueProp.PropertyType == typeof(IFunctionSupportedValue<TNode>) &&
+            valueProp.GetValue(command) == null)
+        {
+            if (valueContent.Count > 0)
             {
-                var fsv = _functionConverter.ParseValue(el.Value, _nodeAdapter);
-                if (fsv != null) valueProp.SetValue(command, fsv);
+                var node = NodeFromContent(valueContent);
+                if (node != null) valueProp.SetValue(command, new FixedValue<TNode>(node));
             }
-            else if (el.HasElements)
+            else if (!el.HasElements && el.Attribute("value") == null)
             {
-                // First child element is the value node (complex value)
-                var first = el.Elements().First();
-                try
+                // Text content is the value. An element with neither text nor children carries
+                // no value at all, which is different from an empty one — leave it unset so
+                // command validation reports it rather than silently writing "".
+                var text = el.Value;
+                if (!string.IsNullOrEmpty(text))
                 {
-                    var node = _nodeAdapter.Parse(first.ToString(SaveOptions.DisableFormatting));
-                    valueProp.SetValue(command, new FixedValue<TNode>(node));
+                    var fsv = _functionConverter.ParseValue(text, _nodeAdapter);
+                    if (fsv != null) valueProp.SetValue(command, fsv);
                 }
-                catch { /* ignore parse errors */ }
             }
         }
 
         return command;
+    }
+
+    private static PropertyInfo? FindProperty(Type commandType, string name)
+    {
+        var prop = commandType.GetProperty(ToPascalCase(name),
+            BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+        return prop is { CanWrite: true } ? prop : null;
+    }
+
+    /// <summary>Converts an attribute value to the property's type.</summary>
+    private object? ConvertScalar(string raw, Type targetType)
+    {
+        if (targetType == typeof(string))
+            return raw;
+
+        if (targetType == typeof(bool) || targetType == typeof(bool?))
+            return bool.TryParse(raw, out var b) ? b : null;
+
+        if (targetType == typeof(IFunctionSupportedValue<TNode>))
+            return _functionConverter.ParseValue(raw, _nodeAdapter);
+
+        var enumType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        if (enumType.IsEnum)
+            return Enum.TryParse(enumType, raw, ignoreCase: true, out var e) ? e : null;
+
+        return null;
+    }
+
+    /// <summary>Converts a child element to the property's type.</summary>
+    private object? ConvertElement(XElement el, Type targetType)
+    {
+        if (targetType == typeof(TLioScript<TNode>))
+        {
+            var sub = new TLioScript<TNode>();
+            foreach (var item in el.Elements())
+            {
+                var cmd = ParseCommand(item);
+                if (cmd != null) sub.Add(cmd);
+            }
+            return sub;
+        }
+
+        if (targetType == typeof(IFunctionSupportedValue<TNode>))
+        {
+            if (el.HasElements)
+            {
+                // The wrapper itself is the value node: its children are the properties of an
+                // object, or the items of an array. Taking the children instead would turn
+                // <value><x>1</x></value> into the bare scalar 1.
+                var node = ParseNode(el);
+                return node == null ? null : new FixedValue<TNode>(node);
+            }
+            // <value/> is an empty element, which is how this format writes null.
+            return string.IsNullOrEmpty(el.Value)
+                ? new FixedValue<TNode>(_nodeAdapter.CreateNull())
+                : _functionConverter.ParseValue(el.Value, _nodeAdapter);
+        }
+
+        if (targetType == typeof(string))
+            return el.Value;
+
+        if (targetType == typeof(bool) || targetType == typeof(bool?))
+            return bool.TryParse(el.Value, out var b) ? b : null;
+
+        var enumType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        if (enumType.IsEnum)
+            return Enum.TryParse(enumType, el.Value, ignoreCase: true, out var e) ? e : null;
+
+        // Settings objects and other POCOs are described by the same field names the JSON
+        // notation uses, so the element is converted to JSON and deserialised the same way.
+        if (targetType.IsClass && !targetType.IsAbstract && !targetType.IsGenericType)
+        {
+            try { return JsonSerializer.Deserialize(XmlToJson(el), targetType, PocoOptions); }
+            catch { return null; }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The node that loose child elements describe — the same thing an explicit
+    /// <c>&lt;value&gt;</c> wrapper around them would mean, so <c>&lt;set&gt;&lt;a/&gt;&lt;/set&gt;</c>
+    /// and <c>&lt;set&gt;&lt;value&gt;&lt;a/&gt;&lt;/value&gt;&lt;/set&gt;</c> agree.
+    /// </summary>
+    private TNode? NodeFromContent(List<XElement> children) =>
+        ParseNode(new XElement("value", children.Select(c => new XElement(c))));
+
+    private TNode? ParseNode(XElement wrapper)
+    {
+        try { return _nodeAdapter.Parse(wrapper.ToString(SaveOptions.DisableFormatting)); }
+        catch { return default; }
+    }
+
+    // ── XML → JSON for settings objects ──────────────────────────────────────
+    // Uses the same shape the node adapter reads documents in: repeated same-named children
+    // (or children named "item") are an array, other children are properties, text is a scalar.
+
+    private static string XmlToJson(XElement el)
+    {
+        var sb = new StringBuilder();
+        WriteJson(el, sb);
+        return sb.ToString();
+    }
+
+    private static void WriteJson(XElement el, StringBuilder sb)
+    {
+        if (!el.HasElements)
+        {
+            var text = el.Value;
+            if (text.Length == 0) { sb.Append("null"); return; }
+            if (bool.TryParse(text, out var b)) { sb.Append(b ? "true" : "false"); return; }
+            if (double.TryParse(text, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out _))
+            { sb.Append(text); return; }
+            sb.Append(JsonSerializer.Serialize(text));
+            return;
+        }
+
+        var children = el.Elements().ToList();
+        var names = children.Select(c => c.Name.LocalName).Distinct().ToList();
+        var isArray = names.Count == 1 &&
+                      (children.Count > 1 || names[0] == XmlNodeAdapter.DefaultItemName);
+
+        if (isArray)
+        {
+            sb.Append('[');
+            for (var i = 0; i < children.Count; i++)
+            {
+                if (i > 0) sb.Append(',');
+                WriteJson(children[i], sb);
+            }
+            sb.Append(']');
+            return;
+        }
+
+        sb.Append('{');
+        for (var i = 0; i < children.Count; i++)
+        {
+            if (i > 0) sb.Append(',');
+            sb.Append(JsonSerializer.Serialize(children[i].Name.LocalName)).Append(':');
+            WriteJson(children[i], sb);
+        }
+        sb.Append('}');
     }
 
     private static string ToPascalCase(string s)

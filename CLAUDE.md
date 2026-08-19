@@ -46,6 +46,8 @@ TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtu
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
 TLio.Mcp/                   ← MCP stdio server (tlio_list_commands, tlio_describe, tlio_execute, tlio_analyze, 019)
 TLio.Mcp.Tests/             ← MCP server tests (DiscoveryTools, ExecutionTools, AnalysisTools, E2E workflow)
+TLio.Parity.Tests/          ← Cross-format regression net (020): one fixture corpus run against
+                              JSON, XML and YAML through each format's own script notation
 samples/
   TLio.Sample.Api/          ← Minimal API sample (JSON/XML/YAML endpoints, 005)
   TLio.Sample.Cli/          ← CLI sample (file-in / transformed-out, 005)
@@ -75,6 +77,24 @@ document element; a hand-built detached `XElement` will not resolve absolute pat
 Renaming the document element (`<order>` → `<opdracht>`) is the `rename` command; `move` with
 `toPath: "/"` replaces the document body but keeps the element's name.
 
+## Cross-format behaviour (020)
+
+Commands are written against the JSON data model; each adapter answers "which kind of node is
+this?" for its format. That mapping — object / array / scalar / null in JSON, XML and YAML — is
+`docs/ai-ref/adapters/document-shape.md`, and the three script notations are
+`docs/ai-ref/adapters/script-notation.md`.
+
+Two rules to keep in mind when touching an adapter:
+
+- An XML **array** is an element whose children share one name, with either more than one child
+  or the canonical item name `item`. `IsObject` and `IsArray` are mutually exclusive.
+- An **empty XML element** is null, `""`, `{}` and `[]` at once. It reads as null *and* as a
+  container that a property can be written into — that second answer is what makes deep-path
+  `add` work.
+
+`TLio.Parity.Tests` fails when a format drifts. Known, deliberate divergences are section E of
+`docs/behaviour-decisions.md`.
+
 ## Commands
 
 ```sh
@@ -87,6 +107,9 @@ dotnet test
 C# / .NET 10: Follow standard conventions
 
 ## Recent Changes
+- 020-xml-alignment: XML and YAML brought onto the JSON data model — canonical document shape,
+  array/object split, script-notation parity (bools, enums, nested scripts, settings), YAML
+  recursive descent, format-aware path detection in functions. Added `TLio.Parity.Tests`.
 - 019-mcp-tlio-server: Added C# / .NET 10 + `ModelContextProtocol` (Anthropic MCP SDK, stdio server), `System.Threading.RateLimiting` (in-box .NET), `TLio.Json`, `TLio.Json.SystemText`, `TLio.Xml`, `TLio.Yaml`, `TLio.Client`, `TLio.Commands`, `TLio.Functions`, `TLio.Extensions.*`
 - 018-api-script-slug-cache: Added C# / .NET 10 + ASP.NET Core Minimal API; `TLio.Client` (`ScriptEngine<TNode>`, `CompiledScript<TNode>`); `TLio.Json` (`JsonExecutionContext`, `JsonNodeAdapter`); `TLio.Xml` (`XmlExecutionContext`); `TLio.Yaml` (`YamlExecutionContext`); NuPlane + CShells (DockerPlugin host only)
 - 017-im-format-converter: Added C# / .NET 10 + `System.Text.Json` (built-in), `System.Xml` (built-in), `YamlDotNet` (MIT, YAML adapter only), `NUnit 4.x` (tests), `TLio.Core` (FormatConverter.TLio only)

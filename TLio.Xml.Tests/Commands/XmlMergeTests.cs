@@ -10,10 +10,9 @@ namespace TLio.Xml.Tests.Commands;
 /// <summary>
 /// Merge command against the XML adapter (issue #30).
 ///
-/// XML has no native array type — an element whose children all share one name
-/// looks like both an object and an array. The merge command therefore only uses
-/// array semantics for such an element when the script declares array settings
-/// for its path, which keeps plain object merges unchanged.
+/// XML has no native array type. The adapter reads an element whose children all share
+/// one name as an array (see XmlNodeAdapter), so merge gives it array semantics — the same
+/// semantics JSON arrays get. Array settings then control key matching on top of that.
 /// </summary>
 [TestFixture]
 public class XmlMergeTests
@@ -86,17 +85,19 @@ public class XmlMergeTests
     }
 
     [Test]
-    public void WithoutArraySettings_RepeatedElementsUseObjectSemantics()
+    public void WithoutArraySettings_RepeatedElementsConcatenateLikeJsonArrays()
     {
-        // Backwards compatible: without array settings XML repeated elements are
-        // merged as objects (first matching child), exactly as before.
+        // Repeated same-named children are an array, so a merge without array settings
+        // concatenates them — the same answer JSON gives for two arrays with no key paths.
+        // Before the XML/YAML alignment this folded every item onto the first one and the
+        // target kept 2 items; if that ever comes back, the array/object split has regressed.
         var data = Doc(ItemsDocument);
 
         new Merge<XElement>("/root/source", "/root/target").Execute(data, _context);
 
         var items = data.Element("target")!.Element("items")!.Elements("item").ToList();
-        Assert.That(items.Count, Is.EqualTo(2));
-        Assert.That(items[0].Element("name")!.Value, Is.EqualTo("one-updated"));
+        Assert.That(items.Count, Is.EqualTo(4));
+        Assert.That(items.Select(i => i.Element("id")!.Value), Is.EqualTo(new[] { "1", "2", "1", "3" }));
     }
 
     [Test]

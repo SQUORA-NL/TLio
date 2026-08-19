@@ -27,6 +27,15 @@ public class SlashPathItemsFetcher : IItemsFetcher<XElement>
     public string ParentPathIndicator => "..";
     public string ArrayCloseChar => "]";
 
+    /// <summary>
+    /// An XPath path expression starts at the document node (<c>/order</c>), searches from it
+    /// (<c>//city</c>), or is written relative to the current node (<c>./city</c>). Anything
+    /// else is a plain value: a bare word like <c>Amsterdam</c> is text, not a path, so a
+    /// function that is handed one returns it rather than searching for an element by that name.
+    /// </summary>
+    public bool IsPathExpression(string text) =>
+        text.Length > 1 && (text[0] == '/' || text.StartsWith("./", StringComparison.Ordinal));
+
     public SelectedNodes<XElement> SelectNodes(string path, XElement data)
     {
         if (string.IsNullOrEmpty(path))

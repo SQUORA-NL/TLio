@@ -1,0 +1,22 @@
+{
+  "input": {
+    "source": {
+      "value": 42
+    }
+  },
+  "script": [
+    {
+      "command": "copy",
+      "fromPath": "$.source.value",
+      "toPath": "$.target.result"
+    }
+  ],
+  "result": {
+    "source": {
+      "value": 42
+    },
+    "target": {
+      "result": 42
+    }
+  }
+}

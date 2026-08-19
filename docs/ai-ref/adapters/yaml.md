@@ -24,6 +24,8 @@ var result  = engine.Execute(scriptJson, data, context);
 | Nested | `$.address.city` | Nested key |
 | Array index | `$.items[0]` | First element (0-based) |
 | Wildcard | `$.items[*]` | All array elements |
+| Recursive descent | `$..city` | Key `city` at any depth |
+| Anchored descent | `$.order..city` | Key `city` at any depth below `$.order` |
 
 ## Notes
 
@@ -33,6 +35,17 @@ var result  = engine.Execute(scriptJson, data, context);
 - No filter expression support (`?(...)`) — for complex filtering, pre-process the YAML
   or convert to JSON.
 
+## Document shape
+
+YAML carries the JSON data model directly — mappings, sequences, scalars and null all exist —
+so the mapping is one to one. See [document-shape.md](document-shape.md) for the comparison
+with XML, which cannot say all of it.
+
+Scalars are untyped: `n: 42` is the characters `42`, so `=isNumber()` reports the apparent type
+rather than a declared one.
+
 ## See Also
 
+[document-shape.md](document-shape.md) — how one document looks in all three formats.
+[script-notation.md](script-notation.md) — the YAML script notation.
 [overview.md](../overview.md) — adapter selection table.

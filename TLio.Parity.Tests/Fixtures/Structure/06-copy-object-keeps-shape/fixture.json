@@ -1,0 +1,38 @@
+{
+  "input": {
+    "src": {
+      "a": {
+        "b": [
+          1,
+          2
+        ]
+      }
+    },
+    "dst": {}
+  },
+  "script": [
+    {
+      "command": "copy",
+      "fromPath": "$.src.a",
+      "toPath": "$.dst.a"
+    }
+  ],
+  "result": {
+    "src": {
+      "a": {
+        "b": [
+          1,
+          2
+        ]
+      }
+    },
+    "dst": {
+      "a": {
+        "b": [
+          1,
+          2
+        ]
+      }
+    }
+  }
+}

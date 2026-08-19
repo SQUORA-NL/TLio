@@ -39,9 +39,10 @@ public abstract class FunctionBase<TNode> : IFunction<TNode>
 
     /// <summary>
     /// Evaluate a function argument and resolve it to its actual data node(s).
-    /// When the argument evaluates to a single string that begins with "$" or "@",
-    /// the string is treated as a path expression and re-evaluated against
-    /// <paramref name="dataContext"/> via <see cref="IItemsFetcher{TNode}.SelectNodes"/>.
+    /// When the argument evaluates to a single string that the fetcher recognises as a path
+    /// expression (<see cref="IItemsFetcher{TNode}.IsPathExpression"/>), the string is
+    /// re-evaluated against <paramref name="dataContext"/> via
+    /// <see cref="IItemsFetcher{TNode}.SelectNodes"/>.
     /// This allows value-consuming functions (Math, Text, TimeDate) to accept inline
     /// path args written as =funcname($.field) without needing a dedicated PathValue.
     /// </summary>
@@ -55,7 +56,7 @@ public abstract class FunctionBase<TNode> : IFunction<TNode>
             return result;
 
         var str = context.NodeAdapter.TryGetString(result.Data[0]);
-        if (str != null && str.Length > 1 && (str[0] == '$' || str[0] == '@'))
+        if (str != null && context.ItemsFetcher.IsPathExpression(str))
         {
             var nodes = context.ItemsFetcher.SelectNodes(str, dataContext);
             return nodes.Count > 0

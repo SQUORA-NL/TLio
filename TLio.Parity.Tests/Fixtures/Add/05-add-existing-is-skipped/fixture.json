@@ -1,0 +1,15 @@
+{
+  "input": {
+    "a": 1
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.a",
+      "value": "x"
+    }
+  ],
+  "result": {
+    "a": 1
+  }
+}

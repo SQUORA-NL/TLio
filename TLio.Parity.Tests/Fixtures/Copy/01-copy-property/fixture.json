@@ -1,0 +1,16 @@
+{
+  "input": {
+    "src": "hello"
+  },
+  "script": [
+    {
+      "command": "copy",
+      "fromPath": "$.src",
+      "toPath": "$.dst"
+    }
+  ],
+  "result": {
+    "src": "hello",
+    "dst": "hello"
+  }
+}
