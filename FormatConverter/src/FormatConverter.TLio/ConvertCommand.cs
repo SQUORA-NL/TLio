@@ -51,7 +51,10 @@ public sealed class ConvertCommand<TNode> : ICommand<TNode>
     public TLioExecutionResult<TNode> Execute(TNode dataContext, IExecutionContext<TNode> context)
     {
         context.LogWarning("ConvertCommand",
-            $"'convert' command to '{To}' was executed inline — it has no effect outside MultiFormatScriptRunner.");
+            $"'convert' to '{To}' did nothing: it marks a format boundary, and only " +
+            "MultiFormatScriptRunner can split a script at one — the engine works in a single " +
+            "node type from start to finish. Run the script through the runner, or use " +
+            "'convertValue' to convert one value in place.");
         return TLioExecutionResult<TNode>.Successful(dataContext);
     }
 
