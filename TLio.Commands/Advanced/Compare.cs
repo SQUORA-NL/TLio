@@ -489,11 +489,17 @@ public class Compare<TNode> : CommandBase<TNode>
             return root.EndsWith(delimiter, StringComparison.Ordinal) ? root + path : root + delimiter + path;
         }
 
+        /// <summary>
+        /// Drops the "this node" marker from the front of a key path, so a path written
+        /// relative to the item is read as a path within it.
+        ///
+        /// The marker is whatever the fetcher declares — this used to strip a literal "@" as
+        /// well, which is that marker only in the JSONPath-shaped languages. In XPath "@" opens
+        /// an attribute reference, so the same line quietly ate the "@" of "@id".
+        /// </summary>
         private string StripRelativePrefixes(string keyPath)
         {
             var path = keyPath.Trim();
-            if (path.StartsWith("@", StringComparison.Ordinal))
-                path = path.Substring(1);
 
             var current = Fetcher.CurrentItemPathIndicator;
             if (current.Length > 0 && current != Fetcher.RootPathIndicator &&

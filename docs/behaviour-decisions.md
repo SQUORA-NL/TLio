@@ -228,31 +228,7 @@ because a leading `/` is not distinctive enough to override at parse time, where
 available to ask. `=fetch(/order/a)` works — path detection inside function arguments *is*
 format-aware (`IItemsFetcher.IsPathExpression`).
 
-### E4. Shared code still tests for `$`, `@` and `/` directly
-
-The path language is injected — `IItemsFetcher` is the extension point, and a caller can supply
-one for a language TLio has never heard of. Five places outside a fetcher still assume what a
-path looks like:
-
-| Where | What it assumes |
-|---|---|
-| `FixedValue` | a value starting `$` or `@` is a path |
-| `Compare` | a key path starting `@` is relative |
-| `ScriptPath` | an argument starting `@` is relative |
-| `MergeArrayHelpers` | strips `@`, then `$`, then `/` — three notations wired in at once |
-| `Merge` | strips `$` and rewrites `/` to `.`, converting one notation into another |
-
-The last two are the sharp ones: they do not merely assume a notation, they hard-code support
-for several. A fetcher for a language that brackets, delimits or roots paths differently gets
-silently wrong answers from them rather than an honest failure.
-
-The tokens to do this properly are already declared on the interface — `RootPathIndicator`,
-`CurrentItemPathIndicator`, `ParentPathIndicator`, `PathDelimiter`, `ArrayOpenChar`,
-`ArrayCloseChar` — which is how `IsPathExpression`, `IsLeafArrayIndex` and `TrySplitArrayIndex`
-answer without naming a language. These five predate that, and each sits inside command logic
-with its own tests, so they were left alone rather than changed blind.
-
-### E5. A quoted YAML `'null'` is still read as null downstream
+### E4. A quoted YAML `'null'` is still read as null downstream
 
 The script parser honours the quoting and writes the four-character string, but
 `YamlNodeAdapter.IsNull` tests the text rather than the scalar style, so every function that
@@ -299,6 +275,39 @@ else:
   carries the type in the document, and true in XML and YAML, whose scalars are untyped.
 - **A path held as a value** — `$.ref`, and what `=scriptPath()` and `=path()` return — is
   written in the format's own path language.
+
+### Shared code assumed what a path looks like
+
+The path language is injected — `IItemsFetcher` is the extension point, and a caller can supply
+one for a language TLio has never heard of. Five places outside a fetcher tested for `$`, `@` or
+`/` themselves:
+
+| Where | What it did | Now |
+|---|---|---|
+| `FixedValue` | rendered a value starting `$` or `@` bare, so it would re-parse as a path | quotes everything that is not a number or boolean; a value that *is* a path is a `PathValue`, which knows it |
+| `ScriptPath` | treated an argument starting `@` as relative | uses `CurrentItemPathIndicator` |
+| `Compare` | stripped a literal `@` from a key path *and* the declared indicator | the declared indicator only |
+| `MergeArrayHelpers` | stripped `@`, then `$`, then `.`, then `/` in turn, then split the path on `.` | strips the declared current-item, root and delimiter tokens, and splits on `PathDelimiter` |
+| `Merge` | stripped `$` and rewrote `/` to `.` before comparing two paths | strips `RootPathIndicator` and leading `PathDelimiter`, applied to both sides |
+
+The last two were the sharp ones: support for three languages wired in side by side, so a key
+path in a fourth was mangled rather than refused. `Compare` and `ScriptPath` were the quiet
+ones — in XPath `@` opens an attribute reference, so `@id` lost its `@`.
+
+Two things this turned up:
+
+- The XML nested-key-path merge fixture had been passing **by accident**. Its key path reached
+  the XML run as `./key.id` — a mix of both languages' delimiters, which is a path in neither —
+  and only worked because the matcher stripped several notations' markers and then split on `.`
+  regardless. The parity harness now rewrites every segment of a relative path, not just the
+  first, and the fixture passes on a path that is actually valid XPath.
+- `IsPathExpression`, `IsLeafArrayIndex` and `TrySplitArrayIndex`, added in this branch, had the
+  same defect and were fixed the same way: they answer from `RootPathIndicator`,
+  `CurrentItemPathIndicator`, `PathDelimiter`, `ArrayOpenChar` and `ArrayCloseChar`, which every
+  fetcher declares. `ArrayOpenChar` was added for this, beside the `ArrayCloseChar` that was
+  already there.
+
+No shared code names a path token any more.
 
 ### Writing through an array subscript did nothing, or the wrong thing
 

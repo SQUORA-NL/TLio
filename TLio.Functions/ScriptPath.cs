@@ -23,10 +23,13 @@ public class ScriptPath<TNode> : FunctionBase<TNode>
             var argResult = Arguments[0].GetValue(currentNode, dataContext, context);
             if (argResult.Success && argResult.Data.First != null)
             {
-                // If the argument is a relative path string (@.<-- etc.), resolve it
-                // and navigate to that node before getting its path.
+                // If the argument is written relative to the current node, resolve it and
+                // navigate there before reading the path. What marks "relative" is the
+                // fetcher's to declare — "@" is that marker only in the JSONPath-shaped
+                // languages, and is an attribute reference in XPath.
                 var argStr = context.NodeAdapter.TryGetString(argResult.Data.First);
-                if (argStr != null && argStr.StartsWith("@"))
+                if (argStr != null &&
+                    argStr.StartsWith(context.ItemsFetcher.CurrentItemPathIndicator, StringComparison.Ordinal))
                 {
                     var resolvedPath = context.ItemsFetcher.ResolveRelativePath(argStr, currentNode, dataContext);
                     var nodes = context.ItemsFetcher.SelectNodes(resolvedPath, dataContext);

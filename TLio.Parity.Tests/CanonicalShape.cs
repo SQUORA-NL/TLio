@@ -205,9 +205,13 @@ public static class CanonicalShape
         rewritten = System.Text.RegularExpressions.Regex.Replace(
             rewritten, @"\$(\.\.?[A-Za-z0-9_]+(\[[0-9*]+\])?)+(?![A-Za-z0-9_])", m => ToXPath(m.Value));
 
-        // A relative path is "@." in JSONPath and the YAML dot-notation, and "./" in XPath.
+        // A relative path is "@.a.b" in JSONPath and the YAML dot-notation, and "./a/b" in
+        // XPath — every segment changes delimiter, not just the first. Rewriting only the head
+        // produced "./a.b", which is not a path in either language; it went unnoticed while the
+        // key-path matcher still stripped several notations' markers and split on ".".
         return System.Text.RegularExpressions.Regex.Replace(
-            rewritten, @"@\.([A-Za-z0-9_]+)", m => "./" + m.Groups[1].Value);
+            rewritten, @"@((?:\.[A-Za-z0-9_]+)+)",
+            m => "." + m.Groups[1].Value.Replace('.', '/'));
     }
 
     private static JToken RewritePathsDeep(JToken token) => token switch
