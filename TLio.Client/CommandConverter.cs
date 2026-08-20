@@ -176,18 +176,13 @@ public class CommandConverter<TNode>
 
             // Object/array values may contain embedded "=func()" strings — use
             // ExpandingFixedValue so those are evaluated lazily at GetValue time.
+            //
+            // Built through the adapter rather than by handing it the raw JSON text: Parse
+            // expects a document in the adapter's own format, so an XML adapter was handed
+            // {"x":1} and threw. The catch turned that into a value that was never set, and the
+            // command wrote nothing without saying so.
             if (element.ValueKind == JsonValueKind.Object || element.ValueKind == JsonValueKind.Array)
-            {
-                try
-                {
-                    var node = _nodeAdapter.Parse(element.GetRawText());
-                    return new ExpandingFixedValue<TNode>(node, _functionConverter, _nodeAdapter);
-                }
-                catch
-                {
-                    return null;
-                }
-            }
+                return new ExpandingFixedValue<TNode>(NodeFromJson(element), _functionConverter, _nodeAdapter);
 
             return element.ValueKind switch
             {
