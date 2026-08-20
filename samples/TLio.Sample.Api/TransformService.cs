@@ -59,8 +59,7 @@ internal static class TransformService
             });
         }
 
-        var options = ParseOptions<TNode>.CreateDefault();
-        var engine  = new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider);
+        var engine  = EngineSetup.CreateEngine<TNode>();
         var result  = engine.Execute(scriptText, input, context);
         var log     = context.GetLogEntries();
 
