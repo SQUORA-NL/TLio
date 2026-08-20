@@ -35,12 +35,18 @@ namespace TLio.Yaml;
 /// the same commands, so a script that works against JSON has a YAML spelling that does the
 /// same thing. See <see cref="CommandConverter{TNode}"/> for the JSON side.
 /// </summary>
-public class YamlScriptParser<TNode>
+public class YamlScriptParser<TNode> : IScriptParser<TNode>
 {
     private readonly ICommandsProvider<TNode> _commandsProvider;
-    private readonly FunctionConverter<TNode> _functionConverter;
     private readonly INodeAdapter<TNode> _nodeAdapter;
     private readonly CommandConverter<TNode> _settingsConverter;
+
+    /// <summary>
+    /// Notation warnings raised by <see cref="FunctionConverter{TNode}"/> while parsing.
+    /// Parsing has no execution context, so they are handed to the parsed
+    /// <see cref="TLioScript{TNode}"/> and logged when it executes.
+    /// </summary>
+    private readonly List<string> _parseWarnings = new();
 
     public YamlScriptParser(
         ICommandsProvider<TNode> commandsProvider,
@@ -48,22 +54,37 @@ public class YamlScriptParser<TNode>
         INodeAdapter<TNode> nodeAdapter)
     {
         _commandsProvider  = commandsProvider;
-        _functionConverter = new FunctionConverter<TNode>(functionsProvider);
         _nodeAdapter       = nodeAdapter;
         _settingsConverter = new CommandConverter<TNode>(commandsProvider, functionsProvider, nodeAdapter);
     }
 
+    /// <inheritdoc />
+    public ScriptFormat Format => ScriptFormat.Yaml;
+
     public TLioScript<TNode> ParseScript(string yamlText)
     {
         var script = new TLioScript<TNode>();
+        _parseWarnings.Clear();
+
         var yamlStream = new YamlStream();
         try { yamlStream.Load(new StringReader(yamlText)); }
-        catch { return script; }
+        catch (YamlDotNet.Core.YamlException ex)
+        {
+            // Malformed script text yields an empty script, as it does in every notation. The
+            // reason travels with the script so the run reports it instead of silently doing
+            // nothing at all.
+            script.ParseWarnings.Add($"Script is not well-formed YAML: {ex.Message}");
+            return script;
+        }
 
         if (!yamlStream.Documents.Any()) return script;
 
         var root = yamlStream.Documents[0].RootNode;
-        if (root is not YamlSequenceNode sequence) return script;
+        if (root is not YamlSequenceNode sequence)
+        {
+            script.ParseWarnings.Add("A YAML script must be a sequence of command mappings.");
+            return script;
+        }
 
         foreach (var item in sequence.Children)
         {
@@ -71,13 +92,19 @@ public class YamlScriptParser<TNode>
             var cmd = ParseCommand(mapping);
             if (cmd != null) script.Add(cmd);
         }
+
+        script.ParseWarnings.AddRange(_parseWarnings);
         return script;
     }
 
     private ICommand<TNode>? ParseCommand(YamlMappingNode mapping)
     {
         var commandName = GetScalarValue(mapping, "command");
-        if (commandName == null) return null;
+        if (string.IsNullOrWhiteSpace(commandName))
+        {
+            _parseWarnings.Add("A script entry has no 'command' key and was skipped.");
+            return null;
+        }
 
         var command = _commandsProvider.GetCommand(commandName);
         if (command == null)
@@ -97,7 +124,8 @@ public class YamlScriptParser<TNode>
                 commandType.GetGenericTypeDefinition() == typeof(DecisionTable<>))
                 propName = "Config";
 
-            var prop = commandType.GetProperty(propName, BindingFlags.Public | BindingFlags.Instance);
+            var prop = commandType.GetProperty(propName,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
             if (prop == null || !prop.CanWrite) continue;
 
             var converted = ConvertValue(value, prop.PropertyType);
@@ -136,21 +164,19 @@ public class YamlScriptParser<TNode>
                 return new FixedValue<TNode>(_nodeAdapter.CreateNull());
 
             if (scalar != null)
-                return _functionConverter.ParseValue(scalar.Value ?? string.Empty, _nodeAdapter);
-            // Complex YAML node → create as a value via serialization
+                return _settingsConverter.ParseTextValue(scalar.Value ?? string.Empty, _parseWarnings.Add);
+
+            // A mapping or a sequence is a structured value. It goes out as JSON and comes back
+            // through the JSON converter rather than being handed to the adapter as YAML text.
+            // The adapter's format is the format of the *data*, which need not be the notation
+            // the script is written in — a YAML script transforming an XML document handed the
+            // XML adapter YAML text and it threw, and the swallowed failure left the property
+            // unset so the command wrote nothing without saying so. The JSON route also picks up
+            // the number and boolean typing, and the lazy expansion of an "=func()" nested
+            // inside the value.
             if (node is YamlMappingNode or YamlSequenceNode)
-            {
-                try
-                {
-                    var stream = new YamlStream(new YamlDocument(node));
-                    using var writer = new StringWriter();
-                    stream.Save(writer, assignAnchors: false);
-                    var yamlStr = writer.ToString();
-                    var parsed = _nodeAdapter.Parse(yamlStr);
-                    return new FixedValue<TNode>(parsed);
-                }
-                catch { return null; }
-            }
+                return _settingsConverter.ConvertSettingsFragment(YamlToJson(node), targetType);
+
             return null;
         }
 
@@ -234,10 +260,19 @@ public class YamlScriptParser<TNode>
         }
     }
 
+    /// <summary>
+    /// The scalar a key names, matched the way the rest of the parser matches keys: without
+    /// regard to case. An exact-key lookup dropped <c>Command: set</c> on the floor — the entry
+    /// vanished from the script with no command and no diagnostic.
+    /// </summary>
     private static string? GetScalarValue(YamlMappingNode mapping, string key)
     {
-        if (mapping.Children.TryGetValue(new YamlScalarNode(key), out var val))
-            return (val as YamlScalarNode)?.Value;
+        foreach (var (k, v) in mapping.Children)
+        {
+            if (k is YamlScalarNode { Value: not null } scalarKey &&
+                scalarKey.Value!.Equals(key, StringComparison.OrdinalIgnoreCase))
+                return (v as YamlScalarNode)?.Value;
+        }
         return null;
     }
 

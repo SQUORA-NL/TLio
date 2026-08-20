@@ -34,10 +34,15 @@ for (int i = 0; i < args.Length; i++)
 
                 Arguments:
                   --input  <path>   Path to the input data file (.json, .xml, .yaml, .yml)
-                  --script <path>   Path to the TLio script file (.json)
+                  --script <path>   Path to the TLio script file (.json, .xml, .yaml, .yml)
                   --output <path>   (optional) Write transformed output to this file instead of stdout
                   --batch  <path>   Process all fixture .json files in directory (fast, single process)
                   --help            Show this help and exit
+
+                The script's notation is taken from its file extension, falling back to the
+                shape of the text. It is independent of the input format — an XML script can
+                transform a JSON document — but the paths inside the script must be written in
+                the input format's path language.
 
                 Batch mode reads fixture files with {input, script, result} format,
                 runs each through the engine, and outputs JSON lines:
@@ -194,20 +199,27 @@ try
     var inputText  = File.ReadAllText(inputPath);
     var scriptText = File.ReadAllText(scriptPath);
 
+    // The extension is the author's own statement of the notation; the text is the fallback for
+    // a script piped in under a name that says nothing.
+    var notation = ScriptFormatDetector.FromFileExtension(Path.GetExtension(scriptPath))
+                   ?? ScriptFormatDetector.Detect(scriptText);
+
     string output;
 
     try
     {
-        output = RunTransform(format, inputText, scriptText);
+        output = RunTransform(format, inputText, scriptText, notation);
     }
     catch (FormatException ex)
     {
         Console.Error.WriteLine($"Error: Could not parse input: {ex.Message}");
         return 3;
     }
-    catch (System.Text.Json.JsonException ex)
+    catch (ScriptParseException ex)
     {
-        Console.Error.WriteLine($"Error: Could not parse script: {ex.Message}");
+        Console.Error.WriteLine("Error: Could not parse script — it produced no commands.");
+        foreach (var warning in ex.Warnings)
+            Console.Error.WriteLine($"  {warning}");
         return 4;
     }
     catch (TransformFailedException ex)
@@ -233,18 +245,19 @@ catch (Exception ex)
 
 // ── Transform dispatch ───────────────────────────────────────────────────────
 
-static string RunTransform(string format, string inputText, string scriptText)
+static string RunTransform(string format, string inputText, string scriptText, ScriptFormat notation)
 {
     return format switch
     {
-        "json" => Execute(JsonExecutionContext.CreateDefault(),        inputText, scriptText),
-        "xml"  => Execute(XmlExecutionContext.CreateWithNativeXPath(), inputText, scriptText),
-        "yaml" => Execute(YamlExecutionContext.CreateDefault(),        inputText, scriptText),
+        "json" => Execute(JsonExecutionContext.CreateDefault(),        inputText, scriptText, notation),
+        "xml"  => Execute(XmlExecutionContext.CreateWithNativeXPath(), inputText, scriptText, notation),
+        "yaml" => Execute(YamlExecutionContext.CreateDefault(),        inputText, scriptText, notation),
         _      => throw new ArgumentException($"Unknown format: {format}")
     };
 }
 
-static string Execute<TNode>(ExecutionContext<TNode> context, string inputText, string scriptText)
+static string Execute<TNode>(
+    ExecutionContext<TNode> context, string inputText, string scriptText, ScriptFormat notation)
 {
     var adapter = context.NodeAdapter;
 
@@ -257,8 +270,19 @@ static string Execute<TNode>(ExecutionContext<TNode> context, string inputText, 
     options.FunctionsProvider.RegisterText<TNode>();
     options.FunctionsProvider.RegisterTimeDate<TNode>();
     options.CommandsProvider.RegisterETL<TNode>();
-    var engine  = new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider);
-    var result  = engine.Execute(scriptText, input, context);
+    var engine = new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider)
+        .UseXmlScripts()
+        .UseYamlScripts();
+
+    var script = engine.Parse(scriptText, notation, adapter);
+
+    // Nothing parsed *and* the parser said why: the text is broken, not deliberately empty.
+    // An empty script is a legal script, so the warnings are what separate the two — without
+    // them a typo would exit 0 having written the input straight back out.
+    if (script.Count == 0 && script.ParseWarnings.Count > 0)
+        throw new ScriptParseException(script.ParseWarnings);
+
+    var result = engine.Execute(script, input, context);
 
     if (!result.Success)
         throw new TransformFailedException(context.GetLogEntries());
@@ -272,4 +296,14 @@ internal sealed class TransformFailedException(
     IReadOnlyList<TLio.Core.Models.Logging.LogEntry> logEntries) : Exception
 {
     public IReadOnlyList<TLio.Core.Models.Logging.LogEntry> LogEntries { get; } = logEntries;
+}
+
+/// <summary>
+/// A script that parsed to nothing. Every parser answers unreadable text with an empty script
+/// rather than an exception, so without this a typo in the script would exit 0 having written
+/// the input back out unchanged.
+/// </summary>
+internal sealed class ScriptParseException(IReadOnlyList<string> warnings) : Exception
+{
+    public IReadOnlyList<string> Warnings { get; } = warnings;
 }

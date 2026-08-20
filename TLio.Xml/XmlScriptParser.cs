@@ -48,12 +48,18 @@ namespace TLio.Xml;
 /// same commands, so a script that works against JSON has an XML spelling that does the same
 /// thing. See <see cref="CommandConverter{TNode}"/> for the JSON side.
 /// </summary>
-public class XmlScriptParser<TNode>
+public class XmlScriptParser<TNode> : IScriptParser<TNode>
 {
     private readonly ICommandsProvider<TNode> _commandsProvider;
-    private readonly FunctionConverter<TNode> _functionConverter;
     private readonly INodeAdapter<TNode> _nodeAdapter;
     private readonly CommandConverter<TNode> _settingsConverter;
+
+    /// <summary>
+    /// Notation warnings raised by <see cref="FunctionConverter{TNode}"/> while parsing.
+    /// Parsing has no execution context, so they are handed to the parsed
+    /// <see cref="TLioScript{TNode}"/> and logged when it executes.
+    /// </summary>
+    private readonly List<string> _parseWarnings = new();
 
     public XmlScriptParser(
         ICommandsProvider<TNode> commandsProvider,
@@ -61,31 +67,46 @@ public class XmlScriptParser<TNode>
         INodeAdapter<TNode> nodeAdapter)
     {
         _commandsProvider   = commandsProvider;
-        _functionConverter  = new FunctionConverter<TNode>(functionsProvider);
         _nodeAdapter        = nodeAdapter;
         _settingsConverter  = new CommandConverter<TNode>(commandsProvider, functionsProvider, nodeAdapter);
     }
 
+    /// <inheritdoc />
+    public ScriptFormat Format => ScriptFormat.Xml;
+
     public TLioScript<TNode> ParseScript(string xmlText)
     {
         var script = new TLioScript<TNode>();
+        _parseWarnings.Clear();
+
         XElement root;
         try { root = XElement.Parse(xmlText); }
-        catch { return script; }
+        catch (System.Xml.XmlException ex)
+        {
+            // Malformed script text yields an empty script, as it does in every notation. The
+            // reason travels with the script so the run reports it instead of silently doing
+            // nothing at all.
+            script.ParseWarnings.Add($"Script is not well-formed XML: {ex.Message}");
+            return script;
+        }
 
         foreach (var el in root.Elements())
         {
             var cmd = ParseCommand(el);
             if (cmd != null) script.Add(cmd);
         }
+
+        script.ParseWarnings.AddRange(_parseWarnings);
         return script;
     }
 
     private ICommand<TNode>? ParseCommand(XElement el)
     {
-        var commandName = el.Name.LocalName.ToLowerInvariant();
-        var command = _commandsProvider.GetCommand(commandName);
+        var commandName = el.Name.LocalName;
+        var command = _commandsProvider.GetCommand(commandName.ToLowerInvariant());
         if (command == null)
+            // Reported as the author spelled it: a lowercased "decisionTabel" is harder to
+            // recognise as the typo it is.
             return new NotFoundCommand<TNode>(commandName);
 
         var commandType = command.GetType();
@@ -117,8 +138,9 @@ public class XmlScriptParser<TNode>
         {
             if (valueContent.Count > 0)
             {
-                var node = NodeFromContent(valueContent);
-                if (node != null) valueProp.SetValue(command, new FixedValue<TNode>(node));
+                var wrapper = new XElement("value", valueContent.Select(c => new XElement(c)));
+                var value = ConvertElement(wrapper, valueProp.PropertyType);
+                if (value != null) valueProp.SetValue(command, value);
             }
             else if (!el.HasElements && el.Attribute("value") == null)
             {
@@ -128,7 +150,7 @@ public class XmlScriptParser<TNode>
                 var text = el.Value;
                 if (!string.IsNullOrEmpty(text))
                 {
-                    var fsv = _functionConverter.ParseValue(text, _nodeAdapter);
+                    var fsv = _settingsConverter.ParseTextValue(text, _parseWarnings.Add);
                     if (fsv != null) valueProp.SetValue(command, fsv);
                 }
             }
@@ -164,7 +186,7 @@ public class XmlScriptParser<TNode>
             return bool.TryParse(raw, out var b) ? b : null;
 
         if (targetType == typeof(IFunctionSupportedValue<TNode>))
-            return _functionConverter.ParseValue(raw, _nodeAdapter);
+            return _settingsConverter.ParseTextValue(raw, _parseWarnings.Add);
 
         var enumType = Nullable.GetUnderlyingType(targetType) ?? targetType;
         if (enumType.IsEnum)
@@ -190,17 +212,23 @@ public class XmlScriptParser<TNode>
         if (targetType == typeof(IFunctionSupportedValue<TNode>))
         {
             if (el.HasElements)
-            {
                 // The wrapper itself is the value node: its children are the properties of an
                 // object, or the items of an array. Taking the children instead would turn
                 // <value><x>1</x></value> into the bare scalar 1.
-                var node = ParseNode(el);
-                return node == null ? null : new FixedValue<TNode>(node);
-            }
+                //
+                // It goes out as JSON and comes back through the JSON converter rather than
+                // being handed to the adapter as XML text. The adapter's format is the format of
+                // the *data*, which need not be the notation the script is written in — an XML
+                // script transforming a JSON document handed the JSON adapter "<value>…" and it
+                // threw, and the swallowed failure left the property unset so the command wrote
+                // nothing without saying so. The JSON route also picks up the number and boolean
+                // typing, and the lazy expansion of an "=func()" nested inside the value.
+                return _settingsConverter.ConvertSettingsFragment(XmlToJson(el), targetType);
+
             // <value/> is an empty element, which is how this format writes null.
             return string.IsNullOrEmpty(el.Value)
                 ? new FixedValue<TNode>(_nodeAdapter.CreateNull())
-                : _functionConverter.ParseValue(el.Value, _nodeAdapter);
+                : _settingsConverter.ParseTextValue(el.Value, _parseWarnings.Add);
         }
 
         if (targetType == typeof(string))
@@ -219,21 +247,7 @@ public class XmlScriptParser<TNode>
         return _settingsConverter.ConvertSettingsFragment(XmlToJson(el), targetType);
     }
 
-    /// <summary>
-    /// The node that loose child elements describe — the same thing an explicit
-    /// <c>&lt;value&gt;</c> wrapper around them would mean, so <c>&lt;set&gt;&lt;a/&gt;&lt;/set&gt;</c>
-    /// and <c>&lt;set&gt;&lt;value&gt;&lt;a/&gt;&lt;/value&gt;&lt;/set&gt;</c> agree.
-    /// </summary>
-    private TNode? NodeFromContent(List<XElement> children) =>
-        ParseNode(new XElement("value", children.Select(c => new XElement(c))));
-
-    private TNode? ParseNode(XElement wrapper)
-    {
-        try { return _nodeAdapter.Parse(wrapper.ToString(SaveOptions.DisableFormatting)); }
-        catch { return default; }
-    }
-
-    // ── XML → JSON for settings objects ──────────────────────────────────────
+    // ── XML → JSON for structured values and settings objects ────────────────
     // Uses the same shape the node adapter reads documents in: repeated same-named children
     // (or children named "item") are an array, other children are properties, text is a scalar.
 

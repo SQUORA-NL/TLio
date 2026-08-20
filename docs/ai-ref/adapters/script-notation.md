@@ -4,7 +4,9 @@ A TLio script is a list of command objects. Each format spells that list in its 
 the command set, the property names and the semantics are identical: a script that works
 against JSON has an XML and a YAML spelling that does the same thing.
 
-Only the **paths** change, because each format has its own path language.
+Only the **paths** change, because each format has its own path language. The notation you
+write a script in is *not* tied to the format of the document it transforms — see
+[Choosing the notation](#choosing-the-notation).
 
 ---
 
@@ -142,9 +144,36 @@ indistinguishable from the text `email`, so it stays a value. Write it anchored.
 
 - **XML has no bare path value.** In JSON, `"value": "$.a"` is a path. In XML, `/order/a` as
   text is text — use `=fetch(/order/a)`.
-- **The `decisionTable` config** is only parseable from the JSON notation today.
+- **A top-level scalar is a string in XML and YAML.** `<set path="…">42</set>` writes the text
+  `"42"`, where JSON's `"value": 42` writes the number. Inside a *structured* value all three
+  agree, because the structured value is typed: `<value><x>42</x></value>` writes a number.
 - Escape sequences (`$$`, `@@`, `==`) are the JSON notation's; the other two have their own
   quoting.
+
+---
+
+## Choosing the notation
+
+The notation is independent of the data format. An XML script can transform a JSON document;
+only the **paths** inside it have to speak the document's path language. `ScriptEngine` reads
+JSON out of the box and takes the other two as a one-line registration:
+
+```csharp
+var engine = new ScriptEngine<JToken>(commands, functions)
+    .UseXmlScripts()     // TLio.Xml
+    .UseYamlScripts();   // TLio.Yaml
+
+engine.Execute(scriptText, data, context);                     // notation detected from the text
+engine.Execute(scriptText, ScriptFormat.Xml, data, context);   // or stated outright
+```
+
+Detection looks at the first meaningful character: `<` is XML, `[` or `{` is JSON, anything
+else is YAML. A JSON script is claimed for JSON even though YAML would also parse it, so
+registering YAML cannot change how a script already in use behaves.
+
+A notation nobody registered, and text that does not parse, both yield an empty script carrying
+the reason in `TLioScript.ParseWarnings` — no exception, because scripts are usually text a
+caller is passing on rather than text it wrote.
 
 ## See Also
 

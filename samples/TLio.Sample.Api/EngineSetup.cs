@@ -3,6 +3,8 @@ using TLio.Extensions.ETL;
 using TLio.Extensions.Math;
 using TLio.Extensions.Text;
 using TLio.Extensions.TimeDate;
+using TLio.Xml;
+using TLio.Yaml;
 
 namespace TLio.Sample.Api;
 
@@ -29,6 +31,10 @@ internal static class EngineSetup
     public static ScriptEngine<TNode> CreateEngine<TNode>()
     {
         var options = CreateOptions<TNode>();
-        return new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider);
+        return new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider)
+            // A registered script may be written in any of the three notations, whichever
+            // format the document it later runs against is in.
+            .UseXmlScripts()
+            .UseYamlScripts();
     }
 }

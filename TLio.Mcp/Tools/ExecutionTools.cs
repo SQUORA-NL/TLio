@@ -48,44 +48,52 @@ public sealed class ExecutionTools
     public object Execute(
         [Description("Raw document text to transform")] string document,
         [Description("Document format: 'json', 'xml', or 'yaml'")] string format,
-        [Description("TLio script as a JSON array of command objects")] string script,
-        [Description("XML path style: 'slash' (default, simple hierarchies) or 'xpath' (predicates and axes). Both anchor on the document node, so paths name the document element: '/order/customer', never '/customer'. Only applies when format is 'xml'.")] string? xmlPathStyle = null)
+        [Description("TLio script. A JSON array of command objects by default; may also be written in the XML notation (<script><set path=\"...\">...</set></script>) or the YAML notation (a sequence of '- command: set' mappings). The notation is detected from the text and is independent of the document format — set scriptFormat to override. Paths inside the script must always speak the document format's path language.")] string script,
+        [Description("XML path style: 'slash' (default, simple hierarchies) or 'xpath' (predicates and axes). Both anchor on the document node, so paths name the document element: '/order/customer', never '/customer'. Only applies when format is 'xml'.")] string? xmlPathStyle = null,
+        [Description("Script notation: 'json' (default), 'xml', or 'yaml'. Omit to detect it from the script text.")] string? scriptFormat = null)
     {
         if (!_rateLimiter.TryAcquire(out var retryAfter))
             return RateLimitError(retryAfter);
 
+        ScriptFormat notation;
+        if (string.IsNullOrWhiteSpace(scriptFormat))
+            notation = ScriptFormatDetector.Detect(script);
+        else if (!ScriptFormatDetector.TryParse(scriptFormat, out notation))
+            return new { success = false, error = $"Unsupported scriptFormat '{scriptFormat}'. Use json, xml, or yaml." };
+
         return format.ToLowerInvariant() switch
         {
-            "json" => RunJson(document, script),
-            "xml" => RunXml(document, script, xmlPathStyle),
-            "yaml" => RunYaml(document, script),
+            "json" => RunJson(document, script, notation),
+            "xml" => RunXml(document, script, notation, xmlPathStyle),
+            "yaml" => RunYaml(document, script, notation),
             _ => new { success = false, error = $"Unsupported format '{format}'. Use json, xml, or yaml." }
         };
     }
 
-    private ExecuteResult RunJson(string document, string script)
+    private ExecuteResult RunJson(string document, string script, ScriptFormat notation)
     {
         var context = JsonExecutionContext.CreateDefault();
-        return RunWithContext(document, script, context, _jsonEngine, "json");
+        return RunWithContext(document, script, notation, context, _jsonEngine, "json");
     }
 
-    private ExecuteResult RunXml(string document, string script, string? pathStyle)
+    private ExecuteResult RunXml(string document, string script, ScriptFormat notation, string? pathStyle)
     {
         var context = string.Equals(pathStyle, "xpath", StringComparison.OrdinalIgnoreCase)
             ? XmlExecutionContext.CreateWithNativeXPath()
             : XmlExecutionContext.CreateWithSlashPaths();
-        return RunWithContext(document, script, context, _xmlEngine, "xml");
+        return RunWithContext(document, script, notation, context, _xmlEngine, "xml");
     }
 
-    private ExecuteResult RunYaml(string document, string script)
+    private ExecuteResult RunYaml(string document, string script, ScriptFormat notation)
     {
         var context = YamlExecutionContext.CreateDefault();
-        return RunWithContext(document, script, context, _yamlEngine, "yaml");
+        return RunWithContext(document, script, notation, context, _yamlEngine, "yaml");
     }
 
     private ExecuteResult RunWithContext<TNode>(
         string documentText,
         string scriptText,
+        ScriptFormat notation,
         ExecutionContext<TNode> context,
         ScriptEngine<TNode> engine,
         string format)
@@ -111,7 +119,7 @@ public sealed class ExecutionTools
         }
 
         TLioExecutionResult<TNode> result;
-        try { result = engine.Execute(scriptText, doc, context); }
+        try { result = engine.Execute(scriptText, notation, doc, context); }
         catch (Exception ex)
         {
             return new ExecuteResult
@@ -206,7 +214,12 @@ public sealed class ExecutionTools
         options.FunctionsProvider.RegisterText<TNode>();
         options.FunctionsProvider.RegisterTimeDate<TNode>();
         options.CommandsProvider.RegisterETL<TNode>();
-        return new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider);
+        return new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider)
+            // All three notations on every engine: the notation a script is written in is
+            // independent of the document it transforms, so an XML script may drive a JSON
+            // document as long as its paths are JSONPath.
+            .UseXmlScripts()
+            .UseYamlScripts();
     }
 
     private static object RateLimitError(int retryAfter) => new
