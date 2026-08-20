@@ -1,0 +1,21 @@
+{
+  "input": {
+    "customer": null
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.customer.addr",
+      "value": {
+        "city": "A"
+      }
+    }
+  ],
+  "result": {
+    "customer": {
+      "addr": {
+        "city": "A"
+      }
+    }
+  }
+}

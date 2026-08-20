@@ -1,0 +1,16 @@
+{
+  "input": {
+    "a": null
+  },
+  "script": [
+    {
+      "command": "copy",
+      "fromPath": "$.a",
+      "toPath": "$.c"
+    }
+  ],
+  "result": {
+    "a": null,
+    "c": null
+  }
+}

@@ -129,7 +129,16 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
     /// Return the JSONPath string for <paramref name="node"/>.
     /// Uses JsonNode.GetPath() (available from .NET 8) which returns "$", "$.a.b", etc.
     /// </summary>
-    public string GetPath(JsonNode node) => node?.GetPath() ?? RootPathIndicator;
+    public string GetPath(JsonNode node)
+    {
+        // A null placeholder is detached — its path is the slot it stands for.
+        if (NullSlots.TryGetSlot(node, out var slot))
+            return slot.Key != null
+                ? $"{slot.Parent.GetPath()}.{slot.Key}"
+                : $"{slot.Parent.GetPath()}[{slot.Index}]";
+
+        return node?.GetPath() ?? RootPathIndicator;
+    }
 
     // ── Parent navigation ─────────────────────────────────────────────────────
 
@@ -146,6 +155,13 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
 
     private static JsonNode? NavigateToSemanticParent(JsonNode token)
     {
+        // A null placeholder is detached; its semantic parent comes from the slot it stands
+        // for, with the same array-skipping rule as an attached node.
+        if (NullSlots.TryGetSlot(token, out var slot))
+            return slot.Index != null && slot.Parent is JsonArray && slot.Parent.Parent is JsonObject po
+                ? po
+                : slot.Parent;
+
         if (token?.Parent == null) return null;
         var parent = token.Parent;
 
@@ -253,6 +269,12 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
             if (!currentObj.ContainsKey(element.ElementName))
             {
                 currentObj.Add(element.ElementName, new JsonObject());
+            }
+            else if (currentObj[element.ElementName] is null)
+            {
+                // JSON null (a C# null node here) is an unfilled container — the same answer
+                // an empty XML element gives — so a path may be built through it.
+                currentObj[element.ElementName] = new JsonObject();
             }
             else if (currentObj[element.ElementName] is not JsonObject)
             {
@@ -376,17 +398,45 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
     private static JsonNode? NavigateByPath(JsonNode root, NormalizedPath path)
     {
         JsonNode? current = root;
+        JsonNode? parent = null;
+        string? key = null;
+        int? index = null;
+
         foreach (var component in path)
         {
             if (current == null) return null;
-            current = component.ComponentKind switch
+            switch (component.ComponentKind)
             {
-                NormalizedPathNodeKind.Root  => root,
-                NormalizedPathNodeKind.Name  => current is JsonObject obj ? obj[component.GetName()] : null,
-                NormalizedPathNodeKind.Index => current is JsonArray arr ? arr[component.GetIndex()] : null,
-                _ => null
-            };
+                case NormalizedPathNodeKind.Root:
+                    current = root;
+                    parent = null; key = null; index = null;
+                    break;
+
+                case NormalizedPathNodeKind.Name:
+                    if (current is not JsonObject obj || !obj.ContainsKey(component.GetName()))
+                        return null;
+                    parent = current; key = component.GetName(); index = null;
+                    current = obj[key];
+                    break;
+
+                case NormalizedPathNodeKind.Index:
+                    if (current is not JsonArray arr || component.GetIndex() >= arr.Count)
+                        return null;
+                    parent = current; index = component.GetIndex(); key = null;
+                    current = arr[index.Value];
+                    break;
+
+                default:
+                    return null;
+            }
         }
+
+        // The path landed on a JSON null, which System.Text.Json stores as C# null — there is
+        // no node to return. Hand out a placeholder that remembers the slot instead, so null
+        // nodes are as selectable here as they are in every other format (see NullSlots).
+        if (current == null && parent != null)
+            return NullSlots.CreatePlaceholder(parent, key, index);
+
         return current;
     }
 }

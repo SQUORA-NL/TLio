@@ -133,12 +133,39 @@ value would be dropped and the document left with an empty `<address/>`.
 
 `GetNodeKind` returning `Null` is what keeps `=isNull($.k)` honest.
 
+**Whitespace-only content counts as empty — for classification.** Parsing normally strips
+insignificant whitespace, but a tree loaded with `LoadOptions.PreserveWhitespace` or built by
+hand still carries it, and `<k>\n</k>` classifies exactly like `<k/>`: `IsObject` ignores
+whitespace-only text, so the element stays a writable container. Only classification ignores
+it — as a *value* (`TryGetString`) the text is kept, so a deliberate `" "` string survives.
+
 **What this costs.** After `remove` empties an object, XML holds `<a/>` where JSON holds `{}`,
 and re-reading that document gives `null`. Round-tripping an empty container through XML does
 not preserve which empty thing it was. Nothing else depends on it.
 
 YAML has none of this: `null`, `""`, `{}` and `[]` are four distinct scalars there, and the
 YAML adapter reports them as such.
+
+---
+
+## Null is an unfilled container — in every format
+
+The empty element answering `IsObject` with yes is not an XML quirk: the rule is format-wide.
+For the commands that build structure — `add` and `put` — a **null-valued node is a container
+nothing has been written into yet**, whether it is `<k/>`, `{"k": null}` or `k: null`:
+
+| Onto `{"k": null}` | Result |
+|---|---|
+| `add $.k.demo = 3` | `{"k": {"demo": 3}}` — upgraded to an object |
+| `add $.k[0] = 1` | `{"k": [1]}` — position `[0]` upgrades it to an array |
+| `add $.k.a.b = 3` | `{"k": {"a": {"b": 3}}}` — a deep path builds through the null |
+| `set $.k.demo = 3` | no-op, warns — `set` never builds |
+
+Without this, one document written three ways behaved differently: XML created the property
+while JSON and YAML warned "cannot add property to a primitive node".
+
+The null document **root** is the one exception, in every format — nothing holds it, so there
+is nothing to swap an object in for.
 
 ---
 

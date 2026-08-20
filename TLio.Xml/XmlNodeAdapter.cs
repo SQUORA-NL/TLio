@@ -50,9 +50,15 @@ public class XmlNodeAdapter : INodeAdapter<XElement>
     /// <summary>
     /// True for an element that holds named properties, and for a completely empty element,
     /// which is a container that has not been filled in yet (see the class remarks).
+    /// Whitespace-only content counts as empty here: it is formatting, not data — parsing
+    /// normally strips it, but a tree loaded with <c>LoadOptions.PreserveWhitespace</c> or
+    /// built by hand still carries it, and <c>&lt;k&gt;\n&lt;/k&gt;</c> must stay as writable
+    /// a container as <c>&lt;k/&gt;</c>. Only this classification ignores it — as a
+    /// <i>value</i> (<see cref="IsNull"/>, <see cref="TryGetString"/>) whitespace text is
+    /// kept, so a deliberate <c>" "</c> string survives the round trip.
     /// </summary>
     public bool IsObject(XElement node) =>
-        node.HasElements ? !IsArray(node) : !HasTextContent(node);
+        node.HasElements ? !IsArray(node) : !HasSignificantTextContent(node);
 
     /// <summary>
     /// True when every child carries the same element name and either there is more than one
@@ -81,6 +87,10 @@ public class XmlNodeAdapter : INodeAdapter<XElement>
 
     private static bool HasTextContent(XElement node) =>
         node.Nodes().OfType<XText>().Any(t => t.Value.Length > 0);
+
+    /// <summary>See <see cref="IsObject"/>: whitespace-only text does not make a container.</summary>
+    private static bool HasSignificantTextContent(XElement node) =>
+        node.Nodes().OfType<XText>().Any(t => !string.IsNullOrWhiteSpace(t.Value));
 
     /// <summary>
     /// The item element name to use when adding to <paramref name="array"/>: the name its

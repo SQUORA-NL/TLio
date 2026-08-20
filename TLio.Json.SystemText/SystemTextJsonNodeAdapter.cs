@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using TLio.Core.Contracts;
+using TLio.Json.SystemText.Internal;
 
 namespace TLio.Json.SystemText;
 
@@ -9,15 +10,22 @@ namespace TLio.Json.SystemText;
 ///
 /// Behavioral contract: must produce identical transformation results to
 /// JsonNodeAdapter (Newtonsoft) for all operations.
+///
+/// JSON null is C# null in this model, so a selected null arrives here as a detached
+/// placeholder that remembers its slot (see <see cref="NullSlots"/>). Every query answers for
+/// a placeholder the way Newtonsoft answers for a null JValue, every write converts it back to
+/// plain null, and the mutations that need the node's position (Replace, RemoveFromParent,
+/// RenameNode) go through the remembered slot.
 /// </summary>
 public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
 {
     // ── Type queries ──────────────────────────────────────────────────────────
 
-    public bool IsObject(JsonNode node) => node is JsonObject;
+    public bool IsObject(JsonNode node) => node is JsonObject && !NullSlots.IsPlaceholder(node);
     public bool IsArray(JsonNode node) => node is JsonArray;
-    public bool IsPrimitive(JsonNode node) => node is JsonValue;
-    public bool IsNull(JsonNode node) => node == null || (node is JsonValue v && v.TryGetValue<object>(out var o) && o == null);
+    public bool IsPrimitive(JsonNode node) => node is JsonValue || NullSlots.IsPlaceholder(node);
+    public bool IsNull(JsonNode node) => node == null || NullSlots.IsPlaceholder(node) ||
+        (node is JsonValue v && v.TryGetValue<object>(out var o) && o == null);
 
     /// <summary>JSON carries its own types, so report the value kind rather than guessing.</summary>
     public NodeKind GetNodeKind(JsonNode node)
@@ -52,16 +60,38 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     public bool HasProperty(JsonNode node, string propertyName) =>
         node is JsonObject obj && obj.ContainsKey(propertyName);
 
-    public JsonNode? GetProperty(JsonNode node, string propertyName) =>
-        node is JsonObject obj ? obj[propertyName] : null;
+    /// <summary>
+    /// A property that exists with a JSON null value has no node to return (C# null here), so
+    /// it comes back as a slot-tracking placeholder — the same answer SelectNodes gives — and
+    /// a missing property stays plain null. Without this, any command that walks properties
+    /// (flatten, compare, …) dereferenced the C# null and crashed or skipped the field.
+    /// </summary>
+    public JsonNode? GetProperty(JsonNode node, string propertyName)
+    {
+        if (node is not JsonObject obj || NullSlots.IsPlaceholder(node)) return null;
+        var value = obj[propertyName];
+        if (value is null && obj.ContainsKey(propertyName))
+            return NullSlots.CreatePlaceholder(obj, propertyName, null);
+        return value;
+    }
 
     public void SetProperty(JsonNode node, string propertyName, JsonNode value)
     {
-        if (node is JsonObject obj)
+        if (node is JsonObject obj && !NullSlots.IsPlaceholder(node))
         {
             // Clone if value already has a parent — JsonNode can only live in one parent at a time.
-            obj[propertyName] = value?.Parent != null ? value.DeepClone() : value;
+            obj[propertyName] = Storable(value);
         }
+    }
+
+    /// <summary>
+    /// The node as it may be written into a document: a null placeholder becomes plain null,
+    /// and an already-parented node is cloned — JsonNode can only live in one parent at a time.
+    /// </summary>
+    private static JsonNode? Storable(JsonNode? value)
+    {
+        var storable = NullSlots.ToStorable(value);
+        return storable?.Parent != null ? storable.DeepClone() : storable;
     }
 
     public void RemoveProperty(JsonNode node, string propertyName)
@@ -78,13 +108,13 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     public void AppendToArray(JsonNode array, JsonNode value)
     {
         if (array is JsonArray arr)
-            arr.Add(value?.Parent != null ? value.DeepClone() : value);
+            arr.Add(Storable(value));
     }
 
     public void InsertIntoArray(JsonNode array, int index, JsonNode value)
     {
         if (array is JsonArray arr)
-            arr.Insert(index, value?.Parent != null ? value.DeepClone() : value);
+            arr.Insert(index, Storable(value));
     }
 
     public void RemoveFromArray(JsonNode array, int index)
@@ -94,11 +124,17 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
 
     public int GetArrayLength(JsonNode array) => array is JsonArray arr ? arr.Count : 0;
 
+    // A null element comes back as a slot-tracking placeholder — JsonValue.Create of a null
+    // is itself C# null, so the previous coalescing still handed out nothing.
     public JsonNode GetArrayElement(JsonNode array, int index) =>
-        array is JsonArray arr ? arr[index]! : JsonValue.Create<object?>(null)!;
+        array is JsonArray arr
+            ? arr[index] ?? NullSlots.CreatePlaceholder(arr, null, index)
+            : JsonValue.Create<object?>(null)!;
 
     public IEnumerable<JsonNode> GetArrayElements(JsonNode array) =>
-        array is JsonArray arr ? arr.Select(n => n ?? JsonValue.Create<object?>(null)!) : Enumerable.Empty<JsonNode>();
+        array is JsonArray arr
+            ? arr.Select((n, i) => n ?? NullSlots.CreatePlaceholder(arr, null, i))
+            : Enumerable.Empty<JsonNode>();
 
     // ── Node creation ─────────────────────────────────────────────────────────
 
@@ -212,7 +248,9 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
 
     // ── Cloning & replacement ─────────────────────────────────────────────────
 
-    public JsonNode DeepClone(JsonNode node) => node.DeepClone();
+    // A placeholder clones to itself: it is immutable, detached, and any write converts it to
+    // plain null, so sharing the instance is safe and keeps its null identity.
+    public JsonNode DeepClone(JsonNode node) => NullSlots.IsPlaceholder(node) ? node : node.DeepClone();
 
     /// <summary>
     /// Replace <paramref name="target"/> in-place with <paramref name="replacement"/>.
@@ -226,7 +264,14 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
         // Clone replacement (or null for JSON null) so the new node is always parentless.
         // JsonNode can only live in one parent at a time; CreateNull() returns C# null
         // in .NET 10+ because System.Text.Json represents JSON null as C# null.
-        JsonNode? value = replacement?.DeepClone();
+        JsonNode? value = NullSlots.ToStorable(replacement)?.DeepClone();
+
+        // A null placeholder is detached — write through the slot it stands for.
+        if (NullSlots.IsPlaceholder(target))
+        {
+            NullSlots.TryWriteSlot(target, value);
+            return;
+        }
 
         var parent = target.Parent;
         if (parent is JsonObject obj)
@@ -234,8 +279,12 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
             string? key = FindKeyInObject(obj, target);
             if (key != null)
             {
-                obj.Remove(key);
-                obj[key] = value;
+                // Rebuild in order: Remove + re-add would move the key to the end, where
+                // Newtonsoft's JToken.Replace keeps the property in place.
+                var entries = obj.Select(e => (e.Key, e.Value)).ToList();
+                obj.Clear();
+                foreach (var (existingKey, existingValue) in entries)
+                    obj[existingKey] = existingKey == key ? value : existingValue;
             }
         }
         else if (parent is JsonArray arr)
@@ -253,6 +302,10 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     /// </summary>
     public bool RemoveFromParent(JsonNode node)
     {
+        // A null placeholder is detached — remove the slot it stands for.
+        if (NullSlots.IsPlaceholder(node))
+            return NullSlots.TryRemoveSlot(node);
+
         var parent = node.Parent;
         if (parent is JsonObject obj)
         {
@@ -276,6 +329,23 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     public bool RenameNode(JsonNode node, string newName)
     {
         if (string.IsNullOrEmpty(newName)) return false;
+
+        // A null placeholder is detached — rename the slot key, keeping the null value and
+        // the object's key order, same as the attached-node path below.
+        if (NullSlots.TryGetSlot(node, out var slot))
+        {
+            if (slot.Parent is not JsonObject slotObj || slot.Key == null ||
+                !slotObj.ContainsKey(slot.Key) || slotObj[slot.Key] is not null)
+                return false;
+            if (slot.Key == newName) return true;
+
+            var slotEntries = slotObj.Select(e => (e.Key, e.Value)).ToList();
+            slotObj.Clear();
+            foreach (var (existingKey, value) in slotEntries)
+                slotObj[existingKey == slot.Key ? newName : existingKey] = value;
+            return true;
+        }
+
         if (node?.Parent is not JsonObject obj) return false;
 
         var key = FindKeyInObject(obj, node);
@@ -299,6 +369,14 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     public void DeepMergeInto(JsonNode source, JsonNode target,
         ArrayMergeMode arrayMergeMode = ArrayMergeMode.Concat)
     {
+        // A placeholder stands for JSON null: a null source overwrites the target the way any
+        // scalar does, and a null target is overwritten by the source — through the slot.
+        if (NullSlots.IsPlaceholder(source) || NullSlots.IsPlaceholder(target))
+        {
+            Replace(target, source);
+            return;
+        }
+
         if (source is JsonObject sourceObj && target is JsonObject targetObj)
         {
             foreach (var kvp in sourceObj.ToList())
@@ -361,6 +439,13 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     /// </summary>
     public JsonNode? GetParentNode(JsonNode node)
     {
+        // A null placeholder is detached; its parent comes from the slot it stands for, with
+        // the same array-skipping rule as an attached node.
+        if (NullSlots.TryGetSlot(node, out var slot))
+            return slot.Index != null && slot.Parent is JsonArray && slot.Parent.Parent is JsonObject po
+                ? po
+                : slot.Parent;
+
         if (node?.Parent == null) return null;
         var parent = node.Parent;
 
@@ -377,6 +462,9 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     /// </summary>
     public string? GetParentPropertyName(JsonNode node)
     {
+        if (NullSlots.TryGetSlot(node, out var slot))
+            return slot.Key;
+
         if (node?.Parent is JsonObject parentObj)
             return FindKeyInObject(parentObj, node);
         return null;
@@ -385,14 +473,25 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     // ── Equality ─────────────────────────────────────────────────────────────
 
     public bool DeepEquals(JsonNode a, JsonNode b) =>
-        JsonNode.DeepEquals(a, b);
+        JsonNode.DeepEquals(NullSlots.ToStorable(a), NullSlots.ToStorable(b));
 
     // ── Serialisation ─────────────────────────────────────────────────────────
 
-    public JsonNode Parse(string content) => JsonNode.Parse(content)!;
+    /// <summary>
+    /// A document that is the literal <c>null</c> has no JsonNode representation (C# null),
+    /// and handing that out as the data context breaks every downstream non-null assumption —
+    /// so it is refused as a parse error rather than returned. Newtonsoft carries such a
+    /// document as a null JValue; here the engine cannot, which is the honest answer.
+    /// </summary>
+    public JsonNode Parse(string content) =>
+        JsonNode.Parse(content)
+        ?? throw new JsonException(
+            "A document consisting of the literal 'null' cannot be represented as a JsonNode.");
 
     public string Serialize(JsonNode node, bool pretty = false) =>
-        node.ToJsonString(new JsonSerializerOptions { WriteIndented = pretty });
+        NullSlots.IsPlaceholder(node)
+            ? "null"
+            : node.ToJsonString(new JsonSerializerOptions { WriteIndented = pretty });
 
     // ── Private helpers ───────────────────────────────────────────────────────
 

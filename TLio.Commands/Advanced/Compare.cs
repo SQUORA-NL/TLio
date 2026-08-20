@@ -581,11 +581,16 @@ public class Compare<TNode> : CommandBase<TNode>
 
         private NodeKind KindOf(TNode node)
         {
+            // Null before the containers: an empty XML element answers IsNull and IsObject at
+            // once, and comparing it as Object put a full difference record where JSON's null
+            // gets the compact scalar verdict. The adapter's own GetNodeKind resolves the same
+            // tie the same way.
+            if (Adapter.IsNull(node)) return NodeKind.Null;
+
             // Array before Object: XML models an array as an element whose children
             // all share one name, which also satisfies IsObject.
             if (Adapter.IsArray(node)) return NodeKind.Array;
             if (Adapter.IsObject(node)) return NodeKind.Object;
-            if (Adapter.IsNull(node)) return NodeKind.Null;
             return NodeKind.Primitive;
         }
 

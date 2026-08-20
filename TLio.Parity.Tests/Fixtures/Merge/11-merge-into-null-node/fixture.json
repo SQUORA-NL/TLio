@@ -1,0 +1,23 @@
+{
+  "input": {
+    "a": null,
+    "s": {
+      "x": 1
+    }
+  },
+  "script": [
+    {
+      "command": "merge",
+      "path": "$.s",
+      "targetPath": "$.a"
+    }
+  ],
+  "result": {
+    "a": {
+      "x": 1
+    },
+    "s": {
+      "x": 1
+    }
+  }
+}

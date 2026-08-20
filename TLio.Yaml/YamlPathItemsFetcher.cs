@@ -129,23 +129,36 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
         if (!CanBuild(segments, root))
             return;
 
+        // A null root cannot be swapped for a mapping — nothing holds it — so there is
+        // nothing to build from. The same answer JSON gives for a null document.
+        if (segments.Count > 0 && root is not YamlMappingNode && !segments[0].IsIndex)
+            return;
+
         var current = root;
 
         foreach (var seg in segments)
         {
             if (seg.IsIndex)
             {
+                // CanBuild guarantees the position exists — a missing one is refused up
+                // front, the same answer JSON gives, never padded into existence.
                 var seq = (YamlSequenceNode)current;
-                while (seq.Children.Count <= seg.Index)
-                    seq.Add(new YamlMappingNode());
+                if (IsNullScalar(seq.Children[seg.Index]))
+                {
+                    var upgraded = new YamlMappingNode();
+                    seq.Children[seg.Index] = upgraded;
+                    _tracker.Track(upgraded, seq, seg.Index);
+                }
                 current = seq.Children[seg.Index];
             }
             else
             {
                 var map = (YamlMappingNode)current;
                 var key = new YamlScalarNode(seg.Key);
-                if (!map.Children.ContainsKey(key))
+                if (!map.Children.ContainsKey(key) || IsNullScalar(map.Children[key]))
                 {
+                    // Missing, or null — an unfilled container the path may be built
+                    // through, the same answer an empty XML element gives.
                     var child = new YamlMappingNode();
                     map.Children[key] = child;
                     _tracker.Track(child, map, seg.Key!);
@@ -154,6 +167,13 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
             }
         }
     }
+
+    /// <summary>Mirrors <see cref="YamlNodeAdapter.IsNull"/>.</summary>
+    private static bool IsNullScalar(YamlNode node) =>
+        node is YamlScalarNode scalar &&
+        (scalar.Value == null || scalar.Value == "null" || scalar.Value == "~" ||
+         (scalar.Value.Length == 0 &&
+          scalar.Style is YamlDotNet.Core.ScalarStyle.Plain or YamlDotNet.Core.ScalarStyle.Any));
 
     /// <summary>
     /// Walks <paramref name="segments"/> over what is already there, treating a node that is not
@@ -168,13 +188,18 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
         {
             if (seg.IsIndex)
             {
-                // A node the build would create is a mapping, never a sequence.
+                // A node the build would create is a mapping, never a sequence — and a
+                // position that does not exist yet cannot be built through either: JSON and
+                // XML build nothing there, and padding the sequence with empty mappings to
+                // reach it left elements the path never named.
                 if (node is not YamlSequenceNode seq) return false;
-                node = seg.Index < seq.Children.Count ? seq.Children[seg.Index] : null;
+                if (seg.Index >= seq.Children.Count) return false;
+                node = seq.Children[seg.Index];
             }
             else
             {
                 if (node is null) continue;               // a mapping that will be created
+                if (IsNullScalar(node)) { node = null; continue; } // an unfilled container the build may claim
                 if (node is not YamlMappingNode map) return false;
                 node = map.Children.TryGetValue(new YamlScalarNode(seg.Key), out var child) ? child : null;
             }

@@ -284,6 +284,22 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             // was already in the document.
             if (!adapter.IsArray(array))
             {
+                // A null node is an unfilled container (see TryUpgradeNullToObject); position 0
+                // is the one place an element can go into it, the same rule as a missing array.
+                if (adapter.IsNull(array) && index == 0 && adapter.GetParentNode(array) is not null)
+                {
+                    var upgradeValue = Value!.GetValue(array, dataContext, context);
+                    if (!upgradeValue.Success)
+                    {
+                        MarkFailed();
+                        return;
+                    }
+                    var newArray = adapter.CreateArray();
+                    adapter.AppendToArray(newArray, upgradeValue.Data.First ?? adapter.CreateNull());
+                    adapter.Replace(array, newArray);
+                    return;
+                }
+
                 WarnNoIndex(context, $"'{arrayPath}' is not an array");
                 return;
             }
@@ -363,8 +379,34 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             context.NodeAdapter.SetProperty(targetNode, propertyName, value);
         else if (context.NodeAdapter.IsArray(targetNode))
             context.NodeAdapter.AppendToArray(targetNode, value);
+        else if (TryUpgradeNullToObject(propertyName, targetNode, value, context))
+        { }
         else
             context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: cannot add property to a primitive node");
+    }
+
+    /// <summary>
+    /// A null-valued node is an unfilled container, the same answer XML's empty element already
+    /// gives: <c>&lt;customer/&gt;</c> is null *and* something a property can be written into.
+    /// JSON and YAML can spell the difference (<c>null</c> vs <c>{}</c>) where XML cannot, so
+    /// without this the one document written three ways behaved differently per format. The
+    /// commands that build structure — add and put — turn the null into an object holding the
+    /// new property; set stays strict and never goes through here.
+    ///
+    /// The upgrade swaps the node for an object via Replace, which needs a parent to write
+    /// into. A null document root has no parent to swap it in, so that one case keeps the
+    /// warning in every format.
+    /// </summary>
+    private bool TryUpgradeNullToObject(string propertyName, TNode targetNode, TNode value, IExecutionContext<TNode> context)
+    {
+        var adapter = context.NodeAdapter;
+        if (!adapter.IsNull(targetNode) || adapter.GetParentNode(targetNode) is null)
+            return false;
+
+        var obj = adapter.CreateObject();
+        adapter.SetProperty(obj, propertyName, value);
+        adapter.Replace(targetNode, obj);
+        return true;
     }
 
     protected void ReplaceProperty(string propertyName, TNode targetNode, TNode value, IExecutionContext<TNode> context)
@@ -404,6 +446,10 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             for (int i = elements.Count - 1; i >= 0; i--)
                 context.NodeAdapter.RemoveFromArray(targetNode, i);
             context.NodeAdapter.AppendToArray(targetNode, value);
+        }
+        else
+        {
+            TryUpgradeNullToObject(propertyName, targetNode, value, context);
         }
     }
 

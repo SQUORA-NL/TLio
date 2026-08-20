@@ -14,7 +14,10 @@ public sealed class DocumentService
 
     public XElement ParseXml(string content)
     {
-        try { return XElement.Parse(content); }
+        // XDocument keeps the document node above the element, which is what makes absolute
+        // paths (/order/customer) resolve — XElement.Parse hands back a detached element that
+        // silently matches nothing. Same parse the XmlNodeAdapter uses.
+        try { return XDocument.Parse(content).Root!; }
         catch (Exception ex) { throw new InvalidOperationException($"Invalid XML: {ex.Message}", ex); }
     }
 

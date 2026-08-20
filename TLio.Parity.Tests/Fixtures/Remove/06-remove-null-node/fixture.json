@@ -1,0 +1,15 @@
+{
+  "input": {
+    "a": null,
+    "b": 1
+  },
+  "script": [
+    {
+      "command": "remove",
+      "path": "$.a"
+    }
+  ],
+  "result": {
+    "b": 1
+  }
+}

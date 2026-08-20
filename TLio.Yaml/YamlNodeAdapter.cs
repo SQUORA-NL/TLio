@@ -14,9 +14,16 @@ public class YamlNodeAdapter : INodeAdapter<YamlNode>
     public bool IsObject(YamlNode node) => node is YamlMappingNode;
     public bool IsArray(YamlNode node) => node is YamlSequenceNode;
     public bool IsPrimitive(YamlNode node) => node is YamlScalarNode;
+    /// <summary>
+    /// A plain-style empty scalar is null too: YAML reads a bare <c>key:</c> as null, and it is
+    /// the YAML spelling of the empty XML element — an unfilled container add/put may write
+    /// into. A quoted <c>''</c> keeps its scalar style and stays a real empty string.
+    /// </summary>
     public bool IsNull(YamlNode node) =>
         node is YamlScalarNode scalar &&
-        (scalar.Value == null || scalar.Value == "null" || scalar.Value == "~");
+        (scalar.Value == null || scalar.Value == "null" || scalar.Value == "~" ||
+         (scalar.Value.Length == 0 &&
+          scalar.Style is YamlDotNet.Core.ScalarStyle.Plain or YamlDotNet.Core.ScalarStyle.Any));
 
     public bool HasProperty(YamlNode node, string propertyName) =>
         node is YamlMappingNode map &&
@@ -119,7 +126,12 @@ public class YamlNodeAdapter : INodeAdapter<YamlNode>
     public YamlNode CreateNull() => new YamlScalarNode("null");
     public YamlNode CreateObject() => new YamlMappingNode();
     public YamlNode CreateArray() => new YamlSequenceNode();
-    public YamlNode CreateString(string value) => new YamlScalarNode(value);
+    // An empty string is quoted so it stays a string: a plain empty scalar is how YAML
+    // spells null (see IsNull), and a deliberately created "" must not be read back as one.
+    public YamlNode CreateString(string value) =>
+        value.Length == 0
+            ? new YamlScalarNode(value) { Style = YamlDotNet.Core.ScalarStyle.SingleQuoted }
+            : new YamlScalarNode(value);
 
     public YamlNode CreateNumber(double value) =>
         new YamlScalarNode(value.ToString(CultureInfo.InvariantCulture));
@@ -128,7 +140,7 @@ public class YamlNodeAdapter : INodeAdapter<YamlNode>
         new YamlScalarNode(value.ToString().ToLowerInvariant());
 
     public YamlNode CreateValue(object? value) =>
-        value == null ? CreateNull() : new YamlScalarNode(value.ToString());
+        value == null ? CreateNull() : CreateString(value.ToString() ?? string.Empty);
 
     public object? GetValue(YamlNode node) =>
         node is YamlScalarNode scalar ? scalar.Value : null;

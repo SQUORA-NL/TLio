@@ -211,6 +211,13 @@ Pinned: `XmlShapeTests.AnEmptyElement_IsAlsoNull_BecauseXmlCannotTellTheTwoApart
 Setting shape: an explicit type marker (`xsi:nil`, or a TLio-owned attribute) — which means
 deciding that attributes are in scope for the data model, currently they are not.
 
+One boundary of "empty" is now pinned: whitespace-only content is formatting, not data.
+Parsing normally strips it, but a tree loaded with `LoadOptions.PreserveWhitespace` or built by
+hand still carries it, and `<k>\n</k>` classifies exactly like `<k/>` — `IsObject` ignores
+insignificant whitespace, so the element stays a writable container. Only classification
+ignores it: as a *value* (`TryGetString`) the text is kept, so a deliberate `" "` string
+survives the round trip.
+
 ### E2. A single-element XML array is indistinguishable from a one-property object
 
 `<items><item>1</item></items>` reads as an array only because the item is named `item`. In a
@@ -236,6 +243,27 @@ asks still sees null. Telling them apart end to end needs a styled scalar in the
 value model.
 
 Pinned: `YamlScriptNotationTests.AQuotedNullValue_IsParsedAsTheString`
+
+### E5. A null merge *source* still diverges in XML
+
+`merge` with a `null` source overwrites the target in JSON and YAML — a scalar source replaces,
+and null is a scalar. XML reads the same document's `<s/>` as an empty *object* (E1: the empty
+element cannot say which empty thing it is), and merging an object with no properties changes
+nothing.
+
+One XML document maps to two JSON documents with different outcomes, so XML can only pick one
+reading; it keeps the target — the non-destructive one. A fixture that means "merge nothing"
+writes `{"s": {}}` and gets the same no-op in every format.
+
+Two more places make the same one-of-two choice for `<k/>`, each picking the reading that
+keeps the formats most aligned in practice:
+
+- **`add` at position `[0]`** into `<a/>` follows the *null/empty-array* reading and starts the
+  array — the same upgrade a JSON `null` gets — while a JSON `{"a": {}}` still warns "not an
+  array". The empty element also stands for `[]`; the empty JSON object does not.
+- **`compare`** reads `<k/>` as *null*, so two empty elements verdict `equal` and an empty
+  element against a scalar verdicts `different` — the compact answers JSON gives for null —
+  rather than reporting a type difference against an empty object.
 
 ---
 
@@ -382,3 +410,45 @@ compare threw for the same reason. All paths now resolve through
 `TLio.Commands.Logic.IndirectPath`, and an expression that cannot be resolved warns and no-ops.
 
 Regression guards: `IndirectPathTests` (27 cases).
+
+### A null node refused what an empty XML element accepted
+
+```
+{"customer": null}  +  add $.customer.demo = 3
+
+JSON / YAML:  warning "cannot add property to a primitive node", nothing written
+XML:          <customer><demo>3</demo></customer>
+```
+
+One document, three spellings, two behaviours. XML's empty element has always answered
+`IsObject` with yes — an unfilled container a property can be written into — because path
+construction depends on it (see the adapter remarks and E1). JSON and YAML read the same
+document as a null scalar and refused.
+
+The rule is now format-wide: for the commands that build structure — `add` and `put` — a
+null-valued node is an unfilled container. Writing a property into it upgrades it to an object;
+writing position `[0]` upgrades it to an array; a deep path builds through it (`EnsurePath`
+treats a null step like a missing one). `set` stays strict and still refuses, the same as it
+refuses a missing path. The null document *root* is the one exception in every format —
+nothing holds it, so there is nothing to swap an object in for.
+
+### System.Text.Json could not select a null node
+
+JSON null is C# `null` in the JsonNode model — a null-valued property has no node object at
+all. `SelectNodes` could not return it, so every command that works on the selected node
+reported "no nodes matched" where Newtonsoft, XML and YAML found one: `remove` left the
+property in place, `rename` did nothing, `copy` and `move` found no source, `merge` no source
+or target, and `=fetch($.a)` failed. The same script gave different answers on the two JSON
+engines.
+
+.NET offers no way out at the representation level — every `JsonValue.Create` overload maps a
+null back to C# null — so the fetcher hands out a detached **placeholder** that remembers the
+slot (parent plus property name or array index) the null was found in
+(`TLio.Json.SystemText/Internal/NullSlots.cs`). The adapter answers for a placeholder the way
+Newtonsoft answers for a null `JValue`, converts it back to plain null the moment it is written
+into a document, and routes the position-dependent mutations (`Replace`, `RemoveFromParent`,
+`RenameNode`) through the remembered slot.
+
+The same alignment pass caught `Replace` moving a replaced property to the end of the object —
+remove-then-re-add, where Newtonsoft's `JToken.Replace` keeps the position. The object is now
+rebuilt in place, the way `RenameNode` already did.

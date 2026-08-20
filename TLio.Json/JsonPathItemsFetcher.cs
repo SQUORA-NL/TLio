@@ -202,6 +202,13 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
                 // Property missing — create an empty JObject placeholder
                 currentObj.Add(element.ElementName, new JObject());
             }
+            else if (currentObj[element.ElementName]?.Type == JTokenType.Null)
+            {
+                // A null value is an unfilled container — the same answer an empty XML
+                // element gives — so a path may be built through it. Without this,
+                // {"a":null} + add $.a.b.c refused in JSON what XML happily created.
+                currentObj[element.ElementName] = new JObject();
+            }
             else if (currentObj[element.ElementName]?.Type != JTokenType.Object)
             {
                 // Property exists but is not an object — leaf already has a value;

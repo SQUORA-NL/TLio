@@ -1,0 +1,17 @@
+{
+  "input": {
+    "customer": null
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.customer.demo",
+      "value": 3
+    }
+  ],
+  "result": {
+    "customer": {
+      "demo": 3
+    }
+  }
+}
