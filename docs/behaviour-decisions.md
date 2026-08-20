@@ -228,7 +228,31 @@ because a leading `/` is not distinctive enough to override at parse time, where
 available to ask. `=fetch(/order/a)` works — path detection inside function arguments *is*
 format-aware (`IItemsFetcher.IsPathExpression`).
 
-### E4. A quoted YAML `'null'` is still read as null downstream
+### E4. Shared code still tests for `$`, `@` and `/` directly
+
+The path language is injected — `IItemsFetcher` is the extension point, and a caller can supply
+one for a language TLio has never heard of. Five places outside a fetcher still assume what a
+path looks like:
+
+| Where | What it assumes |
+|---|---|
+| `FixedValue` | a value starting `$` or `@` is a path |
+| `Compare` | a key path starting `@` is relative |
+| `ScriptPath` | an argument starting `@` is relative |
+| `MergeArrayHelpers` | strips `@`, then `$`, then `/` — three notations wired in at once |
+| `Merge` | strips `$` and rewrites `/` to `.`, converting one notation into another |
+
+The last two are the sharp ones: they do not merely assume a notation, they hard-code support
+for several. A fetcher for a language that brackets, delimits or roots paths differently gets
+silently wrong answers from them rather than an honest failure.
+
+The tokens to do this properly are already declared on the interface — `RootPathIndicator`,
+`CurrentItemPathIndicator`, `ParentPathIndicator`, `PathDelimiter`, `ArrayOpenChar`,
+`ArrayCloseChar` — which is how `IsPathExpression`, `IsLeafArrayIndex` and `TrySplitArrayIndex`
+answer without naming a language. These five predate that, and each sits inside command logic
+with its own tests, so they were left alone rather than changed blind.
+
+### E5. A quoted YAML `'null'` is still read as null downstream
 
 The script parser honours the quoting and writes the four-character string, but
 `YamlNodeAdapter.IsNull` tests the text rather than the scalar style, so every function that
