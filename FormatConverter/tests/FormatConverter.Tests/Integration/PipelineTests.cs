@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Xml;
 using FormatConverter.Core;
 using FormatConverter.Core.Exceptions;
 using Converter = global::FormatConverter.Core.FormatConverter;
@@ -51,7 +52,24 @@ public sealed class PipelineTests
 
         var output = _runner.Execute("xml", input, script).TrimEnd();
 
-        Assert.That(ExtractYamlKeys(output), Is.EquivalentTo(ExtractYamlKeys(expected)));
+        YamlAssert.Equivalent(output, expected, "xml → json → yaml");
+    }
+
+    [Test]
+    public void JsonYamlXml_Pipeline_CarriesArraysAllTheWayThrough()
+    {
+        // The pipeline this feature exists for. It used to throw at the second boundary because
+        // the YAML written at the first one could not be read back.
+        var script = """[{"command":"convert","to":"yaml"},{"command":"convert","to":"xml"}]""";
+        var input = """{"order":{"id":"7","lines":[{"sku":"A1","qty":"2"},{"sku":"B2","qty":"1"}]}}""";
+
+        var output = _runner.Execute("json", input, script);
+
+        var doc = new XmlDocument();
+        Assert.DoesNotThrow(() => doc.LoadXml(output), "the pipeline must end in well-formed XML");
+        Assert.That(doc.DocumentElement!.LocalName, Is.EqualTo("order"));
+        Assert.That(doc.SelectNodes("//*[local-name()='sku']")!.Count, Is.EqualTo(2),
+            "both line items survive both boundaries");
     }
 
     [Test]
@@ -125,7 +143,7 @@ public sealed class PipelineTests
         var output = _runner.Execute("xml", input, script);
 
         // Final format is YAML — verify structure and values are preserved
-        Assert.That(ExtractYamlKeys(output), Is.EquivalentTo(new[] { "root", "key" }));
+        YamlAssert.Equivalent(output, "root:\n  key: value", "xml → json → yaml");
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -135,10 +153,4 @@ public sealed class PipelineTests
 
     private static string NormJson(string json) =>
         JsonSerializer.Serialize(JsonSerializer.Deserialize<JsonElement>(json));
-
-    private static IEnumerable<string> ExtractYamlKeys(string yaml) =>
-        yaml.Split('\n')
-            .Select(l => l.Trim())
-            .Where(l => l.Contains(':'))
-            .Select(l => l.Split(':')[0].Trim('\'', ' '));
 }
