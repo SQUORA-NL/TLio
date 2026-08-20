@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FormatConverter.Core;
 using FormatConverter.Core.Exceptions;
+using TLio.Core.Models.Logging;
 
 namespace FormatConverter.TLio;
 
@@ -50,11 +51,26 @@ public sealed class MultiFormatScriptRunner
     /// <param name="scriptJson">JSON array of TLio commands, possibly containing <c>convert</c> commands.</param>
     /// <returns>The document after all sections have been executed, in the last section's format.</returns>
     /// <exception cref="FormatNotRegisteredException">When a <c>convert</c> command targets an unregistered format.</exception>
-    public string Execute(string initialFormatId, string inputDocument, string scriptJson)
+    /// <exception cref="SectionExecutorNotRegisteredException">When a section has commands and no executor to run them.</exception>
+    public string Execute(string initialFormatId, string inputDocument, string scriptJson) =>
+        Run(initialFormatId, inputDocument, scriptJson).Document;
+
+    /// <summary>
+    /// Execute a multi-format script and return the output together with what every section
+    /// logged along the way.
+    /// </summary>
+    /// <remarks>
+    /// A multi-format run spans one engine per section, so there is no single execution context to
+    /// ask afterwards. The logs are collected as the pipeline goes.
+    /// </remarks>
+    /// <inheritdoc cref="Execute(string,string,string)" path="/exception"/>
+    public MultiFormatScriptResult Run(string initialFormatId, string inputDocument, string scriptJson)
     {
         var sections = SplitIntoSections(initialFormatId, scriptJson);
         var currentDocument = inputDocument;
         var currentFormat = initialFormatId;
+        var logs = new LogEntries();
+        var success = true;
 
         for (var i = 0; i < sections.Count; i++)
         {
@@ -63,28 +79,31 @@ public sealed class MultiFormatScriptRunner
             // Apply incoming format conversion (all sections after the first)
             if (section.IncomingSettings is not null)
             {
-                var prevSection = sections[i - 1];
                 currentDocument = _converter.Convert(
-                    prevSection.FormatId,
+                    sections[i - 1].FormatId,
                     currentDocument,
                     section.FormatId,
                     section.IncomingSettings);
                 currentFormat = section.FormatId;
             }
 
-            // Execute section commands if any
-            if (section.Commands.Count > 0)
+            if (section.Commands.Count == 0)
+                continue;
+
+            if (!_executors.TryGetValue(section.FormatId, out var executor))
             {
-                if (_executors.TryGetValue(section.FormatId, out var executor))
-                {
-                    currentDocument = executor.Execute(section.ToScriptJson(), currentDocument);
-                }
-                // If no executor registered and there are commands, commands are skipped with no error
-                // (conversion-only pipelines don't need executors)
+                // Silently dropping the commands is the one thing this must not do: the script
+                // would report success having applied none of it.
+                throw new SectionExecutorNotRegisteredException(section.FormatId, _executors.Keys.ToList());
             }
+
+            var result = executor.Execute(section.ToScriptJson(), currentDocument);
+            currentDocument = result.Document;
+            logs.AddRange(result.Logs);
+            success &= result.Success;
         }
 
-        return currentDocument;
+        return new MultiFormatScriptResult(currentDocument, currentFormat, success, logs);
     }
 
     private static List<ScriptSection> SplitIntoSections(string initialFormatId, string scriptJson)
