@@ -97,7 +97,7 @@ public sealed class XmlFormatAdapter : IFormatAdapter
         }
 
         AttachAttributes(result, element, settings);
-        AttachNamespaces(result, element);
+        AttachNamespaces(result, element, settings);
         return result;
     }
 
@@ -178,14 +178,19 @@ public sealed class XmlFormatAdapter : IFormatAdapter
         }
     }
 
-    private static void AttachNamespaces(IntermediateNode node, XmlElement element)
+    /// <summary>
+    /// Namespace declarations become metadata keyed by
+    /// <see cref="ConversionSettings.NamespacePrefix"/>. The setting names the key the neutral
+    /// formats see; the XML attribute written back out is always the literal <c>xmlns:</c>.
+    /// </summary>
+    private static void AttachNamespaces(IntermediateNode node, XmlElement element, ConversionSettings settings)
     {
         foreach (XmlAttribute attr in element.Attributes)
         {
-            if (attr.Name == "xmlns")
+            if (attr.Name == NodeMetadata.DefaultNamespaceKey)
                 node.Metadata[NodeMetadata.DefaultNamespaceKey] = attr.Value;
-            else if (attr.Name.StartsWith("xmlns:", StringComparison.Ordinal))
-                node.Metadata[attr.Name] = attr.Value;
+            else if (attr.Name.StartsWith(NodeMetadata.NamespacePrefix, StringComparison.Ordinal))
+                node.Metadata[settings.NamespacePrefix + attr.LocalName] = attr.Value;
         }
     }
 
@@ -213,27 +218,11 @@ public sealed class XmlFormatAdapter : IFormatAdapter
         {
             if (kv.Key == NodeMetadata.DefaultNamespaceKey)
                 nsCtx[string.Empty] = kv.Value;
-            else if (kv.Key.StartsWith("xmlns:", StringComparison.Ordinal))
-                nsCtx[kv.Key[6..]] = kv.Value;
+            else if (MetadataConvention.IsNamespaceKey(kv.Key, settings))
+                nsCtx[kv.Key[settings.NamespacePrefix.Length..]] = kv.Value;
         }
 
-        var elementName = SanitizeXmlName(node.Name ?? "root");
-        XmlElement element;
-
-        // Handle namespace-prefixed names (e.g. "ns:child") using the inherited context
-        var colonIndex = elementName.IndexOf(':');
-        if (colonIndex > 0)
-        {
-            var prefix = elementName[..colonIndex];
-            element = nsCtx.TryGetValue(prefix, out var nsUri)
-                ? doc.CreateElement(elementName, nsUri)
-                : doc.CreateElement(elementName);
-        }
-        else
-        {
-            element = doc.CreateElement(elementName);
-        }
-
+        var element = CreateElement(doc, node.Name ?? "root", nsCtx);
         ApplyMetadataAsAttributes(element, node.Metadata, settings);
 
         switch (node)
@@ -245,7 +234,7 @@ public sealed class XmlFormatAdapter : IFormatAdapter
                     {
                         foreach (var item in arr.Items)
                         {
-                            var wrapper = doc.CreateElement(SanitizeXmlName(arr.Name ?? "item"));
+                            var wrapper = CreateElement(doc, arr.Name ?? "item", nsCtx);
                             ApplyMetadataAsAttributes(wrapper, item.Metadata, settings);
                             AppendChildContent(doc, wrapper, item, settings, nsCtx);
                             element.AppendChild(wrapper);
@@ -316,23 +305,52 @@ public sealed class XmlFormatAdapter : IFormatAdapter
             element.InnerText = scalar.Type == ScalarType.Null ? string.Empty : (scalar.RawValue ?? string.Empty);
     }
 
+    /// <summary>
+    /// Create an element in whatever namespace the context puts it in: the one its own prefix
+    /// names, or the default declaration in force.
+    /// </summary>
+    /// <remarks>
+    /// The default namespace has to be part of the element rather than an <c>xmlns</c> attribute
+    /// set afterwards — the writer rejects redefining the empty prefix on an element that is not
+    /// in that namespace, and children of a defaulted element belong to it too, so building them
+    /// bare would make the writer emit <c>xmlns=""</c> to take them back out again.
+    /// </remarks>
+    private static XmlElement CreateElement(XmlDocument doc, string rawName, Dictionary<string, string> nsCtx)
+    {
+        var name = SanitizeXmlName(rawName);
+        var colonIndex = name.IndexOf(':');
+
+        if (colonIndex > 0)
+        {
+            return nsCtx.TryGetValue(name[..colonIndex], out var prefixedNs)
+                ? doc.CreateElement(name, prefixedNs)
+                : doc.CreateElement(name);
+        }
+
+        return nsCtx.TryGetValue(string.Empty, out var defaultNs) && defaultNs.Length > 0
+            ? doc.CreateElement(name, defaultNs)
+            : doc.CreateElement(name);
+    }
+
     private static void ApplyMetadataAsAttributes(XmlElement element, NodeMetadata metadata, ConversionSettings settings)
     {
-        var attrPrefix = settings.AttributePrefix;
         foreach (var kv in metadata)
         {
-            if (kv.Key.StartsWith(attrPrefix, StringComparison.Ordinal) && kv.Key.Length > attrPrefix.Length)
+            // Namespaces are checked first: a custom attribute prefix could otherwise claim a
+            // namespace key, and the declaration would be written out as an ordinary attribute.
+            if (kv.Key == NodeMetadata.DefaultNamespaceKey)
             {
-                var attrName = kv.Key[attrPrefix.Length..];
-                element.SetAttribute(attrName, kv.Value);
+                // Already carried by the element itself — see CreateElement.
             }
-            else if (kv.Key == NodeMetadata.DefaultNamespaceKey)
+            else if (MetadataConvention.IsNamespaceKey(kv.Key, settings))
             {
-                element.SetAttribute("xmlns", kv.Value);
+                // The metadata key is spelled with the configured prefix; the XML attribute is
+                // always xmlns: — that part is the format, not a convention.
+                element.SetAttribute(NodeMetadata.NamespacePrefix + kv.Key[settings.NamespacePrefix.Length..], kv.Value);
             }
-            else if (kv.Key.StartsWith("xmlns:", StringComparison.Ordinal))
+            else if (MetadataConvention.IsAttributeKey(kv.Key, settings))
             {
-                element.SetAttribute(kv.Key, kv.Value);
+                element.SetAttribute(kv.Key[settings.AttributePrefix.Length..], kv.Value);
             }
         }
     }

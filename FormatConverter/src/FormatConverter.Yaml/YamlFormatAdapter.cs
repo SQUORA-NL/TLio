@@ -96,27 +96,40 @@ public sealed class YamlFormatAdapter : IFormatAdapter
             _ => new ScalarNode(ScalarType.String, node.ToString()) { Name = name },
         };
 
-    private static ObjectNode ConvertMapping(YamlMappingNode mapping, string? name, ConversionSettings settings)
+    private static IntermediateNode ConvertMapping(YamlMappingNode mapping, string? name, ConversionSettings settings)
     {
         var obj = new ObjectNode { Name = name };
         if (settings.FlattenAnchors && !mapping.Anchor.IsEmpty)
             obj.Metadata[NodeMetadata.AnchorFlattenedKey] = "true";
 
-        var prefix = settings.AttributePrefix;
         foreach (var entry in mapping.Children)
         {
             var key = ((YamlScalarNode)entry.Key).Value ?? string.Empty;
 
-            if (IsMetadataKey(key, prefix) && entry.Value is YamlScalarNode metaScalar)
+            if (MetadataConvention.IsMetadataKey(key, settings) && entry.Value is YamlScalarNode metaScalar)
                 obj.Metadata[key] = metaScalar.Value ?? string.Empty;
             else
                 obj.Children.Add(ConvertYamlNode(entry.Value, key, settings));
         }
-        return obj;
+
+        return Unwrap(obj, settings);
     }
 
-    private static bool IsMetadataKey(string key, string prefix) =>
-        key.StartsWith(prefix, StringComparison.Ordinal) && key.Length > prefix.Length;
+    /// <summary>
+    /// Fold a metadata-plus-text mapping back into the scalar with attributes it came from, so an
+    /// XML element carrying both survives a YAML round trip.
+    /// </summary>
+    private static IntermediateNode Unwrap(ObjectNode node, ConversionSettings settings)
+    {
+        if (!MetadataConvention.IsTextWrapper(node.Children.Select(c => c.Name ?? string.Empty), settings))
+            return node;
+        if (node.Children[0] is not ScalarNode text) return node;
+
+        var scalar = new ScalarNode(text.Type, text.RawValue) { Name = node.Name };
+        foreach (var entry in node.Metadata)
+            scalar.Metadata[entry.Key] = entry.Value;
+        return scalar;
+    }
 
     private static ArrayNode ConvertSequence(YamlSequenceNode sequence, string? name, ConversionSettings settings)
     {
@@ -169,11 +182,12 @@ public sealed class YamlFormatAdapter : IFormatAdapter
     private static YamlNode BuildYaml(IntermediateNode node, ConversionSettings settings, bool isRoot)
     {
         // A named root is wrapped as {name: content} so the element name survives the round trip,
-        // matching what the JSON adapter does.
-        if (isRoot && node is ObjectNode { Name: not null } named)
+        // matching what the JSON adapter does. This holds for a scalar root too: <price>9.99</price>
+        // is `price: '9.99'`, not a bare `'9.99'`.
+        if (isRoot && node.Name is not null)
         {
             var wrapper = new YamlMappingNode();
-            wrapper.Add(Key(named.Name!), BuildYaml(named, settings, isRoot: false));
+            wrapper.Add(Key(node.Name), BuildYaml(node, settings, isRoot: false));
             return wrapper;
         }
 
@@ -181,10 +195,25 @@ public sealed class YamlFormatAdapter : IFormatAdapter
         {
             ObjectNode obj => BuildMapping(obj, settings),
             ArrayNode arr => BuildSequence(arr, settings),
+            ScalarNode scalar when MetadataConvention.NeedsTextWrapper(scalar, settings) =>
+                BuildTextWrapper(scalar, settings),
             ScalarNode scalar => BuildScalar(scalar),
             MixedContentNode mixed => Scalar(CollapseText(mixed)),
             _ => new YamlScalarNode("null") { Style = ScalarStyle.Plain },
         };
+    }
+
+    /// <summary>
+    /// Attributes have nowhere to live on a bare value, so the value takes a key of its own
+    /// beside them: <c>{'@currency': EUR, '#text': '9.99'}</c>.
+    /// </summary>
+    private static YamlMappingNode BuildTextWrapper(ScalarNode scalar, ConversionSettings settings)
+    {
+        var mapping = new YamlMappingNode();
+        foreach (var (key, value) in MetadataConvention.Emittable(scalar, settings))
+            mapping.Add(Key(key), Scalar(value));
+        mapping.Add(Key(settings.TextProperty), BuildScalar(scalar));
+        return mapping;
     }
 
     private static YamlMappingNode BuildMapping(ObjectNode obj, ConversionSettings settings)
@@ -215,20 +244,9 @@ public sealed class YamlFormatAdapter : IFormatAdapter
         return mapping;
     }
 
-    /// <summary>
-    /// The metadata keys a non-XML format carries across. Kept identical to the JSON adapter so
-    /// the two agree on what survives a conversion.
-    /// </summary>
     private static IEnumerable<KeyValuePair<string, string>> MetadataEntries(
-        IntermediateNode node, ConversionSettings settings)
-    {
-        var prefix = settings.AttributePrefix;
-        foreach (var kv in node.Metadata)
-        {
-            if (kv.Key.StartsWith(prefix, StringComparison.Ordinal) && kv.Key.Length > prefix.Length)
-                yield return kv;
-        }
-    }
+        IntermediateNode node, ConversionSettings settings) =>
+        MetadataConvention.Emittable(node, settings);
 
     private static YamlNode BuildScalar(ScalarNode scalar) => scalar.Type switch
     {
