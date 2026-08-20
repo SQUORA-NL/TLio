@@ -56,6 +56,20 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 - You want **fail-fast** signalling if a field is unexpectedly absent — use `set`; a missing field will noop and log, whereas `put` silently creates it.
 - The target is an **array** and you only want to append to it — `put` replaces the entire array with the new value. Use `add` to append.
 
+## Array positions
+
+A trailing integer subscript names a position, and `put` writes that element:
+
+```json
+{"command":"put","path":"$.items[0]","value":9}     // ["a","b"] → [9,"b"]
+```
+
+Unlike a missing *property*, a missing position is not created: an array has no holes, so `put`
+warns and changes nothing. Use `add` at the next free position.
+
+In XML the subscript sits on the item step and counts from one. See
+[document-shape.md](../adapters/document-shape.md#addressing-a-position).
+
 ## Comparison: Add vs Set vs Put
 
 | | `add` | `set` | `put` |

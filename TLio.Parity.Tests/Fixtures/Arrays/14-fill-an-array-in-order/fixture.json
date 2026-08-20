@@ -1,0 +1,31 @@
+{
+  "why": "One add per position, each appending at the next free index \u2014 the shape a gap-analysis agent emits.",
+  "input": {
+    "a": 1
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.tags[0]",
+      "value": "frontend"
+    },
+    {
+      "command": "add",
+      "path": "$.tags[1]",
+      "value": "safari"
+    },
+    {
+      "command": "add",
+      "path": "$.tags[2]",
+      "value": "auth"
+    }
+  ],
+  "result": {
+    "a": 1,
+    "tags": [
+      "frontend",
+      "safari",
+      "auth"
+    ]
+  }
+}

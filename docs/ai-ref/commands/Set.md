@@ -55,6 +55,21 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 - You are unsure whether the field exists — use `put` as the safe default.
 - The script may run on documents of varying shape — `set` silently skips missing paths, which can hide data-quality problems; use `put` or validate with an assertion step first.
 
+## Array positions
+
+A trailing integer subscript names a position, and `set` writes that element:
+
+```json
+{"command":"set","path":"$.items[1]","value":9}     // ["a","b"] → ["a",9]
+```
+
+A position past the end is a no-op with a warning — an array has no holes, so there is no
+element there to write to. Use `add` at the next free position to create one.
+
+In XML the subscript sits on the item step and counts from one, so the same command is
+`path: "/order/items/item[2]"`. See
+[document-shape.md](../adapters/document-shape.md#addressing-a-position).
+
 ## Comparison: Add vs Set vs Put
 
 | | `add` | `set` | `put` |

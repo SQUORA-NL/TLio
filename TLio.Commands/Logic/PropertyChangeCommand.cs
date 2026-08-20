@@ -138,6 +138,34 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             return;
         }
 
+        // A trailing [n] addresses a position in an array, not a property of the parent object.
+        // Split off as a leaf name it becomes "items[1]", which no property is called — set
+        // reported it as not found, and put created a property literally named "items[1]"
+        // alongside the array it was meant to edit. The element is what the path names, so
+        // select it and write to it directly.
+        if (context.ItemsFetcher.IsLeafArrayIndex(Path!))
+        {
+            var elements = context.ItemsFetcher.SelectNodes(Path!, dataContext);
+            if (elements.Count == 0)
+            {
+                ApplyValueToMissingIndex(dataContext, context);
+                return;
+            }
+
+            foreach (var element in elements)
+            {
+                var indexedValue = Value!.GetValue(element, dataContext, context);
+                if (!indexedValue.Success)
+                {
+                    MarkFailed();
+                    continue;
+                }
+                ApplyValueToNode(element,
+                    indexedValue.Data.First ?? context.NodeAdapter.CreateNull(), context);
+            }
+            return;
+        }
+
         // Resolve any =indirect() in parentPath. An unresolved expression must not be passed on:
         // the raw '=' is not legal in any path language and would throw out of the whole script.
         var resolvedParentPath = IndirectPath.TryResolve(parentPath, dataContext, context, CommandName);
@@ -196,6 +224,27 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     /// fabricating the structure the path describes.
     /// </summary>
     protected virtual bool CreatesMissingPath => true;
+
+    /// <summary>
+    /// The array position the path names holds nothing.
+    ///
+    /// Set and Put leave it alone: an array has no holes, so there is no element there to write
+    /// to and none can be put there without moving every later one. Add overrides this — the
+    /// position one past the end is exactly where a new element goes.
+    /// </summary>
+    protected virtual void ApplyValueToMissingIndex(TNode dataContext, IExecutionContext<TNode> context)
+        => context.LogWarning(CoreConstants.CommandExecution,
+            $"{CommandName}: no nodes matched path '{Path}' — the array has no element at that position");
+
+    /// <summary>
+    /// Apply <paramref name="value"/> to a node the path addressed directly — an array element
+    /// reached through a subscript — rather than to a named property of its parent.
+    ///
+    /// The default replaces the element's value, which is what <c>set</c> and <c>put</c> mean
+    /// at a position that exists. <c>Add</c> overrides it: something is already there.
+    /// </summary>
+    protected virtual void ApplyValueToNode(TNode target, TNode value, IExecutionContext<TNode> context)
+        => context.NodeAdapter.Replace(target, value);
 
     /// <summary>
     /// Apply <paramref name="value"/> to <paramref name="propertyName"/> on

@@ -1,0 +1,24 @@
+{
+  "why": "put at an existing position writes to the element. Before the fix it created a property literally named \"items[1]\" beside the array it meant to edit.",
+  "input": {
+    "items": [
+      1,
+      2,
+      3
+    ]
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.items[1]",
+      "value": 9
+    }
+  ],
+  "result": {
+    "items": [
+      1,
+      9,
+      3
+    ]
+  }
+}

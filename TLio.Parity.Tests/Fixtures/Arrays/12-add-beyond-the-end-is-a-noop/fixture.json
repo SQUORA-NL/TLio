@@ -1,0 +1,22 @@
+{
+  "why": "Appending here would put the element at index 2, which is not the index the path named. Refused rather than quietly misplaced.",
+  "input": {
+    "items": [
+      "a",
+      "b"
+    ]
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.items[7]",
+      "value": "z"
+    }
+  ],
+  "result": {
+    "items": [
+      "a",
+      "b"
+    ]
+  }
+}

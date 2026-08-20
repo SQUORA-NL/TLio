@@ -1,5 +1,5 @@
 {
-  "why": "A trailing [n] stays part of the leaf name, which matches no property, so set finds nothing and warns. All three formats agree; the fixture pins that they keep agreeing.",
+  "why": "A trailing [n] addresses a position, not a property called \"items[1]\". Before the fix set reported the property as not found and left the array untouched.",
   "input": {
     "items": [
       1,
@@ -17,7 +17,7 @@
   "result": {
     "items": [
       1,
-      2,
+      9,
       3
     ]
   }

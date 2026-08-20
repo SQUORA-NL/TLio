@@ -52,6 +52,27 @@ public class NativeXPathItemsFetcher : IItemsFetcher<XElement>
     public bool IsPathExpression(string text) =>
         text.Length > 1 && (text[0] == '/' || text.StartsWith("./", StringComparison.Ordinal));
 
+    /// <summary>
+    /// XPath writes the subscript on the item step and counts from one, so
+    /// <c>/order/items/item[2]</c> is position 1 of the array <c>/order/items</c> — the array is
+    /// the step above, not the path with the subscript removed.
+    /// </summary>
+    public bool TrySplitArrayIndex(string path, out string arrayPath, out int index)
+    {
+        arrayPath = string.Empty;
+        index = -1;
+
+        if (!PathSubscript.TrySplit(path, ArrayCloseChar, out var itemPath, out var position))
+            return false;
+
+        var lastStep = itemPath.LastIndexOf('/');
+        if (lastStep <= 0 || position < 1) return false;
+
+        arrayPath = itemPath[..lastStep];
+        index = position - 1;
+        return true;
+    }
+
     public SelectedNodes<XElement> SelectNodes(string path, XElement data)
     {
         if (string.IsNullOrEmpty(path))

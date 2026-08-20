@@ -54,6 +54,29 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 - You need to **update** a field that should already be present — use `set` instead.
 - You are unsure whether the field exists — use `put` (the safe default for unconditional write).
 
+## Array positions
+
+A trailing integer subscript names a position. `add` creates the element at the **next free**
+position — the one place a new element goes without leaving a hole:
+
+```json
+{"command":"add","path":"$.tags[0]","value":"frontend"}   // [] → ["frontend"]
+{"command":"add","path":"$.tags[1]","value":"safari"}     // → ["frontend","safari"]
+```
+
+So an array can be filled in order, one command at a time. `add` also creates the array itself
+when it is missing, the same way it creates the objects along `$.address.city`.
+
+| Position | What happens |
+|---|---|
+| Already occupied | skipped, warns — `add` never overwrites |
+| The next free one | appended |
+| Further out | no-op, warns — the element would land at an index the path did not name |
+
+In XML the subscript sits on the item step and counts from one, so the first element is
+`path: "/order/tags/item[1]"`. See
+[document-shape.md](../adapters/document-shape.md#addressing-a-position).
+
 ## Comparison: Add vs Set vs Put
 
 | | `add` | `set` | `put` |

@@ -83,6 +83,42 @@ public interface IItemsFetcher<TNode>
     string? ProcessIndirectPath(string path, TNode data);
 
     /// <summary>
+    /// True when the path's last segment is an array subscript — <c>$.items[1]</c>,
+    /// <c>/order/items/item[2]</c> — so it addresses a position rather than naming a property.
+    ///
+    /// Splitting such a path into a parent and a leaf name yields a name no property has, which
+    /// is why a write through a subscript used to miss: <c>set</c> reported the property as not
+    /// found and <c>put</c> created one literally called <c>items[1]</c> beside the array it
+    /// meant to edit. Commands that write a value check this and address the element itself.
+    ///
+    /// Only an integer subscript counts. A predicate (<c>item[@id='1']</c>), a wildcard
+    /// (<c>items[*]</c>) and a bracket-quoted key (<c>$['a.b']</c>) all name something other
+    /// than a position, and each format's own selector already handles them.
+    /// </summary>
+    bool IsLeafArrayIndex(string path) =>
+        PathSubscript.TrySplit(path, ArrayCloseChar, out _, out _);
+
+    /// <summary>
+    /// Splits a path whose last segment is an array subscript into the path of the array itself
+    /// and the <b>zero-based</b> position it names.
+    ///
+    /// The formats disagree on both halves: JSONPath and the YAML dot-notation put the
+    /// subscript on the array (<c>$.items[1]</c>) and count from zero, while XPath puts it on
+    /// the item step (<c>/order/items/item[2]</c>) and counts from one. Each fetcher normalises
+    /// its own; callers get one answer.
+    ///
+    /// Returns false when the path does not end in an integer subscript.
+    /// </summary>
+    bool TrySplitArrayIndex(string path, out string arrayPath, out int index)
+    {
+        index = -1;
+        if (!PathSubscript.TrySplit(path, ArrayCloseChar, out arrayPath, out index))
+            return false;
+
+        return arrayPath.Length > 0;
+    }
+
+    /// <summary>
     /// Returns true when the leaf of the path is selected directly via a recursive
     /// descent (..) operator — e.g. "$..myArray". In this case the full path should
     /// be used for node selection and each matched node should be replaced in-place.

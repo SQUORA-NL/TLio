@@ -221,31 +221,19 @@ Pinned: `XmlShapeTests.ASingleItemElement_IsAOneElementArray`,
 
 Setting shape: a configurable item name per array path, or a document-level convention.
 
-### E3. Writing through an array subscript does not work in any format
-
-`set $.items[1]` keeps `items[1]` as the leaf name, matches no property, and no-ops with a
-warning. `put $.items[0]` goes further in JSON and creates a property literally named
-`items[0]`. All three formats share the first behaviour, so it is not a divergence — but it is
-also not what the path says.
-
-Pinned: `TLio.Parity.Tests/Fixtures/Arrays/01-set-element-by-index-is-a-noop`
-
-Setting shape: teach `SplitParentAndLeaf` that a trailing subscript addresses a position rather
-than naming a property. This is a command-layer change, deliberately out of scope for 020.
-
-### E4. A bare path is not a value in XML
+### E3. A bare path is not a value in XML
 
 `"value": "$.a"` is a path expression in JSON. In XML `/order/a` written as text stays text,
 because a leading `/` is not distinctive enough to override at parse time, where no fetcher is
 available to ask. `=fetch(/order/a)` works — path detection inside function arguments *is*
 format-aware (`IItemsFetcher.IsPathExpression`).
 
-### E5. `decisionTable` config is JSON-notation only
+### E4. `decisionTable` config is JSON-notation only
 
 The XML and YAML script parsers convert settings objects through their generic POCO path, which
 `DecisionTableConfig<TNode>` (generic, with node-typed members) does not go through.
 
-### E6. A quoted YAML `'null'` is still read as null downstream
+### E5. A quoted YAML `'null'` is still read as null downstream
 
 The script parser honours the quoting and writes the four-character string, but
 `YamlNodeAdapter.IsNull` tests the text rather than the scalar style, so every function that
@@ -259,6 +247,49 @@ Pinned: `YamlScriptNotationTests.AQuotedNullValue_IsParsedAsTheString`
 ## Resolved
 
 Findings from the same sweep that were plain bugs rather than decisions, and have been fixed.
+
+### Writing through an array subscript did nothing, or the wrong thing
+
+```
+set $.items[1] = 9    →  warning "property 'items[1]' not found", array untouched
+put $.items[0] = 9    →  {"items":["a","b"], "items[0]": 9}
+add $.tags[0] = "x"   →  {"tags[0]": "x"}
+```
+
+`SplitParentAndLeaf` kept the subscript inside the leaf, so every command went looking for a
+property literally called `items[1]`. `set` did not find one and warned; `put` and `add` created
+it, beside the array they were meant to edit.
+
+The junk property was worse than a no-op: `tlio_analyze` renders a leaf path the same way
+whether it came from an array element or from a property whose *name* contains a subscript, so
+`{"tags":[], "tags[0]":"x"}` and `{"tags":["x"]}` compared equal. An agent iterating gap →
+script → gap converged on a document that was never right — pinned now by
+`McpComplexChallengeTests.Scenario4_TicketSchemaEvolution_ConvergesWithinThreeIterations`,
+which passed before the fix for exactly that reason.
+
+`IItemsFetcher.IsLeafArrayIndex` now recognises a trailing integer subscript and the writing
+commands address the element instead. `TrySplitArrayIndex` gives back the array's path and a
+**zero-based** position, each fetcher normalising its own convention — XPath writes the
+subscript on the item step and counts from one, JSONPath and the YAML dot-notation write it on
+the array and count from zero.
+
+Semantics, the same in all three formats:
+
+| | at an occupied position | at the next free position | further out |
+|---|---|---|---|
+| `set` / `put` | writes the element | no-op, warns | no-op, warns |
+| `add` | skipped ("already exists") | appends | no-op, warns |
+
+`add` creates the array when it is missing, as it already does for the objects along
+`$.address.city` — so filling an array in order works one command at a time. It refuses any
+other missing position rather than appending, because the element would land at an index the
+path did not name.
+
+Only an integer subscript counts: `items[*]`, `item[@id='1']` and `$['a.b']` name something
+other than a position and are left to each format's own selector.
+
+Regression guards: `ArrayIndexWriteTests` (17 cases), `XmlArrayIndexTests` (8 cases),
+`TLio.Parity.Tests/Fixtures/Arrays` 01 and 08–15 (run against all three formats).
 
 ### `flatten` → `restore` lost arrays of scalars
 

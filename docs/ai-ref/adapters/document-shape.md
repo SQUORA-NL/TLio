@@ -71,6 +71,40 @@ Adding to an array keeps the item name already in use, so an array of `<order>` 
 indistinguishable from an object with one property unless the item is named `item`. If you
 control the source shape and want single-element arrays to survive, name the items `item`.
 
+### Addressing a position
+
+A trailing integer subscript names a position in the array, in every format:
+
+| JSON / YAML | XML |
+|---|---|
+| `$.items[0]` | `/order/items/item[1]` |
+| `$.a.items[2].n` | `/order/a/items/item[3]/n` |
+
+XPath writes the subscript on the item step and counts from one; JSONPath and the YAML
+dot-notation write it on the array and count from zero. The fetchers normalise both, so a
+command sees the same array and the same zero-based position whatever the format.
+
+Writing through one behaves the same everywhere:
+
+| | at an occupied position | at the next free position | further out |
+|---|---|---|---|
+| `set` / `put` | writes the element | no-op, warns | no-op, warns |
+| `add` | skipped — it already exists | appends | no-op, warns |
+
+`add` creates the array when it is not there, the same way it creates the objects along
+`$.address.city`, so an array can be filled in order one command at a time:
+
+```json
+[ { "command": "add", "path": "$.tags[0]", "value": "frontend" },
+  { "command": "add", "path": "$.tags[1]", "value": "safari"   } ]
+```
+
+It refuses any other missing position rather than appending — the element would land at an index
+the path did not name.
+
+Only an integer counts as a position. `items[*]`, `item[@id='1']` and `$['a.b']` name something
+else, and each format's own selector handles them.
+
 ---
 
 ## The empty element
