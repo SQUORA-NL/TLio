@@ -155,8 +155,11 @@ public sealed class JsonFormatAdapter : IFormatAdapter
                 writer.WriteStartObject();
                 foreach (var entry in MetadataConvention.Emittable(scalar, settings))
                     writer.WriteString(entry.Key, entry.Value);
-                writer.WritePropertyName(settings.TextProperty);
-                WriteScalar(writer, scalar);
+                if (MetadataConvention.WrapperCarriesText(scalar))
+                {
+                    writer.WritePropertyName(settings.TextProperty);
+                    WriteScalar(writer, scalar);
+                }
                 writer.WriteEndObject();
                 break;
 

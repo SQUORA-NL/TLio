@@ -83,6 +83,13 @@ public static class MetadataConvention
         HasEmittableMetadata(scalar, settings);
 
     /// <summary>
+    /// Whether the wrapper carries a text key at all. An empty element with attributes —
+    /// <c>&lt;item id="1"/&gt;</c> — has attributes to place and no value to place beside them, so
+    /// it is <c>{"@id": "1"}</c> and not <c>{"@id": "1", "#text": null}</c>.
+    /// </summary>
+    public static bool WrapperCarriesText(ScalarNode scalar) => scalar.Type != ScalarType.Null;
+
+    /// <summary>
     /// Recognise the object form of a scalar-with-attributes on the way back in: every key is
     /// metadata except one named <see cref="ConversionSettings.TextProperty"/>.
     /// </summary>

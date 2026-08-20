@@ -27,6 +27,17 @@ public sealed class NodeMetadata : Dictionary<string, string>
     /// <summary>Key set to <c>"true"</c> when a YAML anchor/alias was dereferenced inline.</summary>
     public const string AnchorFlattenedKey = "#anchor-flattened";
 
+    /// <summary>
+    /// Key holding the element name an array's items were read with, so an array of
+    /// <c>&lt;order&gt;</c> is written back as <c>&lt;order&gt;</c> rather than the default item
+    /// name. Internal like the other <c>#</c> keys — JSON and YAML have no room for it, so the
+    /// name is lost the moment an array passes through one of them, exactly as TLio documents.
+    /// </summary>
+    public const string ItemNameKey = "#item-name";
+
+    /// <summary>Key set to <c>"true"</c> for an element that declared <c>xsi:nil</c>.</summary>
+    public const string NilKey = "#nil";
+
     /// <summary>Prefix for processing-instruction data (e.g. <c>#pi:xml-stylesheet</c>).</summary>
     public const string PiPrefix = "#pi:";
 }

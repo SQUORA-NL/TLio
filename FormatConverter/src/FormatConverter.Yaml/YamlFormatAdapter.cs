@@ -212,7 +212,8 @@ public sealed class YamlFormatAdapter : IFormatAdapter
         var mapping = new YamlMappingNode();
         foreach (var (key, value) in MetadataConvention.Emittable(scalar, settings))
             mapping.Add(Key(key), Scalar(value));
-        mapping.Add(Key(settings.TextProperty), BuildScalar(scalar));
+        if (MetadataConvention.WrapperCarriesText(scalar))
+            mapping.Add(Key(settings.TextProperty), BuildScalar(scalar));
         return mapping;
     }
 

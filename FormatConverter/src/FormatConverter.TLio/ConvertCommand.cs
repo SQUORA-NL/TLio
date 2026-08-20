@@ -42,8 +42,7 @@ public sealed class ConvertCommand<TNode> : ICommand<TNode>
     public static ConvertCommand<TNode> Parse(JsonElement element)
     {
         var to = element.TryGetProperty("to", out var toProp) ? toProp.GetString() ?? string.Empty : string.Empty;
-        var settings = ParseSettings(element);
-        return new ConvertCommand<TNode>(to, settings);
+        return new ConvertCommand<TNode>(to, ConvertSettingsReader.Read(element));
     }
 
     /// <summary>
@@ -67,30 +66,4 @@ public sealed class ConvertCommand<TNode> : ICommand<TNode>
 
     /// <inheritdoc/>
     public ICommand<TNode> Clone() => new ConvertCommand<TNode>(To, Settings);
-
-    private static ConversionSettings ParseSettings(JsonElement element)
-    {
-        if (!element.TryGetProperty("settings", out var settingsEl) || settingsEl.ValueKind != JsonValueKind.Object)
-            return ConversionSettings.Empty;
-
-        return new ConversionSettings
-        {
-            TextProperty = GetString(settingsEl, "textProperty", "#text"),
-            AttributePrefix = GetString(settingsEl, "attributePrefix", "@"),
-            NamespacePrefix = GetString(settingsEl, "namespacePrefix", "xmlns:"),
-            InferTypes = GetBool(settingsEl, "inferTypes", false),
-            CdataAsText = GetBool(settingsEl, "cdataAsText", false),
-            FlattenAnchors = GetBool(settingsEl, "flattenAnchors", true),
-        };
-    }
-
-    private static string GetString(JsonElement el, string prop, string defaultValue) =>
-        el.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String
-            ? v.GetString() ?? defaultValue
-            : defaultValue;
-
-    private static bool GetBool(JsonElement el, string prop, bool defaultValue) =>
-        el.TryGetProperty(prop, out var v) && v.ValueKind is JsonValueKind.True or JsonValueKind.False
-            ? v.GetBoolean()
-            : defaultValue;
 }
