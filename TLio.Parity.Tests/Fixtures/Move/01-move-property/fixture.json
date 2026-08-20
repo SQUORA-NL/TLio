@@ -1,0 +1,15 @@
+{
+  "input": {
+    "src": "moved"
+  },
+  "script": [
+    {
+      "command": "move",
+      "fromPath": "$.src",
+      "toPath": "$.dst"
+    }
+  ],
+  "result": {
+    "dst": "moved"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "input": {
+    "target": {
+      "a": 1
+    },
+    "source": {
+      "b": 2
+    }
+  },
+  "script": [
+    {
+      "command": "merge",
+      "path": "$.source",
+      "targetPath": "$.target"
+    }
+  ],
+  "result": {
+    "target": {
+      "a": 1,
+      "b": 2
+    },
+    "source": {
+      "b": 2
+    }
+  }
+}

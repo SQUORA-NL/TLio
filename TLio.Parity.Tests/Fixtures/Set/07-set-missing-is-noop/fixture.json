@@ -1,0 +1,15 @@
+{
+  "input": {
+    "a": 1
+  },
+  "script": [
+    {
+      "command": "set",
+      "path": "$.absent",
+      "value": "x"
+    }
+  ],
+  "result": {
+    "a": 1
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "why": "An array has no holes, so there is no element at that position to write to.",
+  "input": {
+    "items": [
+      1,
+      2
+    ]
+  },
+  "script": [
+    {
+      "command": "set",
+      "path": "$.items[5]",
+      "value": 9
+    }
+  ],
+  "result": {
+    "items": [
+      1,
+      2
+    ]
+  }
+}

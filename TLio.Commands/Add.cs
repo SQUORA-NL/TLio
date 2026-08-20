@@ -43,4 +43,13 @@ public class Add<TNode> : PropertyChangeCommand<TNode>
 
         AddProperty(propertyName, targetNode, value, context);
     }
+
+    /// <summary>
+    /// A path that resolved to an array position found an element already sitting there, and
+    /// add never overwrites what exists — the same rule it applies to a property that is
+    /// already present. Shifting the later elements aside is what an insert command would mean.
+    /// </summary>
+    protected override void ApplyValueToNode(TNode target, TNode value, IExecutionContext<TNode> context)
+        => context.LogWarning(TLio.Core.CoreConstants.CommandExecution,
+            $"{CommandName}: array element at '{Path}' already exists, skipping");
 }

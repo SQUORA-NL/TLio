@@ -1,0 +1,24 @@
+{
+  "why": "A trailing [n] addresses a position, not a property called \"items[1]\". Before the fix set reported the property as not found and left the array untouched.",
+  "input": {
+    "items": [
+      1,
+      2,
+      3
+    ]
+  },
+  "script": [
+    {
+      "command": "set",
+      "path": "$.items[1]",
+      "value": 9
+    }
+  ],
+  "result": {
+    "items": [
+      1,
+      9,
+      3
+    ]
+  }
+}

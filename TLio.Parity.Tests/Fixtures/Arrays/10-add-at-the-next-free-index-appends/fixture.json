@@ -1,0 +1,21 @@
+{
+  "why": "The position just past the end is the one place a new element goes without leaving a hole, so that is the index add will create.",
+  "input": {
+    "items": [
+      "a"
+    ]
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.items[1]",
+      "value": "b"
+    }
+  ],
+  "result": {
+    "items": [
+      "a",
+      "b"
+    ]
+  }
+}

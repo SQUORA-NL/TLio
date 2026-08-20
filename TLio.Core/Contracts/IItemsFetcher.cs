@@ -24,6 +24,28 @@ public interface IItemsFetcher<TNode>
     /// <summary>Character that closes an array/index subscript.</summary>
     string ArrayCloseChar { get; }
 
+    /// <summary>
+    /// Character that opens an array/index subscript. Declared so the shared helpers do not
+    /// have to assume one — a language that brackets a position differently says so here.
+    /// </summary>
+    string ArrayOpenChar => "[";
+
+    /// <summary>
+    /// True when <paramref name="text"/> reads as a path expression in this language rather than
+    /// as a plain value. Functions use it to decide whether an argument such as
+    /// <c>=fetch(…)</c>'s should be resolved against the document or returned as-is.
+    ///
+    /// The default answers from the tokens this fetcher already declares — a path either starts
+    /// at the root, or is written relative to the current node — so it holds for any language
+    /// without naming one. A language where that is not the rule overrides it.
+    ///
+    /// A lone indicator is not a useful path, so at least one more character is required.
+    /// </summary>
+    bool IsPathExpression(string text) =>
+        text.Length > 1 &&
+        (text.StartsWith(RootPathIndicator, StringComparison.Ordinal) ||
+         text.StartsWith(CurrentItemPathIndicator + PathDelimiter, StringComparison.Ordinal));
+
     /// <summary>Select zero or more nodes matching the given path expression.</summary>
     SelectedNodes<TNode> SelectNodes(string path, TNode data);
 
@@ -68,6 +90,42 @@ public interface IItemsFetcher<TNode>
     /// Mirrors JLio's JsonPathItemsFetcher.ProcessIndirectPath logic.
     /// </summary>
     string? ProcessIndirectPath(string path, TNode data);
+
+    /// <summary>
+    /// True when the path's last segment is an array subscript — <c>$.items[1]</c>,
+    /// <c>/order/items/item[2]</c> — so it addresses a position rather than naming a property.
+    ///
+    /// Splitting such a path into a parent and a leaf name yields a name no property has, which
+    /// is why a write through a subscript used to miss: <c>set</c> reported the property as not
+    /// found and <c>put</c> created one literally called <c>items[1]</c> beside the array it
+    /// meant to edit. Commands that write a value check this and address the element itself.
+    ///
+    /// Only an integer subscript counts. A predicate (<c>item[@id='1']</c>), a wildcard
+    /// (<c>items[*]</c>) and a bracket-quoted key (<c>$['a.b']</c>) all name something other
+    /// than a position, and each format's own selector already handles them.
+    /// </summary>
+    bool IsLeafArrayIndex(string path) =>
+        PathSubscript.TrySplit(path, ArrayOpenChar, ArrayCloseChar, out _, out _);
+
+    /// <summary>
+    /// Splits a path whose last segment is an array subscript into the path of the array itself
+    /// and the <b>zero-based</b> position it names.
+    ///
+    /// The formats disagree on both halves: JSONPath and the YAML dot-notation put the
+    /// subscript on the array (<c>$.items[1]</c>) and count from zero, while XPath puts it on
+    /// the item step (<c>/order/items/item[2]</c>) and counts from one. Each fetcher normalises
+    /// its own; callers get one answer.
+    ///
+    /// Returns false when the path does not end in an integer subscript.
+    /// </summary>
+    bool TrySplitArrayIndex(string path, out string arrayPath, out int index)
+    {
+        index = -1;
+        if (!PathSubscript.TrySplit(path, ArrayOpenChar, ArrayCloseChar, out arrayPath, out index))
+            return false;
+
+        return arrayPath.Length > 0;
+    }
 
     /// <summary>
     /// Returns true when the leaf of the path is selected directly via a recursive

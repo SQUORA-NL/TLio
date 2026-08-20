@@ -11,6 +11,8 @@ namespace TLio.Yaml;
 ///   $.a.b.c     = nested path
 ///   $.items[0]  = index into sequence
 ///   $.items[*]  = all elements of sequence
+///   $..name     = key "name" at any depth (recursive descent)
+///   $.a..name   = key "name" at any depth below $.a
 /// </summary>
 public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
 {
@@ -22,6 +24,7 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
     public string PathDelimiter => ".";
     public string CurrentItemPathIndicator => "@";
     public string ParentPathIndicator => "<--";
+    public string ArrayOpenChar => "[";
     public string ArrayCloseChar => "]";
 
     public SelectedNodes<YamlNode> SelectNodes(string path, YamlNode data)
@@ -99,37 +102,85 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
         return relativePath;
     }
 
+    /// <summary>
+    /// True when the leaf is reached by a recursive descent ("$..name"). The command layer
+    /// then selects the leaf nodes by the whole path and replaces each in place, because there
+    /// is no single parent to write a property on.
+    /// </summary>
+    public bool IsLeafRecursiveDescentSearch(string path)
+    {
+        var segments = ParseSegments(path);
+        return segments.Count > 0 && segments[^1].IsDescendant;
+    }
+
     public void EnsurePath(string path, YamlNode root, INodeAdapter<YamlNode> adapter)
     {
         var segments = ParseSegments(path);
+
+        // A wildcard or a recursive descent describes nodes that already exist rather than a
+        // single place to build, so there is nothing to construct along such a path.
+        if (segments.Any(s => s.IsWildcard || s.IsDescendant))
+            return;
+
+        // Decided before anything is written. A path that runs through a position inside
+        // something that is not a sequence cannot be built, and building the part above it
+        // anyway left a wrong shape behind — "$.rows[0].id" produced "rows: {id: {}}", the
+        // position silently dropped, where JSON and XML build nothing at all.
+        if (!CanBuild(segments, root))
+            return;
+
         var current = root;
 
         foreach (var seg in segments)
         {
             if (seg.IsIndex)
             {
-                if (current is YamlSequenceNode seq)
-                {
-                    while (seq.Children.Count <= seg.Index)
-                        seq.Add(new YamlMappingNode());
-                    current = seq.Children[seg.Index];
-                }
+                var seq = (YamlSequenceNode)current;
+                while (seq.Children.Count <= seg.Index)
+                    seq.Add(new YamlMappingNode());
+                current = seq.Children[seg.Index];
             }
             else
             {
-                if (current is YamlMappingNode map)
+                var map = (YamlMappingNode)current;
+                var key = new YamlScalarNode(seg.Key);
+                if (!map.Children.ContainsKey(key))
                 {
-                    var key = new YamlScalarNode(seg.Key);
-                    if (!map.Children.ContainsKey(key))
-                    {
-                        var child = new YamlMappingNode();
-                        map.Children[key] = child;
-                        _tracker.Track(child, map, seg.Key!);
-                    }
-                    current = map.Children[key];
+                    var child = new YamlMappingNode();
+                    map.Children[key] = child;
+                    _tracker.Track(child, map, seg.Key!);
                 }
+                current = map.Children[key];
             }
         }
+    }
+
+    /// <summary>
+    /// Walks <paramref name="segments"/> over what is already there, treating a node that is not
+    /// there yet as the mapping the build would create. False as soon as a segment cannot be
+    /// satisfied — a position inside anything but a sequence.
+    /// </summary>
+    private bool CanBuild(List<PathSegment> segments, YamlNode root)
+    {
+        YamlNode? node = root;
+
+        foreach (var seg in segments)
+        {
+            if (seg.IsIndex)
+            {
+                // A node the build would create is a mapping, never a sequence.
+                if (node is not YamlSequenceNode seq) return false;
+                node = seg.Index < seq.Children.Count ? seq.Children[seg.Index] : null;
+            }
+            else
+            {
+                if (node is null) continue;               // a mapping that will be created
+                if (node is not YamlMappingNode map) return false;
+                node = map.Children.TryGetValue(new YamlScalarNode(seg.Key), out var child) ? child : null;
+            }
+        }
+
+        return true;
     }
 
     public (string parentPath, string leafName) SplitParentAndLeaf(string path)
@@ -141,25 +192,34 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
         if (segments.Count == 0)
             return (RootPathIndicator, string.Empty);
 
-        var leaf = segments[segments.Count - 1];
-        var leafStr = leaf.IsIndex ? $"[{leaf.Index}]" : leaf.Key!;
+        var leaf = segments[^1];
+        var leafStr = leaf.IsIndex ? $"[{leaf.Index}]"
+                    : leaf.IsWildcard ? "[*]"
+                    : leaf.Key!;
 
         if (segments.Count == 1)
             return (RootPathIndicator, leafStr);
 
+        return (Render(segments.Take(segments.Count - 1)), leafStr);
+    }
+
+    /// <summary>
+    /// Writes segments back out as a path string. Every segment kind has to round-trip here:
+    /// a wildcard rendered as a plain key produced "$.items." — a path that parses back to
+    /// the sequence itself, so a command aimed at "$.items[*].n" landed on the array instead
+    /// of on each element.
+    /// </summary>
+    private string Render(IEnumerable<PathSegment> segments)
+    {
         var sb = new System.Text.StringBuilder(RootPathIndicator);
-        for (int i = 0; i < segments.Count - 1; i++)
+        foreach (var s in segments)
         {
-            var s = segments[i];
-            if (s.IsIndex)
-                sb.Append($"[{s.Index}]");
-            else
-            {
-                sb.Append(PathDelimiter);
-                sb.Append(s.Key);
-            }
+            if (s.IsIndex) sb.Append('[').Append(s.Index).Append(']');
+            else if (s.IsWildcard) sb.Append("[*]");
+            else if (s.IsDescendant) sb.Append(PathDelimiter).Append(PathDelimiter).Append(s.Key);
+            else sb.Append(PathDelimiter).Append(s.Key);
         }
-        return (sb.ToString(), leafStr);
+        return sb.ToString();
     }
 
     public string? ProcessIndirectPath(string path, YamlNode data)
@@ -203,6 +263,10 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
                         next.Add(item);
                     }
                 }
+                else if (seg.IsDescendant)
+                {
+                    CollectDescendants(node, seg.Key!, next);
+                }
                 else
                 {
                     if (node is YamlMappingNode map)
@@ -224,12 +288,42 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
         return current;
     }
 
+    /// <summary>
+    /// Depth-first walk collecting every value stored under <paramref name="key"/>, at any
+    /// depth below <paramref name="node"/>. Matches are recorded in document order and each is
+    /// tracked so it can later be pathed, replaced or removed.
+    /// </summary>
+    private void CollectDescendants(YamlNode node, string key, List<YamlNode> results)
+    {
+        switch (node)
+        {
+            case YamlMappingNode map:
+                foreach (var (k, v) in map.Children)
+                {
+                    var keyText = (k as YamlScalarNode)?.Value;
+                    if (keyText == key)
+                    {
+                        _tracker.Track(v, map, key);
+                        results.Add(v);
+                    }
+                    if (keyText != null) _tracker.Track(v, map, keyText);
+                    CollectDescendants(v, key, results);
+                }
+                break;
+            case YamlSequenceNode seq:
+                for (var i = 0; i < seq.Children.Count; i++)
+                {
+                    _tracker.Track(seq.Children[i], seq, i);
+                    CollectDescendants(seq.Children[i], key, results);
+                }
+                break;
+        }
+    }
+
     private List<PathSegment> ParseSegments(string path)
     {
         var s = path;
-        if (s.StartsWith(RootPathIndicator + PathDelimiter))
-            s = s.Substring(RootPathIndicator.Length + PathDelimiter.Length);
-        else if (s.StartsWith(RootPathIndicator))
+        if (s.StartsWith(RootPathIndicator))
             s = s.Substring(RootPathIndicator.Length);
 
         if (string.IsNullOrEmpty(s))
@@ -240,7 +334,19 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
 
         while (i < s.Length)
         {
-            if (s[i] == '[')
+            if (s[i] == '.' && i + 1 < s.Length && s[i + 1] == '.')
+            {
+                // ".." marks a recursive descent; the key that follows is searched at any depth.
+                i += 2;
+                var end = i;
+                while (end < s.Length && s[end] != '.' && s[end] != '[')
+                    end++;
+                var descendantKey = s.Substring(i, end - i);
+                if (!string.IsNullOrEmpty(descendantKey))
+                    segments.Add(PathSegment.Descendant(descendantKey));
+                i = end;
+            }
+            else if (s[i] == '[')
             {
                 i++; // skip '['
                 if (i < s.Length && (s[i] == '\'' || s[i] == '"'))
@@ -293,18 +399,25 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
         public readonly int Index;
         public readonly bool IsIndex;
         public readonly bool IsWildcard;
+        public readonly bool IsDescendant;
 
         public PathSegment(string key)
         {
-            Key = key; Index = 0; IsIndex = false; IsWildcard = false;
+            Key = key; Index = 0; IsIndex = false; IsWildcard = false; IsDescendant = false;
         }
 
         private PathSegment(int index, bool wildcard)
         {
-            Key = null; Index = index; IsIndex = !wildcard; IsWildcard = wildcard;
+            Key = null; Index = index; IsIndex = !wildcard; IsWildcard = wildcard; IsDescendant = false;
+        }
+
+        private PathSegment(string key, bool descendant)
+        {
+            Key = key; Index = 0; IsIndex = false; IsWildcard = false; IsDescendant = descendant;
         }
 
         public static PathSegment ArrayIndex(int idx) => new(idx, false);
         public static PathSegment Wildcard() => new(0, true);
+        public static PathSegment Descendant(string key) => new(key, true);
     }
 }

@@ -36,9 +36,15 @@ public class FixedValue<TNode> : IFunctionSupportedValue<TNode>
     public string ToScript() => _scriptText ?? FormatValue();
 
     /// <summary>
-    /// Best-effort script rendering for programmatically constructed values, which carry
-    /// no original text. Numbers, booleans and path strings render bare; everything else is
-    /// single-quoted (with '' escaping) so it survives a re-parse as a literal argument.
+    /// Best-effort script rendering for programmatically constructed values, which carry no
+    /// original text. Numbers and booleans render bare; everything else is single-quoted (with
+    /// '' escaping) so it survives a re-parse as a literal argument.
+    ///
+    /// A value is not asked whether it looks like a path. It used to be — a string starting "$"
+    /// or "@" rendered bare so it would re-parse as a path — but this class holds a node, not a
+    /// path, and has no fetcher to ask what a path looks like. It was guessing one language's
+    /// notation on behalf of every other. A value that is a path is a
+    /// <see cref="PathValue{TNode}"/>, which knows it is one and renders itself accordingly.
     /// </summary>
     private string FormatValue()
     {
@@ -47,7 +53,6 @@ public class FixedValue<TNode> : IFunctionSupportedValue<TNode>
 
         if (bool.TryParse(text, out _)) return text;
         if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out _)) return text;
-        if (text[0] == '$' || text[0] == '@') return text;
 
         return $"'{text.Replace("'", "''")}'";
     }

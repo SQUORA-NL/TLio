@@ -122,6 +122,30 @@ public class CommandConverter<TNode>
         return command;
     }
 
+    /// <summary>
+    /// Converts a JSON fragment into a value for a command property of
+    /// <paramref name="targetType"/>.
+    ///
+    /// The settings a command carries — <c>DecisionTableConfig</c>, the <c>ResolveSetting</c>
+    /// list, the plain POCOs — are described by the same field names in every notation, but
+    /// only this class knows how to build them: the first two are generic over the node type
+    /// and cannot go through a plain deserialiser. The XML and YAML parsers render their own
+    /// settings node as JSON and come here, so a setting spelled in one notation means the same
+    /// thing spelled in another instead of being silently dropped.
+    /// </summary>
+    public object? ConvertSettingsFragment(string json, Type targetType)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return ConvertJsonValue(document.RootElement, targetType);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private object? ConvertJsonValue(JsonElement element, Type targetType)
     {
         if (targetType == typeof(string))
@@ -152,18 +176,13 @@ public class CommandConverter<TNode>
 
             // Object/array values may contain embedded "=func()" strings — use
             // ExpandingFixedValue so those are evaluated lazily at GetValue time.
+            //
+            // Built through the adapter rather than by handing it the raw JSON text: Parse
+            // expects a document in the adapter's own format, so an XML adapter was handed
+            // {"x":1} and threw. The catch turned that into a value that was never set, and the
+            // command wrote nothing without saying so.
             if (element.ValueKind == JsonValueKind.Object || element.ValueKind == JsonValueKind.Array)
-            {
-                try
-                {
-                    var node = _nodeAdapter.Parse(element.GetRawText());
-                    return new ExpandingFixedValue<TNode>(node, _functionConverter, _nodeAdapter);
-                }
-                catch
-                {
-                    return null;
-                }
-            }
+                return new ExpandingFixedValue<TNode>(NodeFromJson(element), _functionConverter, _nodeAdapter);
 
             return element.ValueKind switch
             {
@@ -298,6 +317,54 @@ public class CommandConverter<TNode>
 
     // ── DecisionTable config parsing ──────────────────────────────────────────
 
+    /// <summary>
+    /// Builds a node of the target format from a JSON fragment, through the adapter's own
+    /// creation methods.
+    ///
+    /// The obvious alternative — handing the fragment's raw text to
+    /// <see cref="INodeAdapter{TNode}.Parse"/> — only works when the target format is JSON.
+    /// A decision table condition of <c>"active"</c> reaches the adapter as the four bytes
+    /// <c>"active"</c> including its quotes, which is a document in no other format: the XML
+    /// adapter threw on it, so a decision table could not be written in any notation but JSON.
+    /// </summary>
+    private TNode NodeFromJson(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+            {
+                var obj = _nodeAdapter.CreateObject();
+                foreach (var property in element.EnumerateObject())
+                    _nodeAdapter.SetProperty(obj, property.Name, NodeFromJson(property.Value));
+                return obj;
+            }
+
+            case JsonValueKind.Array:
+            {
+                var array = _nodeAdapter.CreateArray();
+                foreach (var item in element.EnumerateArray())
+                    _nodeAdapter.AppendToArray(array, NodeFromJson(item));
+                return array;
+            }
+
+            case JsonValueKind.String:
+                return _nodeAdapter.CreateString(element.GetString() ?? string.Empty);
+
+            case JsonValueKind.True:  return _nodeAdapter.CreateBoolean(true);
+            case JsonValueKind.False: return _nodeAdapter.CreateBoolean(false);
+
+            // Integral literals go through CreateValue so they stay integers, matching the
+            // rule the value branch above uses.
+            case JsonValueKind.Number when element.TryGetInt64(out var l):
+                return _nodeAdapter.CreateValue(l);
+            case JsonValueKind.Number:
+                return _nodeAdapter.CreateNumber(element.GetDouble());
+
+            default:
+                return _nodeAdapter.CreateNull();
+        }
+    }
+
     private DecisionTableConfig<TNode> ParseDecisionTableConfig(JsonElement element)
     {
         var config = new DecisionTableConfig<TNode>();
@@ -341,8 +408,7 @@ public class CommandConverter<TNode>
                 {
                     foreach (var cond in conds.EnumerateObject())
                     {
-                        var condNode = _nodeAdapter.Parse(cond.Value.GetRawText());
-                        rule.Conditions[cond.Name] = condNode;
+                        rule.Conditions[cond.Name] = NodeFromJson(cond.Value);
                     }
                 }
 

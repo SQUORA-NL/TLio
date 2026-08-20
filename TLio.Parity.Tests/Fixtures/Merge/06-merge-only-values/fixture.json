@@ -1,0 +1,32 @@
+{
+  "input": {
+    "source": {
+      "a": "from-source",
+      "c": "new"
+    },
+    "target": {
+      "a": "overwrite-me",
+      "b": "untouched"
+    }
+  },
+  "script": [
+    {
+      "command": "merge",
+      "path": "$.source",
+      "targetPath": "$.target",
+      "settings": {
+        "strategy": "onlyValues"
+      }
+    }
+  ],
+  "result": {
+    "source": {
+      "a": "from-source",
+      "c": "new"
+    },
+    "target": {
+      "a": "from-source",
+      "b": "untouched"
+    }
+  }
+}

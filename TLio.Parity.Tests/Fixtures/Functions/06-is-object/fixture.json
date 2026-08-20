@@ -1,0 +1,20 @@
+{
+  "input": {
+    "v": {
+      "x": 1
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.r",
+      "value": "=isObject($.v)"
+    }
+  ],
+  "result": {
+    "v": {
+      "x": 1
+    },
+    "r": true
+  }
+}

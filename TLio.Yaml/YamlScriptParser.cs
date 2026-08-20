@@ -1,5 +1,8 @@
 using System.Reflection;
+using System.Text;
+using System.Text.Json;
 using TLio.Client;
+using TLio.Commands;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 using YamlDotNet.RepresentationModel;
@@ -19,13 +22,25 @@ namespace TLio.Yaml;
 /// - command: copy
 ///   fromPath: $.src
 ///   toPath: $.dst
+///   destinationAsArray: true
+/// - command: ifElse
+///   condition: "=equals($.n, 5)"
+///   ifScript:
+///     - command: put
+///       path: $.r
+///       value: yes-branch
 /// </code>
+///
+/// The property set is the same one the JSON notation accepts — the two notations describe
+/// the same commands, so a script that works against JSON has a YAML spelling that does the
+/// same thing. See <see cref="CommandConverter{TNode}"/> for the JSON side.
 /// </summary>
 public class YamlScriptParser<TNode>
 {
     private readonly ICommandsProvider<TNode> _commandsProvider;
     private readonly FunctionConverter<TNode> _functionConverter;
     private readonly INodeAdapter<TNode> _nodeAdapter;
+    private readonly CommandConverter<TNode> _settingsConverter;
 
     public YamlScriptParser(
         ICommandsProvider<TNode> commandsProvider,
@@ -35,6 +50,7 @@ public class YamlScriptParser<TNode>
         _commandsProvider  = commandsProvider;
         _functionConverter = new FunctionConverter<TNode>(functionsProvider);
         _nodeAdapter       = nodeAdapter;
+        _settingsConverter = new CommandConverter<TNode>(commandsProvider, functionsProvider, nodeAdapter);
     }
 
     public TLioScript<TNode> ParseScript(string yamlText)
@@ -75,6 +91,12 @@ public class YamlScriptParser<TNode>
             if (keyStr.Equals("command", StringComparison.OrdinalIgnoreCase)) continue;
 
             var propName = ToPascalCase(keyStr);
+            // The one alias the JSON notation also carries: a decision table's configuration is
+            // written under "decisionTable" but the property is called Config.
+            if (propName == "DecisionTable" && commandType.IsGenericType &&
+                commandType.GetGenericTypeDefinition() == typeof(DecisionTable<>))
+                propName = "Config";
+
             var prop = commandType.GetProperty(propName, BindingFlags.Public | BindingFlags.Instance);
             if (prop == null || !prop.CanWrite) continue;
 
@@ -84,6 +106,15 @@ public class YamlScriptParser<TNode>
 
         return command;
     }
+
+    /// <summary>
+    /// True for a YAML null: the plain scalars <c>null</c>, <c>Null</c>, <c>NULL</c>, <c>~</c>
+    /// and the empty scalar. Quoting any of them (<c>'null'</c>) makes it the string it looks
+    /// like, which is why the scalar style is part of the test.
+    /// </summary>
+    private static bool IsYamlNull(YamlScalarNode scalar) =>
+        scalar.Style is YamlDotNet.Core.ScalarStyle.Plain or YamlDotNet.Core.ScalarStyle.Any &&
+        scalar.Value is null or "" or "~" or "null" or "Null" or "NULL";
 
     private object? ConvertValue(YamlNode node, Type targetType)
     {
@@ -100,6 +131,10 @@ public class YamlScriptParser<TNode>
 
         if (targetType == typeof(IFunctionSupportedValue<TNode>))
         {
+            // A YAML null is a null value, not the four-letter string that spells it.
+            if (scalar != null && IsYamlNull(scalar))
+                return new FixedValue<TNode>(_nodeAdapter.CreateNull());
+
             if (scalar != null)
                 return _functionConverter.ParseValue(scalar.Value ?? string.Empty, _nodeAdapter);
             // Complex YAML node → create as a value via serialization
@@ -133,7 +168,70 @@ public class YamlScriptParser<TNode>
             return sub;
         }
 
-        return null;
+        var enumType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        if (enumType.IsEnum && scalar?.Value != null)
+            return Enum.TryParse(enumType, scalar.Value, ignoreCase: true, out var e) ? e : null;
+
+        // Settings are described by the same field names in every notation, so the node is
+        // rendered as JSON and built by the JSON converter — which is the only place that knows
+        // how to make the generic ones (DecisionTableConfig, the ResolveSetting list).
+        return _settingsConverter.ConvertSettingsFragment(YamlToJson(node), targetType);
+    }
+
+    // ── YAML → JSON for settings objects ─────────────────────────────────────
+
+    private static string YamlToJson(YamlNode node)
+    {
+        var sb = new StringBuilder();
+        WriteJson(node, sb);
+        return sb.ToString();
+    }
+
+    private static void WriteJson(YamlNode node, StringBuilder sb)
+    {
+        switch (node)
+        {
+            case YamlMappingNode map:
+                sb.Append('{');
+                var firstKey = true;
+                foreach (var (k, v) in map.Children)
+                {
+                    if (!firstKey) sb.Append(',');
+                    firstKey = false;
+                    sb.Append(JsonSerializer.Serialize((k as YamlScalarNode)?.Value ?? k.ToString()))
+                      .Append(':');
+                    WriteJson(v, sb);
+                }
+                sb.Append('}');
+                break;
+
+            case YamlSequenceNode seq:
+                sb.Append('[');
+                for (var i = 0; i < seq.Children.Count; i++)
+                {
+                    if (i > 0) sb.Append(',');
+                    WriteJson(seq.Children[i], sb);
+                }
+                sb.Append(']');
+                break;
+
+            case YamlScalarNode scalar:
+                if (IsYamlNull(scalar)) { sb.Append("null"); break; }
+                var text = scalar.Value!;
+                if (scalar.Style is YamlDotNet.Core.ScalarStyle.Plain or YamlDotNet.Core.ScalarStyle.Any)
+                {
+                    if (bool.TryParse(text, out var b)) { sb.Append(b ? "true" : "false"); break; }
+                    if (double.TryParse(text, System.Globalization.NumberStyles.Any,
+                            System.Globalization.CultureInfo.InvariantCulture, out _))
+                    { sb.Append(text); break; }
+                }
+                sb.Append(JsonSerializer.Serialize(text));
+                break;
+
+            default:
+                sb.Append("null");
+                break;
+        }
     }
 
     private static string? GetScalarValue(YamlMappingNode mapping, string key)

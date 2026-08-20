@@ -63,8 +63,22 @@ mean "at any depth".
 
 `set` and `put` on `/` warn: the document node has no property name to write.
 
+## Document shape
+
+How a JSON object, array, scalar and null look as XML — and the one case XML cannot
+represent — is in [document-shape.md](document-shape.md). Two points matter most here:
+
+- An **array** is an element whose children are the items: `<items><item>1</item><item>2</item></items>`.
+  `$.items[0]` is `/order/items/item[1]` (XPath positions are 1-based).
+- An **empty element** `<k/>` is null, `""`, `{}` and `[]` all at once. It reads as null, and it
+  is still a container a property can be written into.
+
+Attributes are outside the JSON data model and are ignored by every command.
+
 ## See Also
 
+[document-shape.md](document-shape.md) — the JSON ↔ XML mapping the commands rely on.
+[script-notation.md](script-notation.md) — the XML script notation.
 [xml-xpath.md](xml-xpath.md) — predicates, axes, and indexed access.
 [../commands/Rename.md](../commands/Rename.md) — renaming elements, including the root.
 [overview.md](../overview.md) — adapter selection table.

@@ -161,7 +161,7 @@ public class Merge<TNode> : CommandBase<TNode>
 
         // Root-level match keys: objects are only merged when all key fields match.
         if (settings.MatchSettings.HasKeys &&
-            !MergeArrayHelpers.AllKeysMatch(adapter, target, source, settings.MatchSettings.KeyPaths))
+            !MergeArrayHelpers.AllKeysMatch(adapter, context.ItemsFetcher, target, source, settings.MatchSettings.KeyPaths))
             return;
 
         foreach (var propertyName in adapter.GetPropertyNames(source).Distinct().ToList())
@@ -252,7 +252,7 @@ public class Merge<TNode> : CommandBase<TNode>
         // in matching (matches JLio, which matches against the live target array).
         var targetItems = adapter.GetArrayElements(target).ToList();
         var matches = MergeArrayHelpers.FindMatchingElementIndexes(
-            adapter, targetItems, sourceItem, arraySettings.KeyPaths);
+            adapter, context.ItemsFetcher, targetItems, sourceItem, arraySettings.KeyPaths);
 
         if (matches.Count == 0)
         {
@@ -315,27 +315,47 @@ public class Merge<TNode> : CommandBase<TNode>
         try { actualPath = context.ItemsFetcher.GetPath(targetArray); }
         catch { return null; }
 
-        return settings.ArraySettings.FirstOrDefault(a => PathsMatch(a.ArrayPath, actualPath));
+        return settings.ArraySettings.FirstOrDefault(
+            a => PathsMatch(a.ArrayPath, actualPath, context.ItemsFetcher));
     }
 
     /// <summary>
     /// Compare a configured array path with an actual path, ignoring the root
     /// indicator so "$.items", "items" and "/items" are equivalent across formats.
     /// </summary>
-    internal static bool PathsMatch(string configuredPath, string actualPath)
+    internal static bool PathsMatch(string configuredPath, string actualPath,
+        IItemsFetcher<TNode> fetcher)
     {
         if (string.IsNullOrWhiteSpace(configuredPath)) return false;
         if (string.Equals(configuredPath, actualPath, StringComparison.Ordinal)) return true;
-        return string.Equals(NormalizePath(configuredPath), NormalizePath(actualPath),
+        return string.Equals(Normalize(configuredPath, fetcher), Normalize(actualPath, fetcher),
             StringComparison.Ordinal);
     }
 
-    private static string NormalizePath(string path)
+    /// <summary>
+    /// Reduces a path to the part that names nodes, so a configured array path and the path the
+    /// fetcher reports for the array compare equal even when one carries a root marker and the
+    /// other does not.
+    ///
+    /// Both sides go through this, so it is a canonical form rather than a conversion between
+    /// languages. The tokens come from the fetcher — it used to strip a literal "$" and rewrite
+    /// "/" to ".", which is one language's root marker and another's delimiter.
+    /// </summary>
+    private static string Normalize(string path, IItemsFetcher<TNode> fetcher)
     {
         var value = (path ?? string.Empty).Trim();
-        if (value.StartsWith("$", StringComparison.Ordinal)) value = value[1..];
-        value = value.Replace('/', '.');
-        return value.TrimStart('.');
+
+        var root = fetcher.RootPathIndicator;
+        if (root.Length > 0 && value.StartsWith(root, StringComparison.Ordinal))
+            value = value[root.Length..];
+
+        var delimiter = fetcher.PathDelimiter;
+        if (delimiter.Length == 0) return value;
+
+        while (value.StartsWith(delimiter, StringComparison.Ordinal))
+            value = value[delimiter.Length..];
+
+        return value;
     }
 
     /// <summary>Null-tolerant clone (System.Text.Json exposes JSON null as C# null).</summary>

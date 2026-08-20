@@ -70,6 +70,7 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
     public string PathDelimiter => ".";
     public string CurrentItemPathIndicator => "@";
     public string ParentPathIndicator => "<--";
+    public string ArrayOpenChar => "[";
     public string ArrayCloseChar => "]";
 
     // ── Node selection ────────────────────────────────────────────────────────

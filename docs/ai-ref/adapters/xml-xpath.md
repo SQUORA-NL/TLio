@@ -67,7 +67,16 @@ own rule: a relative step never skips a level. When you mean "at any depth", wri
 
 `set` and `put` on `/` warn: the document node has no property name to write.
 
+## Document shape
+
+The JSON ↔ XML mapping every command relies on — arrays as repeated child elements, the
+ambiguous empty element, attributes being out of scope — is in
+[document-shape.md](document-shape.md).
+
 ## See Also
+
+[document-shape.md](document-shape.md) — the JSON ↔ XML mapping.
+[script-notation.md](script-notation.md) — the XML script notation.
 
 [xml-slashpath.md](xml-slashpath.md) — the same anchoring without predicates or axes.
 [../commands/Rename.md](../commands/Rename.md) — renaming elements, including the root.

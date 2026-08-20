@@ -1,0 +1,21 @@
+{
+  "input": {
+    "a": "scalar"
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.a",
+      "value": {
+        "x": 1,
+        "y": 2
+      }
+    }
+  ],
+  "result": {
+    "a": {
+      "x": 1,
+      "y": 2
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "input": {
+    "v": [
+      1,
+      2
+    ]
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.r",
+      "value": "=isArray($.v)"
+    }
+  ],
+  "result": {
+    "v": [
+      1,
+      2
+    ],
+    "r": true
+  }
+}

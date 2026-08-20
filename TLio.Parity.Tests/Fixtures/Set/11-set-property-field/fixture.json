@@ -1,0 +1,30 @@
+{
+  "input": {
+    "items": [
+      {
+        "n": 1
+      },
+      {
+        "n": 2
+      }
+    ]
+  },
+  "script": [
+    {
+      "command": "set",
+      "path": "$.items[*]",
+      "property": "n",
+      "value": 9
+    }
+  ],
+  "result": {
+    "items": [
+      {
+        "n": 9
+      },
+      {
+        "n": 9
+      }
+    ]
+  }
+}

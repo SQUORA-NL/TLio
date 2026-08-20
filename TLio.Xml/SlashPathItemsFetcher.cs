@@ -25,7 +25,30 @@ public class SlashPathItemsFetcher : IItemsFetcher<XElement>
     public string PathDelimiter => "/";
     public string CurrentItemPathIndicator => ".";
     public string ParentPathIndicator => "..";
+    public string ArrayOpenChar => "[";
     public string ArrayCloseChar => "]";
+
+
+    /// <summary>
+    /// XPath writes the subscript on the item step and counts from one, so
+    /// <c>/order/items/item[2]</c> is position 1 of the array <c>/order/items</c> — the array is
+    /// the step above, not the path with the subscript removed.
+    /// </summary>
+    public bool TrySplitArrayIndex(string path, out string arrayPath, out int index)
+    {
+        arrayPath = string.Empty;
+        index = -1;
+
+        if (!PathSubscript.TrySplit(path, ArrayOpenChar, ArrayCloseChar, out var itemPath, out var position))
+            return false;
+
+        var lastStep = itemPath.LastIndexOf('/');
+        if (lastStep <= 0 || position < 1) return false;
+
+        arrayPath = itemPath[..lastStep];
+        index = position - 1;
+        return true;
+    }
 
     public SelectedNodes<XElement> SelectNodes(string path, XElement data)
     {
@@ -119,6 +142,14 @@ public class SlashPathItemsFetcher : IItemsFetcher<XElement>
         if (segments.Length == 0 || segments[0] != root.Name.LocalName)
             return;
 
+        // A segment that is not a legal element name describes something that cannot be built:
+        // a position (item[1]), a wildcard, a predicate. XName.Get throws on those, and it threw
+        // straight out of the engine, taking the whole script with it — a command that cannot
+        // find its destination has to warn and no-op like every other missed path.
+        // NativeXPathItemsFetcher has always refused these; this one used to try.
+        if (segments.Skip(1).Any(seg => !IsConstructibleName(seg)))
+            return;
+
         var current = root;
         foreach (var seg in segments.Skip(1))
         {
@@ -130,6 +161,13 @@ public class SlashPathItemsFetcher : IItemsFetcher<XElement>
             }
             current = child;
         }
+    }
+
+    /// <summary>True when the segment can be used verbatim as an element name.</summary>
+    private static bool IsConstructibleName(string segment)
+    {
+        try { return System.Xml.XmlConvert.EncodeLocalName(segment) == segment; }
+        catch { return false; }
     }
 
     public (string parentPath, string leafName) SplitParentAndLeaf(string path)

@@ -1,0 +1,19 @@
+{
+  "input": {
+    "a": "hello",
+    "b": "world"
+  },
+  "script": [
+    {
+      "command": "compare",
+      "firstPath": "$.a",
+      "secondPath": "$.b",
+      "resultPath": "$.result"
+    }
+  ],
+  "result": {
+    "a": "hello",
+    "b": "world",
+    "result": "different"
+  }
+}

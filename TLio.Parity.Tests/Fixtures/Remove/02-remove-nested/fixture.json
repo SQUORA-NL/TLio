@@ -1,0 +1,19 @@
+{
+  "input": {
+    "obj": {
+      "keep": 1,
+      "drop": 2
+    }
+  },
+  "script": [
+    {
+      "command": "remove",
+      "path": "$.obj.drop"
+    }
+  ],
+  "result": {
+    "obj": {
+      "keep": 1
+    }
+  }
+}

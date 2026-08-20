@@ -1,0 +1,20 @@
+{
+  "input": {
+    "a": 1
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.x.y.z",
+      "value": "deep"
+    }
+  ],
+  "result": {
+    "a": 1,
+    "x": {
+      "y": {
+        "z": "deep"
+      }
+    }
+  }
+}

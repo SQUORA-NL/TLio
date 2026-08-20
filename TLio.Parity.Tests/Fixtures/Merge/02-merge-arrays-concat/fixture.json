@@ -1,0 +1,40 @@
+{
+  "input": {
+    "target": {
+      "v": [
+        1,
+        2
+      ]
+    },
+    "source": {
+      "v": [
+        3,
+        4
+      ]
+    }
+  },
+  "script": [
+    {
+      "command": "merge",
+      "path": "$.source",
+      "targetPath": "$.target",
+      "arrayMergeMode": "concat"
+    }
+  ],
+  "result": {
+    "target": {
+      "v": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "source": {
+      "v": [
+        3,
+        4
+      ]
+    }
+  }
+}

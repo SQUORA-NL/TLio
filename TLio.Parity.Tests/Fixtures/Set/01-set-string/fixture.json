@@ -1,0 +1,15 @@
+{
+  "input": {
+    "name": "old"
+  },
+  "script": [
+    {
+      "command": "set",
+      "path": "$.name",
+      "value": "new"
+    }
+  ],
+  "result": {
+    "name": "new"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "why": "add never overwrites what is already there \u2014 the same rule it applies to a property that already exists.",
+  "input": {
+    "items": [
+      "a",
+      "b"
+    ]
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.items[0]",
+      "value": "z"
+    }
+  ],
+  "result": {
+    "items": [
+      "a",
+      "b"
+    ]
+  }
+}

@@ -192,9 +192,165 @@ The two areas that were behind have been closed:
 
 ---
 
+## E. Cross-format behaviour still not aligned
+
+The XML/YAML alignment work (020) brought the three adapters onto one data model — see
+`docs/ai-ref/adapters/document-shape.md` — and `TLio.Parity.Tests` now runs one fixture corpus
+against all three. These are what it does **not** cover, because they are decisions rather than
+bugs.
+
+### E1. The empty XML element cannot say which empty thing it is
+
+`<k/>` is `null`, `""`, `{}` and `[]` at once, and no attribute-free encoding separates them.
+Each predicate answers its own question and `GetNodeKind` settles on `Null` (see the adapter
+remarks). The visible consequence: `remove` emptying an object leaves `{}` in JSON and `<a/>`
+in XML, and re-reading that XML gives `null`.
+
+Pinned: `XmlShapeTests.AnEmptyElement_IsAlsoNull_BecauseXmlCannotTellTheTwoApart`
+
+Setting shape: an explicit type marker (`xsi:nil`, or a TLio-owned attribute) — which means
+deciding that attributes are in scope for the data model, currently they are not.
+
+### E2. A single-element XML array is indistinguishable from a one-property object
+
+`<items><item>1</item></items>` reads as an array only because the item is named `item`. In a
+document TLio did not write, `<lines><line>1</line></lines>` is a one-property object.
+
+Pinned: `XmlShapeTests.ASingleItemElement_IsAOneElementArray`,
+`XmlShapeTests.AnObjectWithOneProperty_IsAnObjectNotAOneElementArray`
+
+Setting shape: a configurable item name per array path, or a document-level convention.
+
+### E3. A bare path is not a value in XML
+
+`"value": "$.a"` is a path expression in JSON. In XML `/order/a` written as text stays text,
+because a leading `/` is not distinctive enough to override at parse time, where no fetcher is
+available to ask. `=fetch(/order/a)` works — path detection inside function arguments *is*
+format-aware (`IItemsFetcher.IsPathExpression`).
+
+### E4. A quoted YAML `'null'` is still read as null downstream
+
+The script parser honours the quoting and writes the four-character string, but
+`YamlNodeAdapter.IsNull` tests the text rather than the scalar style, so every function that
+asks still sees null. Telling them apart end to end needs a styled scalar in the adapter's
+value model.
+
+Pinned: `YamlScriptNotationTests.AQuotedNullValue_IsParsedAsTheString`
+
+---
+
 ## Resolved
 
 Findings from the same sweep that were plain bugs rather than decisions, and have been fixed.
+
+### The whole command and function surface was only ever run against JSON
+
+A sweep of what each format actually exercised found 10 of 76 functions covered in all three,
+53 covered only in JSON, and one (`newGuid`) covered nowhere. XML had almost no function
+coverage at all, so nothing would have noticed a function that did not work there — and several
+did not.
+
+`TLio.Parity.Tests/Sweep/sweep.json` is one script that touches every registered command and
+every registered function, run from an empty document against all three formats.
+`SweepTests.EveryRegisteredCommandIsExercised` and `EveryRegisteredFunctionIsExercised` read the
+registries and fail when something is added without being swept, so the coverage cannot quietly
+lapse again.
+
+What it turned up, all now fixed:
+
+| | |
+|---|---|
+| `SlashPathItemsFetcher.EnsurePath` threw `XmlException` out of the engine on a path segment that is not a legal element name (`item[1]`, a wildcard, a predicate). `NativeXPathItemsFetcher` had always refused those; the two XML fetchers disagreed. | crash |
+| `YamlPathItemsFetcher.EnsurePath` skipped an index segment it could not satisfy and carried on, so `$.rows[0].id` built `rows: {id: {}}` — the position dropped and the wrong shape left behind, where JSON and XML build nothing. It now decides before writing anything. | wrong document |
+| A path that could not be built reported **success** while changing nothing: the command fell through a loop with nothing to iterate. It now warns and records a no-op. | false success |
+| `put` refused to create an array position while `add` created one — backwards, `put` is the upsert. Both now build what is missing; Set still never does. | inconsistent |
+| A decision table's conditions were built with `INodeAdapter.Parse(rawJson)`, so the XML adapter was handed `"active"` — quotes included — and threw. Conditions are now built through the adapter's own creation methods, so `decisionTable` works in every notation. | JSON-only |
+| `resolve`'s settings and `decisionTable`'s config are generic over the node type and could only be built by `CommandConverter`. The XML and YAML parsers now render their settings node as JSON and go through it, instead of a deserialiser that silently returned null. | JSON-only |
+
+Two differences remain and are inherent rather than gaps — pinned by
+`SweepTests.TheFormatsDifferOnlyWhereTheyMust`, which fails if the formats drift apart anywhere
+else:
+
+- **A typed vs untyped scalar.** `=isBoolean()` on the string `"true"` is false in JSON, which
+  carries the type in the document, and true in XML and YAML, whose scalars are untyped.
+- **A path held as a value** — `$.ref`, and what `=scriptPath()` and `=path()` return — is
+  written in the format's own path language.
+
+### Shared code assumed what a path looks like
+
+The path language is injected — `IItemsFetcher` is the extension point, and a caller can supply
+one for a language TLio has never heard of. Five places outside a fetcher tested for `$`, `@` or
+`/` themselves:
+
+| Where | What it did | Now |
+|---|---|---|
+| `FixedValue` | rendered a value starting `$` or `@` bare, so it would re-parse as a path | quotes everything that is not a number or boolean; a value that *is* a path is a `PathValue`, which knows it |
+| `ScriptPath` | treated an argument starting `@` as relative | uses `CurrentItemPathIndicator` |
+| `Compare` | stripped a literal `@` from a key path *and* the declared indicator | the declared indicator only |
+| `MergeArrayHelpers` | stripped `@`, then `$`, then `.`, then `/` in turn, then split the path on `.` | strips the declared current-item, root and delimiter tokens, and splits on `PathDelimiter` |
+| `Merge` | stripped `$` and rewrote `/` to `.` before comparing two paths | strips `RootPathIndicator` and leading `PathDelimiter`, applied to both sides |
+
+The last two were the sharp ones: support for three languages wired in side by side, so a key
+path in a fourth was mangled rather than refused. `Compare` and `ScriptPath` were the quiet
+ones — in XPath `@` opens an attribute reference, so `@id` lost its `@`.
+
+Two things this turned up:
+
+- The XML nested-key-path merge fixture had been passing **by accident**. Its key path reached
+  the XML run as `./key.id` — a mix of both languages' delimiters, which is a path in neither —
+  and only worked because the matcher stripped several notations' markers and then split on `.`
+  regardless. The parity harness now rewrites every segment of a relative path, not just the
+  first, and the fixture passes on a path that is actually valid XPath.
+- `IsPathExpression`, `IsLeafArrayIndex` and `TrySplitArrayIndex`, added in this branch, had the
+  same defect and were fixed the same way: they answer from `RootPathIndicator`,
+  `CurrentItemPathIndicator`, `PathDelimiter`, `ArrayOpenChar` and `ArrayCloseChar`, which every
+  fetcher declares. `ArrayOpenChar` was added for this, beside the `ArrayCloseChar` that was
+  already there.
+
+No shared code names a path token any more.
+
+### Writing through an array subscript did nothing, or the wrong thing
+
+```
+set $.items[1] = 9    →  warning "property 'items[1]' not found", array untouched
+put $.items[0] = 9    →  {"items":["a","b"], "items[0]": 9}
+add $.tags[0] = "x"   →  {"tags[0]": "x"}
+```
+
+`SplitParentAndLeaf` kept the subscript inside the leaf, so every command went looking for a
+property literally called `items[1]`. `set` did not find one and warned; `put` and `add` created
+it, beside the array they were meant to edit.
+
+The junk property was worse than a no-op: `tlio_analyze` renders a leaf path the same way
+whether it came from an array element or from a property whose *name* contains a subscript, so
+`{"tags":[], "tags[0]":"x"}` and `{"tags":["x"]}` compared equal. An agent iterating gap →
+script → gap converged on a document that was never right — pinned now by
+`McpComplexChallengeTests.Scenario4_TicketSchemaEvolution_ConvergesWithinThreeIterations`,
+which passed before the fix for exactly that reason.
+
+`IItemsFetcher.IsLeafArrayIndex` now recognises a trailing integer subscript and the writing
+commands address the element instead. `TrySplitArrayIndex` gives back the array's path and a
+**zero-based** position, each fetcher normalising its own convention — XPath writes the
+subscript on the item step and counts from one, JSONPath and the YAML dot-notation write it on
+the array and count from zero.
+
+Semantics, the same in all three formats:
+
+| | at an occupied position | at the next free position | further out |
+|---|---|---|---|
+| `set` / `put` | writes the element | no-op, warns | no-op, warns |
+| `add` | skipped ("already exists") | appends | no-op, warns |
+
+`add` creates the array when it is missing, as it already does for the objects along
+`$.address.city` — so filling an array in order works one command at a time. It refuses any
+other missing position rather than appending, because the element would land at an index the
+path did not name.
+
+Only an integer subscript counts: `items[*]`, `item[@id='1']` and `$['a.b']` name something
+other than a position and are left to each format's own selector.
+
+Regression guards: `ArrayIndexWriteTests` (17 cases), `XmlArrayIndexTests` (8 cases),
+`TLio.Parity.Tests/Fixtures/Arrays` 01 and 08–15 (run against all three formats).
 
 ### `flatten` → `restore` lost arrays of scalars
 

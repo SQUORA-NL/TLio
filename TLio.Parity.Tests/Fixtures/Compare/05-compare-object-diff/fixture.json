@@ -1,0 +1,86 @@
+{
+  "why": "The diff report quotes the paths it compared, in each format's own path language, so the XML expectation differs from the canonical one only in how those paths are spelled.",
+  "input": {
+    "first": {
+      "a": 1,
+      "b": "x",
+      "only": true
+    },
+    "second": {
+      "a": 2,
+      "b": "x"
+    }
+  },
+  "script": [
+    {
+      "command": "compare",
+      "firstPath": "$.first",
+      "secondPath": "$.second",
+      "resultPath": "$.result",
+      "settings": {
+        "resultTypes": [
+          "valueDifference",
+          "structureDifference"
+        ]
+      }
+    }
+  ],
+  "result": {
+    "first": {
+      "a": 1,
+      "b": "x",
+      "only": true
+    },
+    "second": {
+      "a": 2,
+      "b": "x"
+    },
+    "result": [
+      {
+        "foundDifference": true,
+        "differenceType": "valueDifference",
+        "differenceSubType": "lessThan",
+        "firstPath": "$.first.a",
+        "secondPath": "$.second.a",
+        "description": "The values are different LessThan. Source: ($.first.a) --> 1 - Target:($.second.a) --> 2"
+      },
+      {
+        "foundDifference": true,
+        "differenceType": "structureDifference",
+        "differenceSubType": "notEquals",
+        "firstPath": "$.first.only",
+        "secondPath": "$.second.only",
+        "description": "The structure is different. Source: ($.first.only) --> True - Target:($.second.only) --> False"
+      }
+    ]
+  },
+  "resultXml": {
+    "first": {
+      "a": 1,
+      "b": "x",
+      "only": true
+    },
+    "second": {
+      "a": 2,
+      "b": "x"
+    },
+    "result": [
+      {
+        "foundDifference": true,
+        "differenceType": "valueDifference",
+        "differenceSubType": "lessThan",
+        "firstPath": "/root/first/a",
+        "secondPath": "/root/second/a",
+        "description": "The values are different LessThan. Source: (/root/first/a) --> 1 - Target:(/root/second/a) --> 2"
+      },
+      {
+        "foundDifference": true,
+        "differenceType": "structureDifference",
+        "differenceSubType": "notEquals",
+        "firstPath": "/root/first/only",
+        "secondPath": "/root/second/only",
+        "description": "The structure is different. Source: (/root/first/only) --> True - Target:(/root/second/only) --> False"
+      }
+    ]
+  }
+}

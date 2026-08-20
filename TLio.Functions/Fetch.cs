@@ -14,8 +14,10 @@ namespace TLio.Functions;
 ///   =fetch('=indirect($.pathField)')   — indirect reads the path string from $.pathField
 ///   =fetch('=concat($.prefix, $.sfx)') — concat builds the path from field values
 ///
-/// Path-detection rule: if the argument resolves to a string starting with '$' or '@'
-/// it is used as a path expression; otherwise the resolved value is returned as-is.
+/// Path-detection rule: if the argument resolves to a string the fetcher recognises as a
+/// path expression it is used as a path; otherwise the resolved value is returned as-is.
+/// What counts as a path is the format's own syntax — '$'/'@' for JSON and YAML, a leading
+/// '/' for XML — see IItemsFetcher.IsPathExpression.
 /// This means a non-path result from a nested function is returned directly without
 /// an attempted (and failing) SelectNodes call.
 ///
@@ -38,15 +40,12 @@ public class Fetch<TNode> : FunctionBase<TNode>
         if (!pathResult.Success || pathResult.Data.First == null)
             return FunctionResult<TNode>.Failed(currentNode);
 
-        // If the argument resolved to a string that looks like a path expression
-        // (starts with $ or @), use it as a path. Any other string or non-string
-        // value is returned directly — this handles both the "fetch returns its
-        // own computed value" case and prevents number/bool→string coercions from
-        // being misinterpreted as path expressions.
-        // Length < 2: a lone '$' or '@' with nothing after it is not a useful path;
-        // all real path expressions have at least one more character (e.g. '$.', '@.').
+        // If the argument resolved to a string the fetcher reads as a path expression, use it
+        // as a path. Any other string or non-string value is returned directly — this handles
+        // both the "fetch returns its own computed value" case and prevents number/bool→string
+        // coercions from being misinterpreted as path expressions.
         var pathStr = context.NodeAdapter.TryGetString(pathResult.Data.First);
-        if (pathStr == null || pathStr.Length < 2 || (pathStr[0] != '$' && pathStr[0] != '@'))
+        if (pathStr == null || !context.ItemsFetcher.IsPathExpression(pathStr))
             return FunctionResult<TNode>.Successful(pathResult.Data.First);
 
         var nodes = context.ItemsFetcher.SelectNodes(pathStr, dataContext);

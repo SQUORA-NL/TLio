@@ -1,0 +1,19 @@
+{
+  "why": "add builds the path it is given, as it already does for the objects along $.address.city.",
+  "input": {
+    "a": 1
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.tags[0]",
+      "value": "first"
+    }
+  ],
+  "result": {
+    "a": 1,
+    "tags": [
+      "first"
+    ]
+  }
+}

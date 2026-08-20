@@ -1,0 +1,24 @@
+{
+  "input": {
+    "v": [
+      1,
+      2,
+      3
+    ]
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.total",
+      "value": "=sum($.v)"
+    }
+  ],
+  "result": {
+    "v": [
+      1,
+      2,
+      3
+    ],
+    "total": 6
+  }
+}

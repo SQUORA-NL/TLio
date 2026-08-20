@@ -1,0 +1,16 @@
+{
+  "input": {
+    "a": "v"
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.b",
+      "value": "=fetch($.a)"
+    }
+  ],
+  "result": {
+    "a": "v",
+    "b": "v"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "input": {
+    "v": [
+      1,
+      2,
+      3
+    ]
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.r",
+      "value": "=length($.v)"
+    }
+  ],
+  "result": {
+    "v": [
+      1,
+      2,
+      3
+    ],
+    "r": 3
+  }
+}

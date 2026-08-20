@@ -1,0 +1,16 @@
+{
+  "input": {
+    "a": 1
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.name",
+      "value": "Alice"
+    }
+  ],
+  "result": {
+    "a": 1,
+    "name": "Alice"
+  }
+}

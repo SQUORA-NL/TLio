@@ -52,6 +52,8 @@ public class XmlNodeAdapterTests
     [Test]
     public void IsNull_ElementWithNilAttribute_ReturnsTrue()
     {
+        // Not because of the attribute — attributes are outside the JSON data model and the
+        // adapter ignores them. The element is null because it carries no content at all.
         var el = XElement.Parse("<value nil=\"true\"/>");
         Assert.That(_adapter.IsNull(el), Is.True);
     }

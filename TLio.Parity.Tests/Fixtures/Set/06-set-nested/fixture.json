@@ -1,0 +1,19 @@
+{
+  "input": {
+    "a": {
+      "b": "old"
+    }
+  },
+  "script": [
+    {
+      "command": "set",
+      "path": "$.a.b",
+      "value": "new"
+    }
+  ],
+  "result": {
+    "a": {
+      "b": "new"
+    }
+  }
+}

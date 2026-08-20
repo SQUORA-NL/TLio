@@ -1,0 +1,32 @@
+{
+  "input": {
+    "items": [
+      {
+        "n": 1
+      },
+      {
+        "n": 2
+      }
+    ]
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.items[*]",
+      "property": "tag",
+      "value": "t"
+    }
+  ],
+  "result": {
+    "items": [
+      {
+        "n": 1,
+        "tag": "t"
+      },
+      {
+        "n": 2,
+        "tag": "t"
+      }
+    ]
+  }
+}
