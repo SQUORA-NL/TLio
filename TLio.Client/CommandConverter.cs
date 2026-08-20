@@ -27,8 +27,11 @@ namespace TLio.Client;
 ///
 /// Ported from JLio's CommandConverter / ParseContext.
 /// </summary>
-public class CommandConverter<TNode>
+public class CommandConverter<TNode> : IScriptParser<TNode>
 {
+    /// <inheritdoc />
+    public ScriptFormat Format => ScriptFormat.Json;
+
     /// <summary>
     /// Options for the generic POCO settings fallback. Enum members are accepted as
     /// camelCase strings ("valueDifference") as well as their PascalCase and numeric forms.
@@ -68,12 +71,22 @@ public class CommandConverter<TNode>
 
         JsonDocument doc;
         try { doc = JsonDocument.Parse(scriptJson); }
-        catch { return script; }
+        catch (JsonException ex)
+        {
+            // Malformed script text yields an empty script rather than an exception — callers
+            // are often handing on text someone else wrote. The reason travels with the script
+            // so the run can report it instead of silently doing nothing at all.
+            script.ParseWarnings.Add($"Script is not well-formed JSON: {ex.Message}");
+            return script;
+        }
 
         using (doc)
         {
             if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                script.ParseWarnings.Add("A JSON script must be an array of command objects.");
                 return script;
+            }
 
             foreach (var element in doc.RootElement.EnumerateArray())
             {
@@ -145,6 +158,14 @@ public class CommandConverter<TNode>
             return null;
         }
     }
+
+    /// <summary>
+    /// Parses a value written as text in another notation — an XML attribute, a YAML scalar —
+    /// into the value a command property takes, reporting notation warnings the same way a JSON
+    /// string value does.
+    /// </summary>
+    public IFunctionSupportedValue<TNode>? ParseTextValue(string raw, Action<string>? onWarning = null) =>
+        _functionConverter.ParseValue(raw, _nodeAdapter, onWarning);
 
     private object? ConvertJsonValue(JsonElement element, Type targetType)
     {

@@ -20,6 +20,20 @@ public sealed class CompiledScript<TNode>
     internal CompiledScript(TLioScript<TNode> template) => _template = template;
 
     /// <summary>
+    /// How many commands the script text parsed to. Zero means nothing will happen when it
+    /// runs — every parser answers text it cannot read with an empty script rather than an
+    /// exception, so this is what tells a caller the compile found nothing.
+    /// </summary>
+    public int CommandCount => _template.Count;
+
+    /// <summary>
+    /// What the parser had to say about the script text — malformed input, a function name it
+    /// did not recognise. Read alongside <see cref="CommandCount"/> to report why a compile
+    /// produced nothing.
+    /// </summary>
+    public IReadOnlyList<string> ParseWarnings => _template.ParseWarnings;
+
+    /// <summary>
     /// Returns a new <see cref="TLioScript{TNode}"/> with every command independently cloned.
     /// Each returned instance has its own execution state and must not be shared across threads.
     /// </summary>

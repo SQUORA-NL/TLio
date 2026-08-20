@@ -3,21 +3,26 @@ using TLio.Core.Models;
 namespace TLio.Core.Contracts;
 
 /// <summary>
-/// Parses a serialised script text into an executable TLioScript.
+/// Turns script text into an executable <see cref="TLioScript{TNode}"/>.
 ///
-/// TLio scripts are always serialised as JSON (for backward compatibility with JLio)
-/// regardless of the data format being processed. The parser is therefore separate
-/// from the data-format adapters and lives in TLio.Client.
+/// A script can be written in any of three notations — JSON, XML or YAML — and they describe
+/// the same command set with the same property names, so one implementation exists per
+/// notation and they are interchangeable. Which notation a script is written in is independent
+/// of the data format it transforms; only the paths inside the script have to speak the target
+/// format's path language.
 /// </summary>
 /// <typeparam name="TNode">Native node type of the target data format.</typeparam>
 public interface IScriptParser<TNode>
 {
+    /// <summary>The notation this parser reads.</summary>
+    ScriptFormat Format { get; }
+
     /// <summary>
-    /// Parse a JSON-format script string into an executable script.
-    /// The <paramref name="nodeConverter"/> is used to convert literal JSON values
-    /// from the script into TNode instances for FixedValue arguments.
+    /// Parse script text into an executable script. Text that does not parse yields an empty
+    /// script rather than an exception, and an unrecognised command name becomes a command
+    /// that reports itself as not found when the script runs.
     /// </summary>
-    TLioScript<TNode> Parse(string scriptJson, IScriptNodeConverter<TNode> nodeConverter);
+    TLioScript<TNode> ParseScript(string scriptText);
 }
 
 /// <summary>

@@ -31,9 +31,46 @@ A script is a plain array of command objects:
 ]
 ```
 
+## Writing the script in XML or YAML
+
+The same script has an XML and a YAML spelling. The notation is independent of the format of
+the data — only the paths inside the script have to speak the data's path language. JSON works
+out of the box; the other two register in a line each:
+
+```csharp
+var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider)
+    .UseXmlScripts()     // TLio.Xml
+    .UseYamlScripts();   // TLio.Yaml
+
+engine.Execute(scriptText, data, context);                     // notation detected from the text
+engine.Execute(scriptText, ScriptFormat.Xml, data, context);   // or stated outright
+```
+
+```xml
+<script>
+  <put path="$.status">active</put>
+  <add path="$.createdAt">=datetime()</add>
+  <remove path="$.tempId"/>
+</script>
+```
+
+```yaml
+- command: put
+  path: $.status
+  value: active
+- command: add
+  path: $.createdAt
+  value: "=datetime()"
+- command: remove
+  path: $.tempId
+```
+
+Text that does not parse yields an empty script carrying the reason in
+`TLioScript.ParseWarnings` rather than throwing.
+
 ## What's in the box
 
-- `ScriptEngine<TNode>` — parse and execute scripts
+- `ScriptEngine<TNode>` — parse and execute scripts in any of the three notations
 - `CompiledScript<TNode>` — parse once, execute many times
 - `ParseOptions<TNode>` — command and function registries
 - `TLioConvert` — fluent convenience API

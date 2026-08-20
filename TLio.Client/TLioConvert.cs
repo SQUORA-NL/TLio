@@ -23,7 +23,13 @@ public static class TLioConvert
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     };
 
-    /// <summary>Parse a JSON script string into a TLioScript.</summary>
+    /// <summary>
+    /// Parse a JSON script string into a TLioScript.
+    ///
+    /// The XML and YAML notations are read by their own parsers, which ship with their format
+    /// package — build one with <c>CreateXmlScriptParser</c> / <c>CreateYamlScriptParser</c>, or
+    /// register both on a <see cref="ScriptEngine{TNode}"/> and let it pick.
+    /// </summary>
     public static TLioScript<TNode> Parse<TNode>(
         string scriptJson,
         ParseOptions<TNode> options,

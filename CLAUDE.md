@@ -117,7 +117,31 @@ dotnet test
 
 C# / .NET 10: Follow standard conventions
 
+## Script notation (021)
+
+A script can be written in JSON, XML or YAML, whichever format the *document* is in — only the
+paths inside it have to speak the document's path language. `ScriptEngine` reads JSON on its
+own; the other two register in one line, because their parsers ship in the format packages,
+which `TLio.Client` cannot reference without a cycle:
+
+```csharp
+var engine = new ScriptEngine<JToken>(commands, functions).UseXmlScripts().UseYamlScripts();
+engine.Execute(scriptText, data, context);   // notation detected from the text
+```
+
+`ScriptFormatDetector` decides from the first meaningful character: `<` XML, `[`/`{` JSON,
+anything else YAML. All three parsers implement `IScriptParser<TNode>`.
+
+The rule that keeps them honest: a structured value is converted to JSON and rebuilt through
+`CommandConverter`, never handed to `INodeAdapter.Parse` as the notation's own text — the
+adapter's format is the format of the *data*. `ScriptNotationTests` in `TLio.Parity.Tests`
+holds every notation against every document format.
+
 ## Recent Changes
+- 021-script-notation-parsers: XML and YAML script notations reachable from `ScriptEngine`,
+  MCP (`tlio_execute` gained `scriptFormat`) and both samples; notation detection; structured
+  values in XML/YAML now typed and function-expanding like JSON's; parse failures carry a
+  reason instead of an empty script.
 - 020-xml-alignment: XML and YAML brought onto the JSON data model — canonical document shape,
   array/object split, script-notation parity (bools, enums, nested scripts, settings), YAML
   recursive descent, format-aware path detection in functions. Added `TLio.Parity.Tests`.
