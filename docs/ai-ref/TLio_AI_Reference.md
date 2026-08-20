@@ -121,6 +121,18 @@ Use this decision tree to pick the command in one step.
 | Change a node's **name**, keeping value, children and position | `rename` |
 | Rename the XML document element | `rename` (nothing else can — the root has no parent) |
 
+### Changing format
+
+| Goal | Command |
+|------|---------|
+| Change the whole document's format partway through a script | `convert` — needs `MultiFormatScriptRunner`, which splits the script at each boundary |
+| Read or write a value that holds a document in another format | `convertValue` — runs on the ordinary engine, leaves the document's format alone |
+| Reach inside an XML payload carried as a string in a JSON document | `convertValue` with `from`, then ordinary commands |
+| Edit an XML attribute from a script | `convert` to JSON or YAML, edit the `@name` property, convert back — the XML adapter does not expose attributes |
+
+Paths after a `convert` speak the new format's path language. See
+[commands/Convert.md](commands/Convert.md) and [commands/ConvertValue.md](commands/ConvertValue.md).
+
 ### Conditional logic
 
 | Situation | Command |

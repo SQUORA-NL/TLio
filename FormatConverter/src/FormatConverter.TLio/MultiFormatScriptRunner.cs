@@ -36,6 +36,39 @@ public sealed class MultiFormatScriptRunner
         _converter = converter ?? throw new ArgumentNullException(nameof(converter));
     }
 
+    /// <summary>
+    /// Whether a script crosses a format boundary and therefore needs this runner rather than a
+    /// plain <c>ScriptEngine</c>.
+    /// </summary>
+    /// <remarks>
+    /// Callers that accept scripts from elsewhere — an API endpoint, the MCP server — use this to
+    /// decide which of the two paths to take. Text that is not a JSON array of commands is not a
+    /// multi-format script, and says so by returning false rather than throwing; whatever reads
+    /// it next will report the real problem.
+    /// </remarks>
+    public static bool CrossesAFormatBoundary(string scriptJson)
+    {
+        if (string.IsNullOrWhiteSpace(scriptJson)) return false;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(scriptJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array) return false;
+
+            foreach (var element in doc.RootElement.EnumerateArray())
+            {
+                if (IsConvertCommand(element, out _, out _))
+                    return true;
+            }
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+
+        return false;
+    }
+
     /// <summary>Register a format-specific section executor.</summary>
     public void RegisterExecutor(IFormatSectionExecutor executor)
     {

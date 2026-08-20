@@ -182,12 +182,16 @@ public sealed class ConvertValueTests
     // ── the boundary command, run in the wrong place ─────────────────────────
 
     [Test]
-    public void BoundaryConvert_RunInline_SaysWhyItDidNothing()
+    public void BoundaryConvert_RunInline_FailsAndSaysWhy()
     {
-        var (data, context, _) = Run("""{"a":"1"}""", """[{"command":"convert","to":"xml"}]""");
+        var (data, context, success) = Run("""{"a":"1"}""", """[{"command":"convert","to":"xml"}]""");
 
-        Assert.That(data["a"]!.Value<string>(), Is.EqualTo("1"));
-        Assert.That(context.GetLogEntries().Any(e => e.Message.Contains("MultiFormatScriptRunner")), Is.True,
-            "an unknown-command warning would not have told anyone what to do instead");
+        Assert.Multiple(() =>
+        {
+            Assert.That(success, Is.False, "reporting success would claim a conversion that did not happen");
+            Assert.That(data["a"]!.Value<string>(), Is.EqualTo("1"));
+            Assert.That(context.GetLogEntries().Any(e => e.Message.Contains("MultiFormatScriptRunner")), Is.True,
+                "an unknown-command warning would not have told anyone what to do instead");
+        });
     }
 }

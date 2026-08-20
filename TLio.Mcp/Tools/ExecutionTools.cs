@@ -18,6 +18,10 @@ using TLio.Mcp.Models;
 using TLio.Mcp.Services;
 using TLio.Xml;
 using TLio.Yaml;
+using FormatConverter.Json;
+using FormatConverter.TLio;
+using FormatConverter.Xml;
+using FormatConverter.Yaml;
 
 namespace TLio.Mcp.Tools;
 
@@ -29,20 +33,39 @@ public sealed class ExecutionTools
     private readonly ScriptEngine<JToken> _jsonEngine;
     private readonly ScriptEngine<XElement> _xmlEngine;
     private readonly ScriptEngine<YamlNode> _yamlEngine;
+    private readonly MultiFormatScriptRunner _runner;
 
     public ExecutionTools(RateLimiterService rateLimiter, IOptions<McpConfiguration> config)
     {
         _rateLimiter = rateLimiter;
         _config = config.Value;
-        _jsonEngine = CreateEngine<JToken>();
-        _xmlEngine = CreateEngine<XElement>();
-        _yamlEngine = CreateEngine<YamlNode>();
+
+        var converter = CreateConverter();
+        _jsonEngine = CreateEngine<JToken>(converter, "json");
+        _xmlEngine = CreateEngine<XElement>(converter, "xml");
+        _yamlEngine = CreateEngine<YamlNode>(converter, "yaml");
+
+        // A script that crosses a format boundary cannot run on one engine — the node type
+        // changes at the boundary — so it goes through the runner instead, which splits it and
+        // re-hosts each section on the engine for that format.
+        _runner = new MultiFormatScriptRunner(converter);
+        _runner.RegisterExecutor(new ScriptEngineSectionExecutor<JToken>(
+            "json", _jsonEngine, () => JsonExecutionContext.CreateDefault()));
+        _runner.RegisterExecutor(new ScriptEngineSectionExecutor<XElement>(
+            "xml", _xmlEngine, () => XmlExecutionContext.CreateWithNativeXPath()));
+        _runner.RegisterExecutor(new ScriptEngineSectionExecutor<YamlNode>(
+            "yaml", _yamlEngine, () => YamlExecutionContext.CreateDefault()));
     }
 
     [McpServerTool(Name = "tlio_execute")]
     [Description("Executes a TLio script against a document and returns the transformed output with an execution trace. " +
                  "The result includes: 'success' (bool), 'output' (transformed document), 'trace' (per-command outcome: success/noop/failure with detail), " +
                  "and 'suggestions' (actionable fixes for every noop and failure, including tlio_describe calls for docs). " +
+                 "A script may change the document's format partway through with the 'convert' command " +
+                 "({\"command\":\"convert\",\"to\":\"yaml\"}); commands after it use the new format's path language, " +
+                 "and 'format' in the result reports the format the run ended in. " +
+                 "To convert one value in place instead — an XML payload held as a string in a JSON document — " +
+                 "use 'convertValue' with a path, which leaves the surrounding document alone. " +
                  "Before writing a script: call tlio_guide for the command/function decision tree, " +
                  "then call tlio_describe('CommandName') for usage guidance and common mistakes for each command you plan to use.")]
     public object Execute(
@@ -61,13 +84,63 @@ public sealed class ExecutionTools
         else if (!ScriptFormatDetector.TryParse(scriptFormat, out notation))
             return new { success = false, error = $"Unsupported scriptFormat '{scriptFormat}'. Use json, xml, or yaml." };
 
-        return format.ToLowerInvariant() switch
+        var documentFormat = format.ToLowerInvariant();
+        if (documentFormat is not ("json" or "xml" or "yaml"))
+            return new { success = false, error = $"Unsupported format '{format}'. Use json, xml, or yaml." };
+
+        if (MultiFormatScriptRunner.CrossesAFormatBoundary(script))
+        {
+            if (notation != ScriptFormat.Json)
+                return new
+                {
+                    success = false,
+                    error = "A script containing 'convert' must be written in the JSON notation — " +
+                            "the boundary split reads the command array directly."
+                };
+
+            return RunMultiFormat(document, documentFormat, script);
+        }
+
+        return documentFormat switch
         {
             "json" => RunJson(document, script, notation),
             "xml" => RunXml(document, script, notation, xmlPathStyle),
-            "yaml" => RunYaml(document, script, notation),
-            _ => new { success = false, error = $"Unsupported format '{format}'. Use json, xml, or yaml." }
+            _ => RunYaml(document, script, notation),
         };
+    }
+
+    /// <summary>
+    /// Run a script that changes format partway through. The document's node type changes at each
+    /// boundary, so no single engine can carry it — the runner splits the script and hands each
+    /// section to the engine for its format.
+    /// </summary>
+    private ExecuteResult RunMultiFormat(string document, string format, string script)
+    {
+        try
+        {
+            var result = _runner.Run(format, document, script);
+
+            return new ExecuteResult
+            {
+                Success = result.Success,
+                Output = result.Document,
+                Format = result.FormatId,
+                Errors = result.Logs
+                    .Where(e => e.Level == LogLevel.Error)
+                    .Select(e => e.Message)
+                    .ToList()
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ExecuteResult
+            {
+                Success = false,
+                Output = document,
+                Format = format,
+                Errors = [$"Conversion error: {ex.Message}"]
+            };
+        }
     }
 
     private ExecuteResult RunJson(string document, string script, ScriptFormat notation)
@@ -207,13 +280,24 @@ public sealed class ExecutionTools
         return suggestions;
     }
 
-    private static ScriptEngine<TNode> CreateEngine<TNode>()
+    private static FormatConverter.Core.FormatConverter CreateConverter()
+    {
+        var converter = new FormatConverter.Core.FormatConverter();
+        converter.Register(new JsonFormatAdapter());
+        converter.Register(new XmlFormatAdapter());
+        converter.Register(new YamlFormatAdapter());
+        return converter;
+    }
+
+    private static ScriptEngine<TNode> CreateEngine<TNode>(
+        FormatConverter.Core.FormatConverter converter, string documentFormatId)
     {
         var options = ParseOptions<TNode>.CreateDefault();
         options.FunctionsProvider.RegisterMath<TNode>();
         options.FunctionsProvider.RegisterText<TNode>();
         options.FunctionsProvider.RegisterTimeDate<TNode>();
         options.CommandsProvider.RegisterETL<TNode>();
+        options.CommandsProvider.RegisterFormatConversion<TNode>(converter, documentFormatId);
         return new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider)
             // All three notations on every engine: the notation a script is written in is
             // independent of the document it transforms, so an XML script may drive a JSON

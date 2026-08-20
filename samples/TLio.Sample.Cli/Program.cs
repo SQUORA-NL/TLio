@@ -1,4 +1,8 @@
 using System.Text.Json;
+using FormatConverter.Json;
+using FormatConverter.TLio;
+using FormatConverter.Xml;
+using FormatConverter.Yaml;
 using TLio.Client;
 using TLio.Core.Models;
 using TLio.Extensions.ETL;
@@ -247,6 +251,11 @@ catch (Exception ex)
 
 static string RunTransform(string format, string inputText, string scriptText, ScriptFormat notation)
 {
+    // A script that crosses a format boundary cannot run on one engine — the node type changes
+    // at the boundary — so it goes to the runner, which splits it and re-hosts each section.
+    if (MultiFormatScriptRunner.CrossesAFormatBoundary(scriptText))
+        return RunMultiFormat(format, inputText, scriptText);
+
     return format switch
     {
         "json" => Execute(JsonExecutionContext.CreateDefault(),        inputText, scriptText, notation),
@@ -254,6 +263,58 @@ static string RunTransform(string format, string inputText, string scriptText, S
         "yaml" => Execute(YamlExecutionContext.CreateDefault(),        inputText, scriptText, notation),
         _      => throw new ArgumentException($"Unknown format: {format}")
     };
+}
+
+static FormatConverter.Core.FormatConverter CreateConverter()
+{
+    var converter = new FormatConverter.Core.FormatConverter();
+    converter.Register(new JsonFormatAdapter());
+    converter.Register(new XmlFormatAdapter());
+    converter.Register(new YamlFormatAdapter());
+    return converter;
+}
+
+/// <summary>The format id matching an execution context's node type.</summary>
+static string FormatIdOf<TNode>(ExecutionContext<TNode> _) => typeof(TNode) switch
+{
+    var t when t == typeof(Newtonsoft.Json.Linq.JToken) => "json",
+    var t when t == typeof(System.Xml.Linq.XElement) => "xml",
+    _ => "yaml",
+};
+
+static string RunMultiFormat(string format, string inputText, string scriptText)
+{
+    var converter = CreateConverter();
+    var runner = new MultiFormatScriptRunner(converter);
+    runner.RegisterExecutor(SectionExecutor("json", converter,
+        JsonExecutionContext.CreateDefault));
+    runner.RegisterExecutor(SectionExecutor("xml", converter,
+        XmlExecutionContext.CreateWithNativeXPath));
+    runner.RegisterExecutor(SectionExecutor("yaml", converter,
+        YamlExecutionContext.CreateDefault));
+
+    var result = runner.Run(format, inputText, scriptText);
+
+    if (!result.Success)
+        throw new TransformFailedException(result.Logs);
+
+    return result.Document;
+}
+
+static ScriptEngineSectionExecutor<TNode> SectionExecutor<TNode>(
+    string formatId,
+    FormatConverter.Core.FormatConverter converter,
+    Func<ExecutionContext<TNode>> contextFactory)
+{
+    var options = ParseOptions<TNode>.CreateDefault();
+    options.FunctionsProvider.RegisterMath<TNode>();
+    options.FunctionsProvider.RegisterText<TNode>();
+    options.FunctionsProvider.RegisterTimeDate<TNode>();
+    options.CommandsProvider.RegisterETL<TNode>();
+    options.CommandsProvider.RegisterFormatConversion<TNode>(converter, formatId);
+
+    var engine = new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider);
+    return new ScriptEngineSectionExecutor<TNode>(formatId, engine, () => contextFactory());
 }
 
 static string Execute<TNode>(
@@ -270,6 +331,9 @@ static string Execute<TNode>(
     options.FunctionsProvider.RegisterText<TNode>();
     options.FunctionsProvider.RegisterTimeDate<TNode>();
     options.CommandsProvider.RegisterETL<TNode>();
+    // convertValue works on the ordinary engine: it converts a value inside the document, not
+    // the document itself, so the node type never changes.
+    options.CommandsProvider.RegisterFormatConversion<TNode>(CreateConverter(), FormatIdOf(context));
     var engine = new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider)
         .UseXmlScripts()
         .UseYamlScripts();
