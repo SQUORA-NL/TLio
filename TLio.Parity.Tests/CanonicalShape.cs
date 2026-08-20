@@ -188,11 +188,27 @@ public static class CanonicalShape
     /// <summary>
     /// Rewrites every JSONPath in a string to its XPath equivalent, so one fixture can drive
     /// both notations: <c>$.a.b</c> → <c>/root/a/b</c>, <c>$.items[0].n</c> →
-    /// <c>/root/items/item[1]/n</c>, <c>$..n</c> → <c>//n</c>, <c>$</c> → <c>/</c>.
+    /// <c>/root/items/item[1]/n</c>, <c>$..n</c> → <c>//n</c>.
+    ///
+    /// At least one segment is required, so a lone <c>$</c> is left alone — it is far more
+    /// likely to be a regular expression's end anchor (<c>'^al.*a$'</c>) than a reference to
+    /// the document root, and rewriting it silently changed what the pattern matched.
     /// </summary>
-    public static string RewritePaths(string text) =>
-        System.Text.RegularExpressions.Regex.Replace(
-            text, @"\$(\.\.?[A-Za-z0-9_]+(\[[0-9*]+\])?)*(?![A-Za-z0-9_])", m => ToXPath(m.Value));
+    public static string RewritePaths(string text)
+    {
+        // "$$." is the JSON notation's escape for a literal path string — a value that names a
+        // path without being resolved on the spot, which is what =indirect() reads. XPath needs
+        // no escape there: a path written as text in XML stays text.
+        var rewritten = System.Text.RegularExpressions.Regex.Replace(
+            text, @"\$\$(\.[A-Za-z0-9_.\[\]*]+)", m => ToXPath("$" + m.Groups[1].Value));
+
+        rewritten = System.Text.RegularExpressions.Regex.Replace(
+            rewritten, @"\$(\.\.?[A-Za-z0-9_]+(\[[0-9*]+\])?)+(?![A-Za-z0-9_])", m => ToXPath(m.Value));
+
+        // A relative path is "@." in JSONPath and the YAML dot-notation, and "./" in XPath.
+        return System.Text.RegularExpressions.Regex.Replace(
+            rewritten, @"@\.([A-Za-z0-9_]+)", m => "./" + m.Groups[1].Value);
+    }
 
     private static JToken RewritePathsDeep(JToken token) => token switch
     {

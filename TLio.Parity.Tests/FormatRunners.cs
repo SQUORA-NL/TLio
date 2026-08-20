@@ -3,8 +3,10 @@ using Newtonsoft.Json.Linq;
 using TLio.Client;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
+using TLio.Extensions.ETL;
 using TLio.Extensions.Math;
 using TLio.Extensions.Text;
+using TLio.Extensions.TimeDate;
 using TLio.Json;
 using TLio.Xml;
 using TLio.Yaml;
@@ -34,15 +36,17 @@ public sealed record RunOutcome(bool Success, string Actual, string Expected, IR
 public static class FormatRunners
 {
     /// <summary>
-    /// The same command and function set for every format — the text and math packs included,
-    /// so a fixture that calls =concat() or =sum() exercises them on all three adapters rather
-    /// than only on the one whose test project happens to reference the pack.
+    /// The same command and function set for every format — every optional pack included, so a
+    /// fixture that calls =concat(), =sum() or =maxDate() exercises them on all three adapters
+    /// rather than only on the one whose test project happens to reference the pack.
     /// </summary>
-    private static ParseOptions<TNode> Options<TNode>()
+    public static ParseOptions<TNode> Options<TNode>()
     {
         var options = ParseOptions<TNode>.CreateDefault();
         options.FunctionsProvider.RegisterText<TNode>();
         options.FunctionsProvider.RegisterMath<TNode>();
+        options.FunctionsProvider.RegisterTimeDate<TNode>();
+        options.CommandsProvider.RegisterETL<TNode>();
         return options;
     }
 
@@ -107,6 +111,10 @@ public static class FormatRunners
     //
     // Both sides of a comparison go through the same renderer, so a match means the documents
     // agree on structure and text — not on how a particular library chose to print them.
+
+    public static string RenderForComparison(JToken token) => Render(token);
+    public static string RenderXmlForComparison(XElement e) => RenderXml(e);
+    public static string RenderYamlForComparison(YamlNode n) => RenderYaml(n);
 
     private static string Render(JToken token) => Normalise(token).ToString(Newtonsoft.Json.Formatting.None);
 

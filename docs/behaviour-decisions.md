@@ -228,12 +228,7 @@ because a leading `/` is not distinctive enough to override at parse time, where
 available to ask. `=fetch(/order/a)` works — path detection inside function arguments *is*
 format-aware (`IItemsFetcher.IsPathExpression`).
 
-### E4. `decisionTable` config is JSON-notation only
-
-The XML and YAML script parsers convert settings objects through their generic POCO path, which
-`DecisionTableConfig<TNode>` (generic, with node-typed members) does not go through.
-
-### E5. A quoted YAML `'null'` is still read as null downstream
+### E4. A quoted YAML `'null'` is still read as null downstream
 
 The script parser honours the quoting and writes the four-character string, but
 `YamlNodeAdapter.IsNull` tests the text rather than the scalar style, so every function that
@@ -247,6 +242,39 @@ Pinned: `YamlScriptNotationTests.AQuotedNullValue_IsParsedAsTheString`
 ## Resolved
 
 Findings from the same sweep that were plain bugs rather than decisions, and have been fixed.
+
+### The whole command and function surface was only ever run against JSON
+
+A sweep of what each format actually exercised found 10 of 76 functions covered in all three,
+53 covered only in JSON, and one (`newGuid`) covered nowhere. XML had almost no function
+coverage at all, so nothing would have noticed a function that did not work there — and several
+did not.
+
+`TLio.Parity.Tests/Sweep/sweep.json` is one script that touches every registered command and
+every registered function, run from an empty document against all three formats.
+`SweepTests.EveryRegisteredCommandIsExercised` and `EveryRegisteredFunctionIsExercised` read the
+registries and fail when something is added without being swept, so the coverage cannot quietly
+lapse again.
+
+What it turned up, all now fixed:
+
+| | |
+|---|---|
+| `SlashPathItemsFetcher.EnsurePath` threw `XmlException` out of the engine on a path segment that is not a legal element name (`item[1]`, a wildcard, a predicate). `NativeXPathItemsFetcher` had always refused those; the two XML fetchers disagreed. | crash |
+| `YamlPathItemsFetcher.EnsurePath` skipped an index segment it could not satisfy and carried on, so `$.rows[0].id` built `rows: {id: {}}` — the position dropped and the wrong shape left behind, where JSON and XML build nothing. It now decides before writing anything. | wrong document |
+| A path that could not be built reported **success** while changing nothing: the command fell through a loop with nothing to iterate. It now warns and records a no-op. | false success |
+| `put` refused to create an array position while `add` created one — backwards, `put` is the upsert. Both now build what is missing; Set still never does. | inconsistent |
+| A decision table's conditions were built with `INodeAdapter.Parse(rawJson)`, so the XML adapter was handed `"active"` — quotes included — and threw. Conditions are now built through the adapter's own creation methods, so `decisionTable` works in every notation. | JSON-only |
+| `resolve`'s settings and `decisionTable`'s config are generic over the node type and could only be built by `CommandConverter`. The XML and YAML parsers now render their settings node as JSON and go through it, instead of a deserialiser that silently returned null. | JSON-only |
+
+Two differences remain and are inherent rather than gaps — pinned by
+`SweepTests.TheFormatsDifferOnlyWhereTheyMust`, which fails if the formats drift apart anywhere
+else:
+
+- **A typed vs untyped scalar.** `=isBoolean()` on the string `"true"` is false in JSON, which
+  carries the type in the document, and true in XML and YAML, whose scalars are untyped.
+- **A path held as a value** — `$.ref`, and what `=scriptPath()` and `=path()` return — is
+  written in the format's own path language.
 
 ### Writing through an array subscript did nothing, or the wrong thing
 

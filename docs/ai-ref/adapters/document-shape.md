@@ -168,6 +168,12 @@ other two. This is inherent, and documented under [NodeKind](../TLio_AI_Referenc
 all three formats through each format's own script notation. `CanonicalShape` is this page in
 code — it is what turns a fixture into the XML and YAML it should produce.
 
+Alongside it, `Sweep/sweep.json` is a single script that touches **every registered command and
+every registered function**, run from an empty document against all three. Two tests read the
+command and function registries and fail when something is added without being swept, so the
+coverage cannot lapse; a third asserts that the three recorded results differ only where a
+format genuinely cannot agree.
+
 A format that stops agreeing fails there.
 
 ## See Also

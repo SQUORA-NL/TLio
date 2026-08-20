@@ -149,6 +149,14 @@ public class SlashPathItemsFetcher : IItemsFetcher<XElement>
         if (segments.Length == 0 || segments[0] != root.Name.LocalName)
             return;
 
+        // A segment that is not a legal element name describes something that cannot be built:
+        // a position (item[1]), a wildcard, a predicate. XName.Get throws on those, and it threw
+        // straight out of the engine, taking the whole script with it — a command that cannot
+        // find its destination has to warn and no-op like every other missed path.
+        // NativeXPathItemsFetcher has always refused these; this one used to try.
+        if (segments.Skip(1).Any(seg => !IsConstructibleName(seg)))
+            return;
+
         var current = root;
         foreach (var seg in segments.Skip(1))
         {
@@ -160,6 +168,13 @@ public class SlashPathItemsFetcher : IItemsFetcher<XElement>
             }
             current = child;
         }
+    }
+
+    /// <summary>True when the segment can be used verbatim as an element name.</summary>
+    private static bool IsConstructibleName(string segment)
+    {
+        try { return System.Xml.XmlConvert.EncodeLocalName(segment) == segment; }
+        catch { return false; }
     }
 
     public (string parentPath, string leafName) SplitParentAndLeaf(string path)

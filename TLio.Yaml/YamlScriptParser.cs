@@ -1,8 +1,8 @@
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using TLio.Client;
+using TLio.Commands;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 using YamlDotNet.RepresentationModel;
@@ -37,19 +37,10 @@ namespace TLio.Yaml;
 /// </summary>
 public class YamlScriptParser<TNode>
 {
-    /// <summary>
-    /// Options for the settings-object fallback, matching <see cref="CommandConverter{TNode}"/>
-    /// so the same setting is spelled the same way in both notations.
-    /// </summary>
-    private static readonly JsonSerializerOptions PocoOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: true) }
-    };
-
     private readonly ICommandsProvider<TNode> _commandsProvider;
     private readonly FunctionConverter<TNode> _functionConverter;
     private readonly INodeAdapter<TNode> _nodeAdapter;
+    private readonly CommandConverter<TNode> _settingsConverter;
 
     public YamlScriptParser(
         ICommandsProvider<TNode> commandsProvider,
@@ -59,6 +50,7 @@ public class YamlScriptParser<TNode>
         _commandsProvider  = commandsProvider;
         _functionConverter = new FunctionConverter<TNode>(functionsProvider);
         _nodeAdapter       = nodeAdapter;
+        _settingsConverter = new CommandConverter<TNode>(commandsProvider, functionsProvider, nodeAdapter);
     }
 
     public TLioScript<TNode> ParseScript(string yamlText)
@@ -99,6 +91,12 @@ public class YamlScriptParser<TNode>
             if (keyStr.Equals("command", StringComparison.OrdinalIgnoreCase)) continue;
 
             var propName = ToPascalCase(keyStr);
+            // The one alias the JSON notation also carries: a decision table's configuration is
+            // written under "decisionTable" but the property is called Config.
+            if (propName == "DecisionTable" && commandType.IsGenericType &&
+                commandType.GetGenericTypeDefinition() == typeof(DecisionTable<>))
+                propName = "Config";
+
             var prop = commandType.GetProperty(propName, BindingFlags.Public | BindingFlags.Instance);
             if (prop == null || !prop.CanWrite) continue;
 
@@ -174,15 +172,10 @@ public class YamlScriptParser<TNode>
         if (enumType.IsEnum && scalar?.Value != null)
             return Enum.TryParse(enumType, scalar.Value, ignoreCase: true, out var e) ? e : null;
 
-        // Settings objects and other POCOs are described by the same field names the JSON
-        // notation uses, so the node is converted to JSON and deserialised the same way.
-        if (targetType.IsClass && !targetType.IsAbstract && !targetType.IsGenericType)
-        {
-            try { return JsonSerializer.Deserialize(YamlToJson(node), targetType, PocoOptions); }
-            catch { return null; }
-        }
-
-        return null;
+        // Settings are described by the same field names in every notation, so the node is
+        // rendered as JSON and built by the JSON converter — which is the only place that knows
+        // how to make the generic ones (DecisionTableConfig, the ResolveSetting list).
+        return _settingsConverter.ConvertSettingsFragment(YamlToJson(node), targetType);
     }
 
     // ── YAML → JSON for settings objects ─────────────────────────────────────

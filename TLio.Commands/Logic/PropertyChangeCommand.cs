@@ -191,6 +191,17 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             var ensurePath = EnsureFullPathForLeaf ? Path! : resolvedParentPath;
             context.ItemsFetcher.EnsurePath(ensurePath, dataContext, context.NodeAdapter);
             parents = context.ItemsFetcher.SelectNodes(resolvedParentPath, dataContext);
+
+            if (parents.Count == 0)
+            {
+                // Not every path can be built — one that runs through an array position which
+                // does not exist yet describes a shape there is no unambiguous way to make. The
+                // command used to fall through the loop below with nothing to iterate and report
+                // success, so a script that changed nothing looked like it had worked.
+                context.LogWarning(CoreConstants.CommandExecution,
+                    $"{CommandName}: no nodes matched path '{Path}' — the path could not be created");
+                return;
+            }
         }
 
         foreach (var parent in parents)
@@ -228,13 +239,99 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     /// <summary>
     /// The array position the path names holds nothing.
     ///
-    /// Set and Put leave it alone: an array has no holes, so there is no element there to write
-    /// to and none can be put there without moving every later one. Add overrides this — the
-    /// position one past the end is exactly where a new element goes.
+    /// The commands that build what is missing — Add and Put — create the element when the path
+    /// names the one position that can be created: the one just past the end, which is where a
+    /// new element goes without leaving a hole behind it. When the array itself is not there,
+    /// position 0 creates it, the same thing these commands already do for the objects along a
+    /// path like <c>$.address.city</c>.
+    ///
+    /// Any position further out is refused rather than quietly appended — the element would end
+    /// up at an index the path did not name. Set never builds anything, so it always warns.
     /// </summary>
     protected virtual void ApplyValueToMissingIndex(TNode dataContext, IExecutionContext<TNode> context)
+    {
+        if (!CreatesMissingPath)
+        {
+            WarnNoIndex(context, "the array has no element at that position");
+            return;
+        }
+
+        if (!context.ItemsFetcher.TrySplitArrayIndex(Path!, out var arrayPath, out var index))
+            return;
+
+        var adapter = context.NodeAdapter;
+        var array = context.ItemsFetcher.SelectNode(arrayPath, dataContext);
+
+        if (array is null)
+        {
+            if (index != 0)
+            {
+                WarnNoIndex(context, $"'{arrayPath}' does not exist, so the only position that can be added is 0");
+                return;
+            }
+
+            array = CreateArrayAt(arrayPath, dataContext, context);
+            if (array is null)
+            {
+                WarnNoIndex(context, $"'{arrayPath}' does not exist and could not be created");
+                return;
+            }
+        }
+        else
+        {
+            // A freshly created array is empty, and in XML an empty element is not yet
+            // distinguishable from an empty object — so this only applies to an array that
+            // was already in the document.
+            if (!adapter.IsArray(array))
+            {
+                WarnNoIndex(context, $"'{arrayPath}' is not an array");
+                return;
+            }
+
+            var length = adapter.GetArrayLength(array);
+            if (index != length)
+            {
+                WarnNoIndex(context,
+                    $"'{arrayPath}' holds {length} element(s), so the next position that can be added is {length}");
+                return;
+            }
+        }
+
+        var valueResult = Value!.GetValue(array, dataContext, context);
+        if (!valueResult.Success)
+        {
+            MarkFailed();
+            return;
+        }
+
+        adapter.AppendToArray(array, valueResult.Data.First ?? adapter.CreateNull());
+    }
+
+    /// <summary>
+    /// Builds an empty array at <paramref name="arrayPath"/>, creating the objects above it,
+    /// and returns it. Null when the containing path cannot be built or does not hold properties.
+    /// </summary>
+    private TNode? CreateArrayAt(string arrayPath, TNode dataContext, IExecutionContext<TNode> context)
+    {
+        var (parentPath, leafName) = context.ItemsFetcher.SplitParentAndLeaf(arrayPath);
+        if (string.IsNullOrEmpty(leafName)) return default;
+
+        context.ItemsFetcher.EnsurePath(parentPath, dataContext, context.NodeAdapter);
+
+        var parent = context.ItemsFetcher.SelectNode(parentPath, dataContext);
+        if (parent is null || !context.NodeAdapter.IsObject(parent)) return default;
+
+        context.NodeAdapter.SetProperty(parent, leafName, context.NodeAdapter.CreateArray());
+        return context.ItemsFetcher.SelectNode(arrayPath, dataContext);
+    }
+
+    /// <summary>
+    /// Reported as "no nodes matched" so the trace records a no-op, the same outcome every
+    /// other path that finds nothing produces.
+    /// </summary>
+    private void WarnNoIndex(IExecutionContext<TNode> context, string detail)
         => context.LogWarning(CoreConstants.CommandExecution,
-            $"{CommandName}: no nodes matched path '{Path}' — the array has no element at that position");
+            $"{CommandName}: no nodes matched path '{Path}' — {detail}");
 
     /// <summary>
     /// Apply <paramref name="value"/> to a node the path addressed directly — an array element

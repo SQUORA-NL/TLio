@@ -121,34 +121,65 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
         if (segments.Any(s => s.IsWildcard || s.IsDescendant))
             return;
 
+        // Decided before anything is written. A path that runs through a position inside
+        // something that is not a sequence cannot be built, and building the part above it
+        // anyway left a wrong shape behind — "$.rows[0].id" produced "rows: {id: {}}", the
+        // position silently dropped, where JSON and XML build nothing at all.
+        if (!CanBuild(segments, root))
+            return;
+
         var current = root;
 
         foreach (var seg in segments)
         {
             if (seg.IsIndex)
             {
-                if (current is YamlSequenceNode seq)
-                {
-                    while (seq.Children.Count <= seg.Index)
-                        seq.Add(new YamlMappingNode());
-                    current = seq.Children[seg.Index];
-                }
+                var seq = (YamlSequenceNode)current;
+                while (seq.Children.Count <= seg.Index)
+                    seq.Add(new YamlMappingNode());
+                current = seq.Children[seg.Index];
             }
             else
             {
-                if (current is YamlMappingNode map)
+                var map = (YamlMappingNode)current;
+                var key = new YamlScalarNode(seg.Key);
+                if (!map.Children.ContainsKey(key))
                 {
-                    var key = new YamlScalarNode(seg.Key);
-                    if (!map.Children.ContainsKey(key))
-                    {
-                        var child = new YamlMappingNode();
-                        map.Children[key] = child;
-                        _tracker.Track(child, map, seg.Key!);
-                    }
-                    current = map.Children[key];
+                    var child = new YamlMappingNode();
+                    map.Children[key] = child;
+                    _tracker.Track(child, map, seg.Key!);
                 }
+                current = map.Children[key];
             }
         }
+    }
+
+    /// <summary>
+    /// Walks <paramref name="segments"/> over what is already there, treating a node that is not
+    /// there yet as the mapping the build would create. False as soon as a segment cannot be
+    /// satisfied — a position inside anything but a sequence.
+    /// </summary>
+    private bool CanBuild(List<PathSegment> segments, YamlNode root)
+    {
+        YamlNode? node = root;
+
+        foreach (var seg in segments)
+        {
+            if (seg.IsIndex)
+            {
+                // A node the build would create is a mapping, never a sequence.
+                if (node is not YamlSequenceNode seq) return false;
+                node = seg.Index < seq.Children.Count ? seq.Children[seg.Index] : null;
+            }
+            else
+            {
+                if (node is null) continue;               // a mapping that will be created
+                if (node is not YamlMappingNode map) return false;
+                node = map.Children.TryGetValue(new YamlScalarNode(seg.Key), out var child) ? child : null;
+            }
+        }
+
+        return true;
     }
 
     public (string parentPath, string leafName) SplitParentAndLeaf(string path)

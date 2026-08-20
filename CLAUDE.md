@@ -92,8 +92,17 @@ Two rules to keep in mind when touching an adapter:
   container that a property can be written into — that second answer is what makes deep-path
   `add` work.
 
-`TLio.Parity.Tests` fails when a format drifts. Known, deliberate divergences are section E of
-`docs/behaviour-decisions.md`.
+`TLio.Parity.Tests` fails when a format drifts. It holds two things:
+
+- **Fixtures** — one corpus written in JSON, run against all three formats through each
+  format's own script notation.
+- **The sweep** (`Sweep/sweep.json`) — one script touching every registered command and every
+  registered function, run from an empty document. Adding a command or a function without
+  adding it to the sweep fails `SweepTests.EveryRegistered*IsExercised`. After changing the
+  sweep, re-record with
+  `dotnet test TLio.Parity.Tests --filter "Name~RecordSweep"` and read the diff.
+
+Known, deliberate divergences are section E of `docs/behaviour-decisions.md`.
 
 ## Commands
 
