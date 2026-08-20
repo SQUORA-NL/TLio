@@ -24,6 +24,7 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
     public string PathDelimiter => ".";
     public string CurrentItemPathIndicator => "@";
     public string ParentPathIndicator => "<--";
+    public string ArrayOpenChar => "[";
     public string ArrayCloseChar => "]";
 
     public SelectedNodes<YamlNode> SelectNodes(string path, YamlNode data)

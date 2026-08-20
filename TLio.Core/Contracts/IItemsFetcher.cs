@@ -25,17 +25,26 @@ public interface IItemsFetcher<TNode>
     string ArrayCloseChar { get; }
 
     /// <summary>
-    /// True when <paramref name="text"/> reads as a path expression in this format rather than
+    /// Character that opens an array/index subscript. Declared so the shared helpers do not
+    /// have to assume one — a language that brackets a position differently says so here.
+    /// </summary>
+    string ArrayOpenChar => "[";
+
+    /// <summary>
+    /// True when <paramref name="text"/> reads as a path expression in this language rather than
     /// as a plain value. Functions use it to decide whether an argument such as
     /// <c>=fetch(…)</c>'s should be resolved against the document or returned as-is.
     ///
-    /// The default is the JSONPath rule — a leading <c>$</c> or <c>@</c> — which is also what
-    /// the YAML dot-notation uses. Formats with a different path language (XPath) override it.
-    /// A lone <c>$</c> or <c>@</c> is not a useful path, so at least one more character is
-    /// required.
+    /// The default answers from the tokens this fetcher already declares — a path either starts
+    /// at the root, or is written relative to the current node — so it holds for any language
+    /// without naming one. A language where that is not the rule overrides it.
+    ///
+    /// A lone indicator is not a useful path, so at least one more character is required.
     /// </summary>
     bool IsPathExpression(string text) =>
-        text.Length > 1 && (text[0] == '$' || text[0] == '@');
+        text.Length > 1 &&
+        (text.StartsWith(RootPathIndicator, StringComparison.Ordinal) ||
+         text.StartsWith(CurrentItemPathIndicator + PathDelimiter, StringComparison.Ordinal));
 
     /// <summary>Select zero or more nodes matching the given path expression.</summary>
     SelectedNodes<TNode> SelectNodes(string path, TNode data);
@@ -96,7 +105,7 @@ public interface IItemsFetcher<TNode>
     /// than a position, and each format's own selector already handles them.
     /// </summary>
     bool IsLeafArrayIndex(string path) =>
-        PathSubscript.TrySplit(path, ArrayCloseChar, out _, out _);
+        PathSubscript.TrySplit(path, ArrayOpenChar, ArrayCloseChar, out _, out _);
 
     /// <summary>
     /// Splits a path whose last segment is an array subscript into the path of the array itself
@@ -112,7 +121,7 @@ public interface IItemsFetcher<TNode>
     bool TrySplitArrayIndex(string path, out string arrayPath, out int index)
     {
         index = -1;
-        if (!PathSubscript.TrySplit(path, ArrayCloseChar, out arrayPath, out index))
+        if (!PathSubscript.TrySplit(path, ArrayOpenChar, ArrayCloseChar, out arrayPath, out index))
             return false;
 
         return arrayPath.Length > 0;

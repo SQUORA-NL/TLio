@@ -22,6 +22,7 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
     public string PathDelimiter => ".";
     public string CurrentItemPathIndicator => "@";
     public string ParentPathIndicator => "<--";
+    public string ArrayOpenChar => "[";
     public string ArrayCloseChar => "]";
 
     // ── Node selection ────────────────────────────────────────────────────────
