@@ -1,0 +1,21 @@
+<Project>
+
+  <!--
+    NuGet readme wiring.
+
+    Every packable project ships its own README.md from its project directory.
+    Imported *after* the SDK's default item globs so `None Update` retargets the
+    existing item instead of adding a duplicate (NETSDK1022).
+
+    PackageReadmeFile is only set when the file actually exists, otherwise pack
+    fails with NU5039 on projects that have no readme.
+  -->
+  <PropertyGroup Condition="'$(IsPackable)' == 'true' AND Exists('$(MSBuildProjectDirectory)\README.md')">
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' == 'true' AND Exists('$(MSBuildProjectDirectory)\README.md')">
+    <None Update="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

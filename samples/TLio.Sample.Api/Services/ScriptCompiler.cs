@@ -4,6 +4,7 @@ using TLio.Client;
 using TLio.Json;
 using TLio.Xml;
 using TLio.Yaml;
+using TLio.Sample.Api;
 using TLio.Sample.Api.Registry;
 using YamlDotNet.RepresentationModel;
 
@@ -15,16 +16,13 @@ internal sealed class ScriptCompiler
     {
         try
         {
-            var jsonOptions = ParseOptions<JToken>.CreateDefault();
-            var jsonEngine = new ScriptEngine<JToken>(jsonOptions.CommandsProvider, jsonOptions.FunctionsProvider);
+            var jsonEngine = EngineSetup.CreateEngine<JToken>();
             var compiledJson = jsonEngine.Compile(scriptSource, JsonExecutionContext.CreateDefault());
 
-            var xmlOptions = ParseOptions<XElement>.CreateDefault();
-            var xmlEngine = new ScriptEngine<XElement>(xmlOptions.CommandsProvider, xmlOptions.FunctionsProvider);
+            var xmlEngine = EngineSetup.CreateEngine<XElement>();
             var compiledXml = xmlEngine.Compile(scriptSource, XmlExecutionContext.CreateWithNativeXPath());
 
-            var yamlOptions = ParseOptions<YamlNode>.CreateDefault();
-            var yamlEngine = new ScriptEngine<YamlNode>(yamlOptions.CommandsProvider, yamlOptions.FunctionsProvider);
+            var yamlEngine = EngineSetup.CreateEngine<YamlNode>();
             var compiledYaml = yamlEngine.Compile(scriptSource, YamlExecutionContext.CreateDefault());
 
             return new ScriptRegistryEntry(slug, scriptSource, compiledJson, compiledXml, compiledYaml, DateTimeOffset.UtcNow);
