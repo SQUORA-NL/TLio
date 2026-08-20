@@ -52,8 +52,19 @@ public class SweepTests
             "=path() is the same function under its other registered name.",
     };
 
-    private static string Script() => File.ReadAllText(
-        Path.Combine(TestContext.CurrentContext.TestDirectory, "Sweep", "sweep.json"));
+    /// <summary>
+    /// The sweep as written for a format — not a translation of another format's script.
+    ///
+    /// JSON and YAML share one file: they use the same path language, and JSON is a subset of
+    /// YAML, so the YAML parser reads the .json script unchanged. XML has its own, written in
+    /// XPath. Two files, because there are two path languages here — the third format happens
+    /// to share one.
+    /// </summary>
+    private static string Script(string format) => File.ReadAllText(ScriptPath(format));
+
+    private static string ScriptPath(string format) => Path.Combine(
+        TestContext.CurrentContext.TestDirectory, "Sweep",
+        format == "XML" ? "sweep.xml" : "sweep.json");
 
     private static string ExpectedPath(string format) => Path.Combine(
         TestContext.CurrentContext.TestDirectory, "Sweep", $"expected.{format.ToLowerInvariant()}.json");
@@ -65,7 +76,7 @@ public class SweepTests
     [TestCase("YAML")]
     public void EveryCommandInTheSweepIsApplied(string format)
     {
-        var run = SweepRunner.Run(format, Script());
+        var run = SweepRunner.Run(format, Script(format));
 
         Assert.That(run.Success, Is.True,
             $"{format} sweep reported failure.\n  {string.Join("\n  ", run.Warnings)}");
@@ -80,7 +91,7 @@ public class SweepTests
     [TestCase("YAML")]
     public void TheSweepProducesTheRecordedDocument(string format)
     {
-        var run = SweepRunner.Run(format, Script());
+        var run = SweepRunner.Run(format, Script(format));
         var expected = File.ReadAllText(ExpectedPath(format)).Trim();
 
         Assert.That(run.Document, Is.EqualTo(expected),
@@ -115,39 +126,46 @@ public class SweepTests
 
     // ── Coverage: the sweep must actually reach everything ────────────────────
 
-    [Test]
-    public void EveryRegisteredCommandIsExercised()
+    [TestCase("JSON")]
+    [TestCase("XML")]
+    public void EveryRegisteredCommandIsExercised(string script)
     {
-        var script = Script();
+        var text = Script(script);
         var registered = FormatRunners.Options<JToken>().CommandsProvider.GetRegisteredCommandNames();
 
         var missing = registered
-            .Where(name => !Regex.IsMatch(script, $"\"command\"\\s*:\\s*\"{Regex.Escape(name)}\"",
-                                          RegexOptions.IgnoreCase))
+            .Where(name => !Regex.IsMatch(text, CommandPattern(script, name), RegexOptions.IgnoreCase))
             .OrderBy(n => n)
             .ToList();
 
         Assert.That(missing, Is.Empty,
-            "These commands are registered but the sweep never runs them, so nothing proves they "
-            + "work outside JSON: " + string.Join(", ", missing));
+            $"These commands are registered but the {script} sweep never runs them, so nothing "
+            + "proves they work there: " + string.Join(", ", missing));
     }
 
-    [Test]
-    public void EveryRegisteredFunctionIsExercised()
+    [TestCase("JSON")]
+    [TestCase("XML")]
+    public void EveryRegisteredFunctionIsExercised(string script)
     {
-        var script = Script();
+        var text = Script(script);
         var registered = FormatRunners.Options<JToken>().FunctionsProvider.GetRegisteredFunctionNames();
 
         var missing = registered
-            .Where(name => !Regex.IsMatch(script, $@"[=(,\s']{Regex.Escape(name)}\s*\(",
+            .Where(name => !Regex.IsMatch(text, $@"[=(,\s']{Regex.Escape(name)}\s*\(",
                                           RegexOptions.IgnoreCase))
             .OrderBy(n => n)
             .ToList();
 
         Assert.That(missing, Is.Empty,
-            "These functions are registered but the sweep never calls them, so nothing proves "
-            + "they work outside JSON: " + string.Join(", ", missing));
+            $"These functions are registered but the {script} sweep never calls them, so nothing "
+            + "proves they work there: " + string.Join(", ", missing));
     }
+
+    /// <summary>A command is a "command" field in the JSON notation and an element in the XML one.</summary>
+    private static string CommandPattern(string script, string name) =>
+        script == "XML"
+            ? $@"<{Regex.Escape(name)}[\s/>]"
+            : $@"""command""\s*:\s*""{Regex.Escape(name)}""";
 
     // ── Helper ────────────────────────────────────────────────────────────────
 

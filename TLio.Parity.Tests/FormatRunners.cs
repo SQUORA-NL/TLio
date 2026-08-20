@@ -94,8 +94,10 @@ public static class FormatRunners
         var parser  = new YamlScriptParser<YamlNode>(
             options.CommandsProvider, options.FunctionsProvider, adapter);
 
+        // The fixture's script text unchanged — JSON is a subset of YAML, and the two share a
+        // path language, so there is nothing to translate.
         var data   = adapter.Parse(CanonicalShape.ToYamlDocument(fixture.Input));
-        var script = parser.ParseScript(CanonicalShape.ToYamlScript(fixture.Script));
+        var script = parser.ParseScript(fixture.Script);
         var result = script.Execute(data, context);
 
         var expected = adapter.Parse(CanonicalShape.ToYamlDocument(fixture.Expected("yaml")));

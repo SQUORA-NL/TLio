@@ -15,14 +15,15 @@ public class SweepRecorder
     public void RecordSweep()
     {
         var testDir = TestContext.CurrentContext.TestDirectory;
-        var script  = File.ReadAllText(Path.Combine(testDir, "Sweep", "sweep.json"));
+        string Script(string format) => File.ReadAllText(Path.Combine(
+            testDir, "Sweep", format == "XML" ? "sweep.xml" : "sweep.json"));
 
         // bin/Debug/net10.0 → project root
         var sourceDir = Path.GetFullPath(Path.Combine(testDir, "..", "..", "..", "Sweep"));
 
         foreach (var format in new[] { "JSON", "XML", "YAML" })
         {
-            var run = SweepRunner.Run(format, script);
+            var run = SweepRunner.Run(format, Script(format));
             Assert.That(run.Success, Is.True, $"{format} sweep failed; nothing recorded.\n{run.Report()}");
             Assert.That(run.NotApplied, Is.Empty, $"{format} sweep had unapplied commands.\n{run.Report()}");
 

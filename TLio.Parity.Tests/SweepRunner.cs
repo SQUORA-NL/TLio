@@ -41,8 +41,15 @@ public sealed record SweepRun(
 /// Runs a sweep script — one script that touches every command and every function — against a
 /// format, starting from an empty document, and records what each command actually did.
 ///
-/// The document comparison alone would catch a wrong value; the trace is what catches a command
-/// that quietly matched nothing, which is how an unsupported function or path form fails.
+/// <para>The script text handed in is the script as written, not a translation of one. JSON and
+/// YAML get the same file: they share the path language, and JSON is a subset of YAML, so the
+/// YAML parser reads a .json script unchanged. XML gets its own file, written in XPath, because
+/// its path language is a different one — which is the point of the path language being
+/// injected rather than assumed.</para>
+///
+/// <para>The document comparison alone would catch a wrong value; the trace is what catches a
+/// command that quietly matched nothing, which is how an unsupported function or path form
+/// fails.</para>
 /// </summary>
 public static class SweepRunner
 {
@@ -61,11 +68,11 @@ public static class SweepRunner
         }
     }
 
-    public static SweepRun Run(string format, string scriptJson) => format switch
+    public static SweepRun Run(string format, string script) => format switch
     {
-        "XML"  => Guard("XML",  () => RunXml(scriptJson)),
-        "YAML" => Guard("YAML", () => RunYaml(scriptJson)),
-        _      => Guard("JSON", () => RunJson(scriptJson)),
+        "XML"  => Guard("XML",  () => RunXml(script)),
+        "YAML" => Guard("YAML", () => RunYaml(script)),
+        _      => Guard("JSON", () => RunJson(script)),
     };
 
     public static SweepRun RunJson(string scriptJson)
@@ -82,7 +89,7 @@ public static class SweepRunner
             FormatRunners.RenderForComparison(result.Data), trace.Entries, Warnings(context));
     }
 
-    public static SweepRun RunXml(string scriptJson)
+    public static SweepRun RunXml(string scriptXml)
     {
         var options = FormatRunners.Options<XElement>();
         var adapter = new XmlNodeAdapter();
@@ -93,13 +100,13 @@ public static class SweepRunner
         context.TraceCollector = trace;
 
         var data   = adapter.Parse($"<{CanonicalShape.RootName}/>");
-        var result = parser.ParseScript(CanonicalShape.ToXmlScript(scriptJson)).Execute(data, context);
+        var result = parser.ParseScript(scriptXml).Execute(data, context);
 
         return new SweepRun("XML", result.Success,
             FormatRunners.RenderXmlForComparison(result.Data), trace.Entries, Warnings(context));
     }
 
-    public static SweepRun RunYaml(string scriptJson)
+    public static SweepRun RunYaml(string script)
     {
         var options = FormatRunners.Options<YamlNode>();
         var context = YamlExecutionContext.CreateDefault();
@@ -109,8 +116,9 @@ public static class SweepRunner
         var trace   = new RecordingTraceCollector();
         context.TraceCollector = trace;
 
+        // The .json script text, unchanged — JSON is a subset of YAML.
         var data   = adapter.Parse("{}");
-        var result = parser.ParseScript(CanonicalShape.ToYamlScript(scriptJson)).Execute(data, context);
+        var result = parser.ParseScript(script).Execute(data, context);
 
         return new SweepRun("YAML", result.Success,
             FormatRunners.RenderYamlForComparison(result.Data), trace.Entries, Warnings(context));

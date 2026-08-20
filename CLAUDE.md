@@ -96,10 +96,12 @@ Two rules to keep in mind when touching an adapter:
 
 - **Fixtures** — one corpus written in JSON, run against all three formats through each
   format's own script notation.
-- **The sweep** (`Sweep/sweep.json`) — one script touching every registered command and every
-  registered function, run from an empty document. Adding a command or a function without
-  adding it to the sweep fails `SweepTests.EveryRegistered*IsExercised`. After changing the
-  sweep, re-record with
+- **The sweep** — every registered command and every registered function, run from an empty
+  document, as a script someone would actually write. Two files, because there are two path
+  languages: `Sweep/sweep.json` drives JSON *and* YAML (they share the path language, and JSON
+  is a subset of YAML, so the same text is read by both), and `Sweep/sweep.xml` is written in
+  XPath. Change one, change the other — `SweepTests.EveryRegistered*IsExercised` runs against
+  both. After changing either, re-record with
   `dotnet test TLio.Parity.Tests --filter "Name~RecordSweep"` and read the diff.
 
 Known, deliberate divergences are section E of `docs/behaviour-decisions.md`.

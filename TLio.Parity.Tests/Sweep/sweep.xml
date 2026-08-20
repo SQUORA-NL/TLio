@@ -1,0 +1,460 @@
+<script>
+  <add path="/root/name">
+    <value>Ada Lovelace</value>
+  </add>
+  <add path="/root/padded">
+    <value>  spaced  </value>
+  </add>
+  <add path="/root/numbers/item[1]">
+    <value>3</value>
+  </add>
+  <add path="/root/numbers/item[2]">
+    <value>1</value>
+  </add>
+  <add path="/root/numbers/item[3]">
+    <value>4</value>
+  </add>
+  <add path="/root/tags/item[1]">
+    <value>alpha</value>
+  </add>
+  <add path="/root/tags/item[2]">
+    <value>beta</value>
+  </add>
+  <add path="/root/people/item[1]">
+    <value>
+      <id>p1</id>
+      <score>10</score>
+    </value>
+  </add>
+  <add path="/root/people/item[2]">
+    <value>
+      <id>p2</id>
+      <score>20</score>
+    </value>
+  </add>
+  <put path="/root/nested/deep/value">
+    <value>buried</value>
+  </put>
+  <set path="/root/name">
+    <value>Grace Hopper</value>
+  </set>
+  <put path="/root/name">
+    <value>Grace M. Hopper</value>
+  </put>
+  <copy fromPath="/root/name" toPath="/root/copied" />
+  <move fromPath="/root/copied" toPath="/root/moved" />
+  <rename path="/root/moved" name="renamed" />
+  <add path="/root/doomed">
+    <value>remove me</value>
+  </add>
+  <remove path="/root/doomed" />
+  <put path="/root/text/concat">
+    <value>=concat(/root/name,' &amp; ',/root/tags/item[1])</value>
+  </put>
+  <put path="/root/text/length">
+    <value>=length(/root/name)</value>
+  </put>
+  <put path="/root/text/substring">
+    <value>=substring(/root/name,0,5)</value>
+  </put>
+  <put path="/root/text/toUpper">
+    <value>=toUpper(/root/tags/item[1])</value>
+  </put>
+  <put path="/root/text/toLower">
+    <value>=toLower('LOUD')</value>
+  </put>
+  <put path="/root/text/trim">
+    <value>=trim(/root/padded)</value>
+  </put>
+  <put path="/root/text/trimStart">
+    <value>=trimStart(/root/padded)</value>
+  </put>
+  <put path="/root/text/trimEnd">
+    <value>=trimEnd(/root/padded)</value>
+  </put>
+  <put path="/root/text/startsWith">
+    <value>=startsWith(/root/name,'Grace')</value>
+  </put>
+  <put path="/root/text/endsWith">
+    <value>=endsWith(/root/name,'Hopper')</value>
+  </put>
+  <put path="/root/text/contains">
+    <value>=contains(/root/name,'Hopper')</value>
+  </put>
+  <put path="/root/text/replace">
+    <value>=replace(/root/name,'Grace','Rear Admiral')</value>
+  </put>
+  <put path="/root/text/split">
+    <value>=split('a,b,c',',')</value>
+  </put>
+  <put path="/root/text/join">
+    <value>=join(/root/tags,'-')</value>
+  </put>
+  <put path="/root/text/indexOf">
+    <value>=indexOf(/root/name,'Hopper')</value>
+  </put>
+  <put path="/root/text/format">
+    <value>=format(/root/people/item[1]/score,'000')</value>
+  </put>
+  <put path="/root/text/parse">
+    <value>=parse('42')</value>
+  </put>
+  <put path="/root/text/padLeft">
+    <value>=padLeft(/root/tags/item[1],7,'.')</value>
+  </put>
+  <put path="/root/text/padRight">
+    <value>=padRight(/root/tags/item[1],7,'.')</value>
+  </put>
+  <put path="/root/text/isEmpty">
+    <value>=isEmpty(/root/tags)</value>
+  </put>
+  <put path="/root/text/toString">
+    <value>=toString(/root/people/item[1]/score)</value>
+  </put>
+  <put path="/root/text/toFixed">
+    <value>=toFixed('3.14159',2)</value>
+  </put>
+  <put path="/root/math/sum">
+    <value>=sum(/root/numbers)</value>
+  </put>
+  <put path="/root/math/avg">
+    <value>=avg(/root/numbers)</value>
+  </put>
+  <put path="/root/math/count">
+    <value>=count(/root/numbers)</value>
+  </put>
+  <put path="/root/math/min">
+    <value>=min(/root/numbers)</value>
+  </put>
+  <put path="/root/math/max">
+    <value>=max(/root/numbers)</value>
+  </put>
+  <put path="/root/math/median">
+    <value>=median(/root/numbers)</value>
+  </put>
+  <put path="/root/math/abs">
+    <value>=abs('-7')</value>
+  </put>
+  <put path="/root/math/ceiling">
+    <value>=ceiling('2.1')</value>
+  </put>
+  <put path="/root/math/floor">
+    <value>=floor('2.9')</value>
+  </put>
+  <put path="/root/math/round">
+    <value>=round('2.567',2)</value>
+  </put>
+  <put path="/root/math/sqrt">
+    <value>=sqrt('16')</value>
+  </put>
+  <put path="/root/math/pow">
+    <value>=pow('2','10')</value>
+  </put>
+  <put path="/root/math/subtract">
+    <value>=subtract('10','4')</value>
+  </put>
+  <put path="/root/math/modulo">
+    <value>=modulo('10','3')</value>
+  </put>
+  <put path="/root/math/calculate">
+    <value>=calculate('2.5+3.5')</value>
+  </put>
+  <put path="/root/math/sumIf">
+    <value>=sumif(/root/people/item/id,'p1',/root/people/item/score)</value>
+  </put>
+  <put path="/root/math/sumIfs">
+    <value>=sumifs(/root/people/item/score,/root/people/item/id,'p2')</value>
+  </put>
+  <put path="/root/math/countIf">
+    <value>=countif(/root/people/item/id,'p1')</value>
+  </put>
+  <put path="/root/math/countIfs">
+    <value>=countifs(/root/people/item/id,'p1')</value>
+  </put>
+  <put path="/root/math/averageIf">
+    <value>=averageif(/root/people/item/id,'p1',/root/people/item/score)</value>
+  </put>
+  <put path="/root/math/averageIfs">
+    <value>=averageifs(/root/people/item/score,/root/people/item/id,'p2')</value>
+  </put>
+  <put path="/root/math/minIfs">
+    <value>=minifs(/root/people/item/score,/root/people/item/id,'p2')</value>
+  </put>
+  <put path="/root/math/maxIfs">
+    <value>=maxifs(/root/people/item/score,/root/people/item/id,'p1')</value>
+  </put>
+  <add path="/root/flagText">
+    <value>true</value>
+  </add>
+  <add path="/root/emptyField">
+    <value />
+  </add>
+  <add path="/root/dates/item[1]">
+    <value>2024-03-01</value>
+  </add>
+  <add path="/root/dates/item[2]">
+    <value>2024-01-15</value>
+  </add>
+  <add path="/root/dates/item[3]">
+    <value>2024-02-01</value>
+  </add>
+  <add path="/root/ref">
+    <value>/root/name</value>
+  </add>
+  <put path="/root/check/equals">
+    <value>=equals(/root/tags/item[1],'alpha')</value>
+  </put>
+  <put path="/root/check/notEquals">
+    <value>=notEquals(/root/tags/item[1],'beta')</value>
+  </put>
+  <put path="/root/check/greaterThan">
+    <value>=greaterThan(/root/people/item[2]/score,/root/people/item[1]/score)</value>
+  </put>
+  <put path="/root/check/greaterOrEqual">
+    <value>=greaterOrEqual(/root/people/item[1]/score,'10')</value>
+  </put>
+  <put path="/root/check/lessThan">
+    <value>=lessThan(/root/people/item[1]/score,/root/people/item[2]/score)</value>
+  </put>
+  <put path="/root/check/lessOrEqual">
+    <value>=lessOrEqual(/root/people/item[1]/score,'10')</value>
+  </put>
+  <put path="/root/check/and">
+    <value>=and(=equals(/root/tags/item[1],'alpha'),=equals(/root/tags/item[2],'beta'))</value>
+  </put>
+  <put path="/root/check/or">
+    <value>=or(=equals(/root/tags/item[1],'nope'),=equals(/root/tags/item[2],'beta'))</value>
+  </put>
+  <put path="/root/check/not">
+    <value>=not(=equals(/root/tags/item[1],'beta'))</value>
+  </put>
+  <put path="/root/check/in">
+    <value>=in(/root/tags/item[1],/root/tags)</value>
+  </put>
+  <put path="/root/check/matches">
+    <value>=matches(/root/tags/item[1],'^al.*a$')</value>
+  </put>
+  <put path="/root/check/exists">
+    <value>=exists(/root/name)</value>
+  </put>
+  <put path="/root/check/existsMissing">
+    <value>=exists(/root/nowhere)</value>
+  </put>
+  <put path="/root/check/isNull">
+    <value>=isNull(/root/emptyField)</value>
+  </put>
+  <put path="/root/check/isString">
+    <value>=isString(/root/name)</value>
+  </put>
+  <put path="/root/check/isNumber">
+    <value>=isNumber(/root/people/item[1]/score)</value>
+  </put>
+  <put path="/root/check/isBoolean">
+    <value>=isBoolean(/root/flagText)</value>
+  </put>
+  <put path="/root/check/isObject">
+    <value>=isObject(/root/nested)</value>
+  </put>
+  <put path="/root/check/isArray">
+    <value>=isArray(/root/tags)</value>
+  </put>
+  <put path="/root/date/compare">
+    <value>=dateCompare(/root/dates/item[1],/root/dates/item[2])</value>
+  </put>
+  <put path="/root/date/isBetween">
+    <value>=isDateBetween(/root/dates/item[3],/root/dates/item[2],/root/dates/item[1])</value>
+  </put>
+  <put path="/root/date/min">
+    <value>=minDate(/root/dates)</value>
+  </put>
+  <put path="/root/date/max">
+    <value>=maxDate(/root/dates)</value>
+  </put>
+  <put path="/root/date/avg">
+    <value>=avgDate(/root/dates)</value>
+  </put>
+  <put path="/root/core/fetch">
+    <value>=fetch(/root/name)</value>
+  </put>
+  <put path="/root/core/fetchDefault">
+    <value>=fetch(/root/nowhere,'fallback')</value>
+  </put>
+  <put path="/root/core/indirect">
+    <value>=indirect(/root/ref)</value>
+  </put>
+  <put path="/root/core/partial">
+    <value>=partial(/root/people/item/id)</value>
+  </put>
+  <put path="/root/core/promote">
+    <value>=promote(/root/nested/deep)</value>
+  </put>
+  <ifElse condition="=equals(/root/tags/item[1],'alpha')">
+    <ifScript>
+      <put path="/root/branch/taken">
+        <value>then</value>
+      </put>
+    </ifScript>
+    <elseScript>
+      <put path="/root/branch/taken">
+        <value>else</value>
+      </put>
+    </elseScript>
+  </ifElse>
+  <ifElse condition="=equals(/root/tags/item[1],'nope')">
+    <ifScript>
+      <put path="/root/branch/notTaken">
+        <value>then</value>
+      </put>
+    </ifScript>
+    <elseScript>
+      <put path="/root/branch/notTaken">
+        <value>else</value>
+      </put>
+    </elseScript>
+  </ifElse>
+  <compare firstPath="/root/people/item[1]/score" secondPath="/root/people/item[2]/score" resultPath="/root/compare/scores" />
+  <compare firstPath="/root/tags/item[1]" secondPath="/root/tags/item[1]" resultPath="/root/compare/same" />
+  <put path="/root/mergeSource/extra">
+    <value>merged-in</value>
+  </put>
+  <put path="/root/mergeTarget/kept">
+    <value>still-here</value>
+  </put>
+  <merge path="/root/mergeSource" targetPath="/root/mergeTarget" />
+  <put path="/root/arrSource/list/item[1]">
+    <value>s1</value>
+  </put>
+  <put path="/root/arrTarget/list/item[1]">
+    <value>t1</value>
+  </put>
+  <merge path="/root/arrSource" targetPath="/root/arrTarget" arrayMergeMode="concat" />
+  <put path="/root/tmp/guid">
+    <value>=newGuid()</value>
+  </put>
+  <put path="/root/tmp/now">
+    <value>=datetime()</value>
+  </put>
+  <put path="/root/core/guidLength">
+    <value>=length(/root/tmp/guid)</value>
+  </put>
+  <put path="/root/core/nowLooksLikeADate">
+    <value>=startsWith(/root/tmp/now,'20')</value>
+  </put>
+  <remove path="/root/tmp" />
+  <put path="/root/etl/src/user/name">
+    <value>Alice</value>
+  </put>
+  <put path="/root/etl/src/user/city">
+    <value>Amsterdam</value>
+  </put>
+  <flatten path="/root/etl/src">
+    <flattenSettings>
+      <delimiter>_</delimiter>
+      <preserveTypes>false</preserveTypes>
+      <metadataPath></metadataPath>
+    </flattenSettings>
+  </flatten>
+  <add path="/root/etl/rows/item[1]">
+    <value>
+      <id>r1</id>
+      <qty>2</qty>
+    </value>
+  </add>
+  <add path="/root/etl/rows/item[2]">
+    <value>
+      <id>r2</id>
+      <qty>5</qty>
+    </value>
+  </add>
+  <copy fromPath="/root/etl/rows" toPath="/root/etl/csv" />
+  <tocsv path="/root/etl/csv">
+    <csvSettings>
+      <lineEnding>|</lineEnding>
+      <delimiter>;</delimiter>
+    </csvSettings>
+  </tocsv>
+  <put path="/root/etl/resolveRef/code">
+    <value>A</value>
+  </put>
+  <add path="/root/etl/lookup/item[1]">
+    <value>
+      <code>A</code>
+      <label>Alpha</label>
+    </value>
+  </add>
+  <resolve path="/root/etl/resolveRef">
+    <resolveSettings>
+      <item>
+        <referencesCollectionPath>/root/etl/lookup</referencesCollectionPath>
+        <resolveKeys>
+          <item>
+            <keyPath>./code</keyPath>
+            <referenceKeyPath>./code</referenceKeyPath>
+          </item>
+        </resolveKeys>
+        <values>
+          <item>
+            <sourcePath>./label</sourcePath>
+            <targetPath>./label</targetPath>
+          </item>
+        </values>
+      </item>
+    </resolveSettings>
+  </resolve>
+  <put path="/root/dt/status">
+    <value>active</value>
+  </put>
+  <decisionTable path="/root/dt">
+    <decisionTable>
+      <inputs>
+        <item>
+          <name>status</name>
+          <path>./status</path>
+        </item>
+      </inputs>
+      <outputs>
+        <item>
+          <name>label</name>
+          <path>./label</path>
+        </item>
+      </outputs>
+      <rules>
+        <item>
+          <priority>1</priority>
+          <conditions>
+            <status>active</status>
+          </conditions>
+          <results>
+            <label>Active</label>
+          </results>
+        </item>
+      </rules>
+    </decisionTable>
+  </decisionTable>
+  <put path="/root/trip/user/name">
+    <value>Alice</value>
+  </put>
+  <put path="/root/trip/user/city">
+    <value>Amsterdam</value>
+  </put>
+  <flatten path="/root/trip">
+    <flattenSettings>
+      <delimiter>__</delimiter>
+      <preserveTypes>false</preserveTypes>
+      <metadataPath></metadataPath>
+    </flattenSettings>
+  </flatten>
+  <restore path="/root/trip">
+    <restoreSettings>
+      <delimiter>__</delimiter>
+      <metadataPath></metadataPath>
+      <removeMetadata>true</removeMetadata>
+    </restoreSettings>
+  </restore>
+  <put path="/root/core/scriptPath">
+    <value>=scriptPath()</value>
+  </put>
+  <put path="/root/core/path">
+    <value>=path()</value>
+  </put>
+</script>

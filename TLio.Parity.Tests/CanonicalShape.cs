@@ -13,6 +13,11 @@ namespace TLio.Parity.Tests;
 /// XML and YAML the same fixture should produce, so the three suites cannot drift: if XML
 /// stops agreeing with JSON, the fixture fails rather than quietly testing something else.</para>
 ///
+/// <para>It translates <b>documents</b> for all three formats, and <b>scripts</b> for XML only.
+/// JSON and YAML share a path language and JSON is a subset of YAML, so a script written for one
+/// is read by the other unchanged — there is nothing to translate. XML has its own path
+/// language, which is the whole reason the language is injected rather than assumed.</para>
+///
 /// <para>The mapping is the one <see cref="TLio.Xml.XmlNodeAdapter"/> reads documents in:</para>
 /// <list type="table">
 ///   <listheader><term>JSON</term><description>XML</description></listheader>
@@ -130,8 +135,18 @@ public static class CanonicalShape
     // ── Script notation ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// The XML spelling of a JSON script. Paths are rewritten to XPath, nested scripts and
+    /// The XML spelling of a fixture's script. Paths are rewritten to XPath, nested scripts and
     /// structured values become child elements, everything else becomes an attribute.
+    ///
+    /// <para>Used by the <b>fixtures</b> only, and deliberately. A fixture asks whether one case
+    /// behaves the same in three formats, so deriving the other two spellings from a single
+    /// written case is the oracle: three hand-written files could disagree and still pass.</para>
+    ///
+    /// <para>The <b>sweep</b> does not use this. It asks whether the whole surface is reachable
+    /// as a script someone would actually write, so it has a real XPath file
+    /// (<c>Sweep/sweep.xml</c>) next to the JSON one. Translating there had already produced two
+    /// bugs of its own — a lone <c>$</c> read as the document root inside a regular expression,
+    /// and a relative path rewritten only in its first segment.</para>
     /// </summary>
     public static string ToXmlScript(string scriptJson)
     {
@@ -179,9 +194,6 @@ public static class CanonicalShape
 
     private static bool IsCommandList(JToken t) =>
         t is JArray a && a.Count > 0 && a.All(i => i is JObject o && o["command"] != null);
-
-    /// <summary>The YAML spelling of a JSON script — the same object graph in YAML block style.</summary>
-    public static string ToYamlScript(string scriptJson) => ToYamlDocument(JArray.Parse(scriptJson));
 
     // ── Path rewriting ────────────────────────────────────────────────────────
 

@@ -9,14 +9,15 @@ public class SweepDiagnostic
     [Test]
     public void Report()
     {
-        var script = File.ReadAllText(Path.Combine(
-            TestContext.CurrentContext.TestDirectory, "Sweep", "sweep.json"));
+        var testDir = TestContext.CurrentContext.TestDirectory;
+        string Script(string format) => File.ReadAllText(Path.Combine(
+            testDir, "Sweep", format == "XML" ? "sweep.xml" : "sweep.json"));
 
         var runs = new[]
         {
-            SweepRunner.Run("JSON", script),
-            SweepRunner.Run("XML",  script),
-            SweepRunner.Run("YAML", script),
+            SweepRunner.Run("JSON", Script("JSON")),
+            SweepRunner.Run("XML",  Script("XML")),
+            SweepRunner.Run("YAML", Script("YAML")),
         };
 
         foreach (var run in runs)
