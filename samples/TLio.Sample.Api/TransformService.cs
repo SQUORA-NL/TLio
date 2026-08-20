@@ -1,3 +1,4 @@
+using FormatConverter.TLio;
 using TLio.Client;
 using TLio.Core.Models;
 using TLio.Core.Models.Logging;
@@ -23,9 +24,9 @@ internal static class TransformService
     {
         return format.ToLowerInvariant() switch
         {
-            "json" => Run(JsonExecutionContext.CreateDefault(),       "transform-json",  payload),
-            "xml"  => Run(XmlExecutionContext.CreateWithNativeXPath(), "transform-xml",  payload),
-            "yaml" => Run(YamlExecutionContext.CreateDefault(),        "transform-yaml", payload),
+            "json" => Run(JsonExecutionContext.CreateDefault(),        "transform-json", "json", payload),
+            "xml"  => Run(XmlExecutionContext.CreateWithNativeXPath(), "transform-xml",  "xml",  payload),
+            "yaml" => Run(YamlExecutionContext.CreateDefault(),        "transform-yaml", "yaml", payload),
             _      => null
         };
     }
@@ -33,6 +34,7 @@ internal static class TransformService
     private static (bool Success, string Output, IReadOnlyList<LogEntry> Log)? Run<TNode>(
         ExecutionContext<TNode> context,
         string scriptName,
+        string formatId,
         string payload)
     {
         var scriptPath = Path.Combine(AppContext.BaseDirectory, "Scripts", $"{scriptName}.json");
@@ -44,6 +46,11 @@ internal static class TransformService
             });
 
         var scriptText = File.ReadAllText(scriptPath);
+
+        // A script that changes the document's format cannot run on one engine — the node type
+        // changes at the boundary — so it goes through the runner instead.
+        if (MultiFormatScriptRunner.CrossesAFormatBoundary(scriptText))
+            return RunMultiFormat(formatId, scriptText, payload);
 
         TNode input;
         try
@@ -59,10 +66,28 @@ internal static class TransformService
             });
         }
 
-        var engine  = EngineSetup.CreateEngine<TNode>();
+        var engine  = EngineSetup.CreateEngine<TNode>(formatId);
         var result  = engine.Execute(scriptText, input, context);
         var log     = context.GetLogEntries();
 
         return (result.Success, context.NodeAdapter.Serialize(result.Data), log);
+    }
+
+    private static (bool Success, string Output, IReadOnlyList<LogEntry> Log) RunMultiFormat(
+        string formatId, string scriptText, string payload)
+    {
+        try
+        {
+            var result = EngineSetup.CreateRunner().Run(formatId, payload, scriptText);
+            return (result.Success, result.Document, result.Logs);
+        }
+        catch (Exception ex)
+        {
+            return (false, string.Empty, new List<LogEntry>
+            {
+                new(Microsoft.Extensions.Logging.LogLevel.Error, "TransformService",
+                    $"Conversion failed: {ex.Message}", DateTimeOffset.UtcNow)
+            });
+        }
     }
 }
