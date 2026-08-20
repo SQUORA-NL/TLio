@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TLio.Json.SystemText\TLio.Json.SystemText.csproj" />
     <ProjectReference Include="..\TLio.Client\TLio.Client.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Math\TLio.Extensions.Math.csproj" />
   </ItemGroup>
 
 </Project>

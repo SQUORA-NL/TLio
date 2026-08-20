@@ -108,8 +108,34 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     public JsonNode CreateString(string value) => JsonValue.Create(value)!;
     public JsonNode CreateNumber(double value) => JsonValue.Create(value)!;
     public JsonNode CreateBoolean(bool value) => JsonValue.Create(value)!;
-    public JsonNode CreateValue(object? value) =>
-        value == null ? CreateNull() : JsonValue.Create(value)!;
+    /// <summary>
+    /// Create a value node from a boxed CLR value.
+    ///
+    /// Must dispatch on the runtime type: JsonValue.Create&lt;object&gt;(boxed) produces a
+    /// JsonValueCustomized&lt;object&gt;, which throws on serialization unless the caller
+    /// supplies a TypeInfoResolver. MathFunctionBase hands this a boxed long, so a naive
+    /// Create() leaves the document unserializable after any count/sum/length.
+    /// </summary>
+    public JsonNode CreateValue(object? value) => value switch
+    {
+        null             => CreateNull(),
+        JsonNode node    => node,
+        string s         => JsonValue.Create(s)!,
+        bool b           => JsonValue.Create(b)!,
+        int i            => JsonValue.Create(i)!,
+        long l           => JsonValue.Create(l)!,
+        short sh         => JsonValue.Create(sh)!,
+        byte by          => JsonValue.Create(by)!,
+        uint ui          => JsonValue.Create(ui)!,
+        ulong ul         => JsonValue.Create(ul)!,
+        double d         => JsonValue.Create(d)!,
+        float f          => JsonValue.Create(f)!,
+        decimal dec      => JsonValue.Create(dec)!,
+        DateTime dt      => JsonValue.Create(dt)!,
+        DateTimeOffset o => JsonValue.Create(o)!,
+        Guid g           => JsonValue.Create(g)!,
+        _                => JsonValue.Create(value.ToString())!
+    };
 
     // ── Value access ──────────────────────────────────────────────────────────
 
