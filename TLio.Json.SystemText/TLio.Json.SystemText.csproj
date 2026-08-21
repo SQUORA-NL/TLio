@@ -19,4 +19,13 @@
     <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
   </ItemGroup>
 
+  <!-- Declared here rather than in an AssemblyInfo.cs so the public key stays in one place
+       (Directory.Build.props). Now that this assembly is signed, the grantee must be signed too
+       and named with its full public key. -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>TLio.Json.SystemText.Tests, PublicKey=$(TlioPublicKey)</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>

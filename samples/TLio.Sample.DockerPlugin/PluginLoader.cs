@@ -92,9 +92,16 @@ internal sealed class PluginLoader(
 
         if (!anyRegistered)
         {
+            // Name what was actually scanned. The usual cause of a pack landing here is not an
+            // empty package but a registrar whose IFunctionsProviderRegistrar<JToken> came from
+            // a different copy of TLio.Core than the host's, and without the assembly list
+            // that is indistinguishable from "this package has nothing in it".
             logger.LogWarning(
-                "Package '{PackageId}' contains no recognisable TLio extension assemblies — ignored.",
-                package.Id);
+                "Package '{PackageId}' contains no recognisable TLio extension assemblies — ignored. Scanned: {Assemblies}",
+                package.Id,
+                packageAssemblies.Assemblies.Count == 0
+                    ? "(none)"
+                    : string.Join(", ", packageAssemblies.Assemblies.Select(a => a.FullName)));
             return;
         }
 
@@ -142,7 +149,22 @@ internal sealed class PluginLoader(
                     var concrete = method.MakeGenericMethod(typeof(JToken));
                     var parameters = concrete.GetParameters();
                     if (parameters.Length != 1) continue;
-                    if (!registrarType.IsAssignableFrom(parameters[0].ParameterType)) continue;
+                    if (!registrarType.IsAssignableFrom(parameters[0].ParameterType))
+                    {
+                        // A registrar-shaped method whose parameter is nonetheless not our
+                        // registrar means two copies of TLio.Core are in play — the pack's load
+                        // context resolved its own instead of deferring to the host's. Say which
+                        // two, because the type names are identical and the log is otherwise
+                        // baffling.
+                        if (parameters[0].ParameterType.Name == registrarType.Name)
+                            logger.LogWarning(
+                                "'{Type}.{Method}' in '{PackageId}' takes {Param} from {ParamAsm}, but the host's is from {HostAsm} — the package resolved its own copy instead of sharing the host's.",
+                                type.Name, method.Name, packageId,
+                                parameters[0].ParameterType.Name,
+                                parameters[0].ParameterType.Assembly.FullName,
+                                registrarType.Assembly.FullName);
+                        continue;
+                    }
 
                     concrete.Invoke(null, [provider]);
                     found = true;

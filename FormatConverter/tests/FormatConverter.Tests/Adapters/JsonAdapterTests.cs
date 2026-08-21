@@ -22,7 +22,7 @@ public sealed class JsonAdapterTests
 
     // ── Fixture round-trip tests ─────────────────────────────────────────────
 
-    private static IEnumerable<string[]> JsonFixtureDirectories()
+    private static IEnumerable<string> JsonFixtureDirectories()
     {
         var fixtureRoot = Path.Combine(TestContext.CurrentContext.TestDirectory, "Fixtures", "Json");
         foreach (var dir in Directory.GetDirectories(fixtureRoot))
@@ -30,7 +30,7 @@ public sealed class JsonAdapterTests
             var input = Path.Combine(dir, "input.json");
             var expected = Path.Combine(dir, "expected-roundtrip.json");
             if (File.Exists(input) && File.Exists(expected))
-                yield return new[] { dir };
+                yield return dir;
         }
     }
 

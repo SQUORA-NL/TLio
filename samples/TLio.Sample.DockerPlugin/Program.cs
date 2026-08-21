@@ -56,7 +56,30 @@ builder.Services.AddNuplane(nuplaneConfig, nuplane =>
         cfg.Watch = true;
         cfg.IncludeAll();
     });
-    nuplane.AutoloadPackages(nuplaneConfig.GetSection("Loading"), lb => lb.Enable());
+    nuplane.AutoloadPackages(nuplaneConfig.GetSection("Loading"), lb =>
+    {
+        lb.Enable();
+
+        // A pack is loaded into its own AssemblyLoadContext. Left alone it would resolve its
+        // own copy of TLio.Core, and PluginLoader — which recognises a pack by reflecting for a
+        // registrar method taking IFunctionsProviderRegistrar<JToken> — would find a type of
+        // that name belonging to a *different* assembly instance, match nothing, and log the
+        // pack as "no recognisable TLio extension assemblies". Naming these here makes the load
+        // context defer to the host's copy, so there is one type identity on both sides.
+        //
+        // Newtonsoft.Json is on the list for the same reason: JToken is the TNode, so a second
+        // copy of it breaks the match just as thoroughly as a second copy of TLio.Core.
+        //
+        // The last argument is the major version that has to match. TLio's is 0 because
+        // AssemblyVersion is major-only and TLio is pre-1.0 — raise these to 1 in the same
+        // commit that tags v1.0.0 (see Directory.Build.targets).
+        const string TLioKey = "356c904b6d1035c0";   // Directory.Build.props: TlioPublicKeyToken
+        lb.SharedAssembly("TLio.Core", TLioKey, 0);
+        lb.SharedAssembly("TLio.Commands", TLioKey, 0);
+        lb.SharedAssembly("TLio.Functions", TLioKey, 0);
+        lb.SharedAssembly("TLio.Client", TLioKey, 0);
+        lb.SharedAssembly("Newtonsoft.Json", "30ad4fe6b2a6aeed", 13);
+    });
     nuplane.OnPackagesChanged<PluginLoader>();
 });
 
@@ -70,61 +93,11 @@ var app = builder.Build();
 
 app.MapShells();
 
-// ── Slug-cache endpoints ──────────────────────────────────────────────────────
+// ── Endpoints ─────────────────────────────────────────────────────────────────
 
 SlugExecutionEndpoints.Map(app);
 ScriptManagementEndpoints.Map(app);
-
-// ── POST /transform/{format} ──────────────────────────────────────────────────
-
-app.MapPost("/transform/{format}", async (
-    string format,
-    HttpRequest request,
-    MutableFunctionsProvider<JToken> functionsProvider,
-    ILogger<Program> log) =>
-{
-    using var reader = new StreamReader(request.Body);
-    var body = await reader.ReadToEndAsync();
-
-    if (string.IsNullOrWhiteSpace(body))
-        return Results.BadRequest(new { error = "Request body must not be empty." });
-
-    TransformRequest? payload;
-    try { payload = System.Text.Json.JsonSerializer.Deserialize<TransformRequest>(body, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }); }
-    catch (Exception ex) { return Results.BadRequest(new { error = $"Invalid JSON: {ex.Message}" }); }
-
-    if (payload is null || payload.Script is null)
-        return Results.BadRequest(new { error = "Fields 'input' and 'script' are required." });
-
-    var scriptJson = System.Text.Json.JsonSerializer.Serialize(payload.Script);
-
-    var context = JsonExecutionContext.CreateDefault();
-    var commandsProvider = ParseOptions<JToken>.CreateDefault().CommandsProvider;
-    var engine = new ScriptEngine<JToken>(commandsProvider, functionsProvider);
-
-    JToken input;
-    try { input = JToken.Parse(System.Text.Json.JsonSerializer.Serialize(payload.Input)); }
-    catch (Exception ex) { return Results.BadRequest(new { error = $"Invalid input document: {ex.Message}" }); }
-
-    TLio.Core.Models.TLioExecutionResult<JToken> result;
-    try { result = engine.Execute(scriptJson, input, context); }
-    catch (Exception ex)
-    {
-        log.LogWarning(ex, "Script execution threw an exception.");
-        return Results.Ok(new { success = false, error = ex.Message });
-    }
-
-    if (!result.Success)
-    {
-        var errors = context.GetLogEntries()
-            .Select(e => e.Message)
-            .ToArray();
-        return Results.Ok(new { success = false, error = string.Join("; ", errors) });
-    }
-
-    var resultJson = System.Text.Json.JsonDocument.Parse(result.Data.ToString(Newtonsoft.Json.Formatting.None));
-    return Results.Ok(new { success = true, data = resultJson.RootElement });
-});
+TransformEndpoints.Map(app);
 
 // ── GET /plugins ──────────────────────────────────────────────────────────────
 
@@ -194,11 +167,5 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
-
-// ── Request model ─────────────────────────────────────────────────────────────
-
-internal sealed record TransformRequest(
-    object? Input,
-    object[]? Script);
 
 public partial class Program { }

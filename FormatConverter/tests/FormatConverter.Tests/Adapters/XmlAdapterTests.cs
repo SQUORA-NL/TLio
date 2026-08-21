@@ -23,7 +23,7 @@ public sealed class XmlAdapterTests
 
     // ── Fixture round-trip tests ─────────────────────────────────────────────
 
-    private static IEnumerable<string[]> XmlFixtureDirectories()
+    private static IEnumerable<string> XmlFixtureDirectories()
     {
         var fixtureRoot = Path.Combine(TestContext.CurrentContext.TestDirectory, "Fixtures", "Xml");
         foreach (var dir in Directory.GetDirectories(fixtureRoot))
@@ -31,7 +31,7 @@ public sealed class XmlAdapterTests
             var input = Path.Combine(dir, "input.xml");
             var expected = Path.Combine(dir, "expected-roundtrip.xml");
             if (File.Exists(input) && File.Exists(expected))
-                yield return new[] { dir };
+                yield return dir;
         }
     }
 

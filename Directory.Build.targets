@@ -18,4 +18,16 @@
     <None Update="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
+  <!--
+    AssemblyVersion is deliberately left at MinVer's default of major-only: 0.9.0 and 0.10.0
+    both produce AssemblyVersion 0.0.0.0, while Version, FileVersion and the package version
+    stay exactly the tag.
+
+    It is tempting to widen it to major.minor, since pre-1.0 the minor is the breaking bump.
+    Don't. TLio.Sample.DockerPlugin hot-loads extension packs as .nupkg files at runtime, and a
+    pack compiled against `TLio.Core, Version=0.9.0.0` cannot bind to a host carrying 0.10.0.0 —
+    moving AssemblyVersion on every minor means every plugin in the wild breaks on every
+    release. Package versions still tell consumers exactly what they have.
+  -->
+
 </Project>
