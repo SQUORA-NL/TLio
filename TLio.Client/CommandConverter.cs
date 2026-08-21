@@ -16,6 +16,10 @@ namespace TLio.Client;
 /// registered ICommand. Remaining camelCase properties are mapped to PascalCase
 /// C# properties via reflection.
 ///
+/// Two of those properties are on every command and configure nothing: "title" and
+/// "description" are free text for whoever reads the script next. They are parsed like any
+/// other string property and never looked at again.
+///
 /// Supported target property types:
 ///   string                         ← JSON string (direct)
 ///   bool                           ← JSON true/false

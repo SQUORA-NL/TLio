@@ -36,6 +36,9 @@ model to JSON, XML, YAML, and any future structured data format.
 
 `flatten`, `restore`, `resolve` and `tocsv` come from the ETL pack (`RegisterETL`).
 
+Any command also takes an optional `title` and `description` — free text saying what the step is
+for. Nothing reads them at run time; they are there so a script is readable months later.
+
 ### Functions in values and in paths
 
 Both a command's **value** and its **path** can carry function expressions, and the two are

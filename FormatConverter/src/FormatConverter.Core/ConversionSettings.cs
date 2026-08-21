@@ -51,6 +51,34 @@ public sealed class ConversionSettings
     /// </summary>
     public bool CdataAsText { get; init; } = false;
 
+    /// <summary>
+    /// The element name an array item takes in XML when it has no name of its own.
+    /// Default: <c>"item"</c>, the canonical item name TLio's own XML adapter recognises.
+    /// </summary>
+    /// <remarks>
+    /// An array read from XML remembers the item name it was written with, and keeps it on the
+    /// way back out; this names the ones that arrive without one — from JSON, from YAML, or from
+    /// an array that was empty.
+    /// </remarks>
+    public string ArrayItemName { get; init; } = "item";
+
+    /// <summary>
+    /// Whether an array becomes a wrapping element with items inside it, or repeated sibling
+    /// elements. Default: <see cref="ArrayHandling.Wrapped"/> — the shape TLio can address.
+    /// </summary>
+    public ArrayHandling ArrayHandling { get; init; } = ArrayHandling.Wrapped;
+
+    /// <summary>
+    /// How an absent value is written in XML. Default: <see cref="NullRepresentation.Empty"/>.
+    /// </summary>
+    public NullRepresentation NullRepresentation { get; init; } = NullRepresentation.Empty;
+
+    /// <summary>
+    /// What to do with a property name XML cannot spell.
+    /// Default: <see cref="NameSanitization.Sanitize"/>, which is quiet and lossy.
+    /// </summary>
+    public NameSanitization NameSanitization { get; init; } = NameSanitization.Sanitize;
+
     // ── YAML settings ─────────────────────────────────────────────────────────
 
     /// <summary>

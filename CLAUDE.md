@@ -41,14 +41,20 @@ TLio.UnitTests/             ← Core / Commands / Engine tests only (no function
 TLio.Json.Tests/            ← JSON (Newtonsoft) adapter tests (JsonNodeAdapter, JsonPathItemsFetcher)
 TLio.Json.SystemText.Tests/ ← System.Text.Json adapter fixture tests
 TLio.Functions.Tests/       ← Built-in function tests + extension-pack fixture tests (Math, Text, TimeDate, ETL, TextPack)
-TLio.Extensions.Text/      ← Optional text function pack: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim (008), regexReplace, regexExtract, right (022)
-TLio.Functions/Collections/ ← distinct, sort, sortBy, last — built in, registered by ParseOptions (022)
+TLio.Extensions.Text/      ← Optional text function pack: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim (008), regexReplace, regexExtract, right (023)
+TLio.Functions/Collections/ ← distinct, sort, sortBy, last — built in, registered by ParseOptions (023)
 TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtures
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
 TLio.Mcp/                   ← MCP stdio server (tlio_list_commands, tlio_describe, tlio_execute, tlio_analyze, 019)
 TLio.Mcp.Tests/             ← MCP server tests (DiscoveryTools, ExecutionTools, AnalysisTools, E2E workflow)
 TLio.Parity.Tests/          ← Cross-format regression net (020): one fixture corpus run against
                               JSON, XML and YAML through each format's own script notation
+FormatConverter/            ← Format conversion (017, 022). Part of TLio.sln.
+  src/FormatConverter.Core/   IM model, ConversionSettings, MetadataConvention
+  src/FormatConverter.{Json,Xml,Yaml}/  the three adapters
+  src/FormatConverter.TLio/   convert, convertValue, MultiFormatScriptRunner,
+                              ScriptEngineSectionExecutor
+  tests/FormatConverter.Tests/
 samples/
   TLio.Sample.Api/          ← Minimal API sample (JSON/XML/YAML endpoints, 005)
   TLio.Sample.Cli/          ← CLI sample (file-in / transformed-out, 005)
@@ -167,6 +173,12 @@ var engine = new ScriptEngine<JToken>(commands, functions).UseXmlScripts().UseYa
 engine.Execute(scriptText, data, context);   // notation detected from the text
 ```
 
+Any command in any notation may carry an optional `title` and `description` — free text about
+the step, never read during execution. They live on `CommandBase`, so every command has them and
+each parser binds them like any other string property. XML is the one exception worth
+remembering: there they are **attributes only**, because a `<title>` child element is part of the
+value being written. `CommandDocumentationTests` in `TLio.Parity.Tests` holds both halves.
+
 `ScriptFormatDetector` decides from the first meaningful character: `<` XML, `[`/`{` JSON,
 anything else YAML. All three parsers implement `IScriptParser<TNode>`.
 
@@ -175,13 +187,48 @@ The rule that keeps them honest: a structured value is converted to JSON and reb
 adapter's format is the format of the *data*. `ScriptNotationTests` in `TLio.Parity.Tests`
 holds every notation against every document format.
 
+## Format conversion (022)
+
+Two commands, and the difference between them is what changes format:
+
+- **`convert`** changes the *whole document*. That means a different `TNode`, which no
+  `ICommand<TNode>` can return, so it is not something the engine can run — `MultiFormatScriptRunner`
+  splits the script at each boundary and re-hosts each section on the engine for that format via
+  `ScriptEngineSectionExecutor<TNode>`. Run on a bare engine it fails and says so.
+  `MultiFormatScriptRunner.CrossesAFormatBoundary(script)` is how a host decides which path to take;
+  the MCP server and the CLI sample both use it.
+- **`convertValue`** changes *one value* at a path. The document's format never changes, so it is
+  an ordinary command on the ordinary engine. This is the embedded-payload case.
+
+Paths after a `convert` speak the new format's path language — that is inherent, not a wart.
+
+**Conversion output is the canonical document shape**, not a second one. That matters only because
+`convert` works mid-script: the commands after it address the tree that
+`docs/ai-ref/adapters/document-shape.md` describes, so the converter has to write it.
+`CanonicalShapeTests` walks converted output with TLio's own `XmlNodeAdapter` and `YamlNodeAdapter`
+and fails when the two drift. The old repeated-sibling XML shape survives as
+`arrayHandling: "repeated"`; it is not the default because in that shape the *parent* element reads
+as the array.
+
+Settings exist where XML leaves the answer open — `attributePrefix`, `textProperty`,
+`namespacePrefix`, `arrayItemName`, `arrayHandling`, `nullRepresentation`, `nameSanitization`,
+`inferTypes`, `cdataAsText`, `flattenAnchors`. `MetadataConvention` in `FormatConverter.Core` holds
+the rules JSON and YAML must spell identically; when they were separate, an attribute that survived
+`xml → json` vanished on `xml → yaml`.
+
+One asymmetry to know: TLio's XML adapter ignores attributes by design, but after a `convert` to
+JSON or YAML they are ordinary `@name` properties. Converting is how a script edits an attribute.
+
 ## Recent Changes
-- 022-function-gaps: 21 functions added so one idea stops costing four levels of nesting —
+- 023-function-gaps: 21 functions added so one idea stops costing four levels of nesting —
   Math `multiply` / `divide` / `clamp` / `sign`; TimeDate `dateDiff` / `dateAdd` / `datePart` /
   `formatDate` / `parseDate` / `startOfMonth` / `endOfMonth`; Text `regexReplace` /
   `regexExtract` / `right`; built-in `if` / `coalesce` / `between` / `distinct` / `sort` /
   `sortBy` / `last`. The two car-insurance samples were rewritten onto them with byte-identical
   output. Analysis and rationale: `docs/function-gaps.md`.
+- 022-format-convert-command: `convert` usable mid-script — section executors, canonical shape,
+  `convertValue` for in-place values, `textProperty`/`namespacePrefix` honoured, YAML emitted
+  through YamlDotNet, FormatConverter folded into `TLio.sln`.
 - 021-script-notation-parsers: XML and YAML script notations reachable from `ScriptEngine`,
   MCP (`tlio_execute` gained `scriptFormat`) and both samples; notation detection; structured
   values in XML/YAML now typed and function-expanding like JSON's; parse failures carry a

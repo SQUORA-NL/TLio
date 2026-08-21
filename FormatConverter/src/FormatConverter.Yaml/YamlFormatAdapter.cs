@@ -1,4 +1,3 @@
-using System.Text;
 using FormatConverter.Core;
 using FormatConverter.Core.Exceptions;
 using FormatConverter.Core.Model;
@@ -12,9 +11,21 @@ namespace FormatConverter.Yaml;
 /// Format ID: <c>"yaml"</c> (case-insensitive).
 /// </summary>
 /// <remarks>
+/// <para>
+/// Output is produced by YamlDotNet's own emitter rather than by hand: the IM is projected onto
+/// a <see cref="YamlNode"/> tree and serialised. Hand-written indentation is what previously made
+/// any array of objects with more than one key emit YAML that YAML could not read back.
+/// </para>
+/// <para>
+/// Keys beginning with <see cref="ConversionSettings.AttributePrefix"/> (default <c>@</c>) are
+/// carried as <see cref="NodeMetadata"/> rather than children, mirroring the JSON adapter, so
+/// XML attributes survive a trip through YAML.
+/// </para>
+/// <para>
 /// When <see cref="ConversionSettings.FlattenAnchors"/> is <see langword="true"/> (default),
 /// alias nodes are dereferenced inline and the result is marked with
 /// <c>Metadata["#anchor-flattened"] = "true"</c>.
+/// </para>
 /// </remarks>
 public sealed class YamlFormatAdapter : IFormatAdapter
 {
@@ -46,16 +57,35 @@ public sealed class YamlFormatAdapter : IFormatAdapter
     {
         try
         {
-            var sb = new StringBuilder();
-            using var writer = new StringWriter(sb);
-            WriteNode(writer, root, 0, isRoot: true);
-            return sb.ToString();
+            var document = new YamlDocument(BuildYaml(root, settings, isRoot: true));
+            var stream = new YamlStream(document);
+
+            var writer = new StringWriter();
+            stream.Save(writer, assignAnchors: false);
+
+            return Normalise(writer.ToString());
         }
         catch (Exception ex) when (ex is not FormatParseException)
         {
             throw new FormatParseException(FormatId, "FromIM", ex.Message, ex);
         }
     }
+
+    /// <summary>
+    /// Strip the explicit document-end marker the emitter appends. A converted document is a
+    /// value, not a stream, and <c>...</c> on the end is noise every consumer has to tolerate.
+    /// </summary>
+    private static string Normalise(string yaml)
+    {
+        var text = yaml.Replace("\r\n", "\n").TrimEnd('\n');
+        if (text.EndsWith("\n...", StringComparison.Ordinal))
+            text = text[..^4];
+        else if (text == "...")
+            text = string.Empty;
+        return text.Length == 0 ? text : text + "\n";
+    }
+
+    // ── ToIM ─────────────────────────────────────────────────────────────────
 
     private static IntermediateNode ConvertYamlNode(YamlNode node, string? name, ConversionSettings settings) =>
         node switch
@@ -66,7 +96,7 @@ public sealed class YamlFormatAdapter : IFormatAdapter
             _ => new ScalarNode(ScalarType.String, node.ToString()) { Name = name },
         };
 
-    private static ObjectNode ConvertMapping(YamlMappingNode mapping, string? name, ConversionSettings settings)
+    private static IntermediateNode ConvertMapping(YamlMappingNode mapping, string? name, ConversionSettings settings)
     {
         var obj = new ObjectNode { Name = name };
         if (settings.FlattenAnchors && !mapping.Anchor.IsEmpty)
@@ -75,9 +105,30 @@ public sealed class YamlFormatAdapter : IFormatAdapter
         foreach (var entry in mapping.Children)
         {
             var key = ((YamlScalarNode)entry.Key).Value ?? string.Empty;
-            obj.Children.Add(ConvertYamlNode(entry.Value, key, settings));
+
+            if (MetadataConvention.IsMetadataKey(key, settings) && entry.Value is YamlScalarNode metaScalar)
+                obj.Metadata[key] = metaScalar.Value ?? string.Empty;
+            else
+                obj.Children.Add(ConvertYamlNode(entry.Value, key, settings));
         }
-        return obj;
+
+        return Unwrap(obj, settings);
+    }
+
+    /// <summary>
+    /// Fold a metadata-plus-text mapping back into the scalar with attributes it came from, so an
+    /// XML element carrying both survives a YAML round trip.
+    /// </summary>
+    private static IntermediateNode Unwrap(ObjectNode node, ConversionSettings settings)
+    {
+        if (!MetadataConvention.IsTextWrapper(node.Children.Select(c => c.Name ?? string.Empty), settings))
+            return node;
+        if (node.Children[0] is not ScalarNode text) return node;
+
+        var scalar = new ScalarNode(text.Type, text.RawValue) { Name = node.Name };
+        foreach (var entry in node.Metadata)
+            scalar.Metadata[entry.Key] = entry.Value;
+        return scalar;
     }
 
     private static ArrayNode ConvertSequence(YamlSequenceNode sequence, string? name, ConversionSettings settings)
@@ -94,18 +145,24 @@ public sealed class YamlFormatAdapter : IFormatAdapter
     private static ScalarNode ConvertScalar(YamlScalarNode scalar, string? name, ConversionSettings settings)
     {
         var raw = scalar.Value ?? string.Empty;
-        ScalarType type;
+        var tag = scalar.Tag.IsEmpty ? null : scalar.Tag.Value;
 
-        if (settings.InferTypes)
-            type = InferType(raw, scalar.Tag.IsEmpty ? null : scalar.Tag.Value);
-        else
-            type = ScalarType.String;
+        // A quoted scalar is a string in YAML whatever it spells, so inference must not touch it.
+        // This is what lets a converter round-trip the string "42" without it becoming a number.
+        var type = settings.InferTypes && !IsExplicitString(scalar, tag)
+            ? InferType(raw, tag)
+            : ScalarType.String;
 
         var result = new ScalarNode(type, type == ScalarType.Null ? null : raw) { Name = name };
         if (settings.FlattenAnchors && !scalar.Anchor.IsEmpty)
             result.Metadata[NodeMetadata.AnchorFlattenedKey] = "true";
         return result;
     }
+
+    private static bool IsExplicitString(YamlScalarNode scalar, string? tag) =>
+        tag == "tag:yaml.org,2002:str" ||
+        scalar.Style is ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted
+                     or ScalarStyle.Literal or ScalarStyle.Folded;
 
     private static ScalarType InferType(string value, string? tag)
     {
@@ -120,127 +177,120 @@ public sealed class YamlFormatAdapter : IFormatAdapter
         return ScalarType.String;
     }
 
-    // ── FromIM: simple YAML text writer ─────────────────────────────────────
+    // ── FromIM ───────────────────────────────────────────────────────────────
 
-    private static void WriteNode(TextWriter writer, IntermediateNode node, int indent, bool isRoot)
+    private static YamlNode BuildYaml(IntermediateNode node, ConversionSettings settings, bool isRoot)
     {
-        var pad = new string(' ', indent * 2);
-
-        switch (node)
+        // A named root is wrapped as {name: content} so the element name survives the round trip,
+        // matching what the JSON adapter does. This holds for a scalar root too: <price>9.99</price>
+        // is `price: '9.99'`, not a bare `'9.99'`.
+        if (isRoot && node.Name is not null)
         {
-            case ObjectNode obj when isRoot && obj.Name is not null:
-                // Wrap named root so the element name survives a YAML round-trip
-                writer.WriteLine($"{YamlKey(obj.Name)}:");
-                foreach (var child in obj.Children)
-                {
-                    writer.Write($"  {YamlKey(child.Name ?? "item")}: ");
-                    WriteNode(writer, child, 1, isRoot: false);
-                }
-                break;
-
-            case ObjectNode obj:
-                if (!isRoot && obj.Children.Count > 0)
-                    writer.WriteLine();
-                foreach (var child in obj.Children)
-                {
-                    writer.Write($"{pad}{YamlKey(child.Name ?? "item")}: ");
-                    WriteNode(writer, child, indent + 1, isRoot: false);
-                }
-                break;
-
-            case ArrayNode arr:
-                if (!isRoot)
-                    writer.WriteLine();
-                foreach (var item in arr.Items)
-                {
-                    writer.Write($"{pad}- ");
-                    WriteArrayItem(writer, item, indent + 1);
-                }
-                break;
-
-            case ScalarNode scalar:
-                writer.WriteLine(FormatScalar(scalar));
-                break;
-
-            case MixedContentNode mixed:
-                var text = string.Concat(mixed.Content.Select(c => c switch
-                {
-                    TextRun tr => tr.Text,
-                    ChildNode cn => ExtractText(cn.Node),
-                    _ => string.Empty,
-                }));
-                writer.WriteLine(QuoteYamlString(text));
-                break;
+            var wrapper = new YamlMappingNode();
+            wrapper.Add(Key(node.Name), BuildYaml(node, settings, isRoot: false));
+            return wrapper;
         }
+
+        return node switch
+        {
+            ObjectNode obj => BuildMapping(obj, settings),
+            ArrayNode arr => BuildSequence(arr, settings),
+            ScalarNode scalar when MetadataConvention.NeedsTextWrapper(scalar, settings) =>
+                BuildTextWrapper(scalar, settings),
+            ScalarNode scalar => BuildScalar(scalar),
+            MixedContentNode mixed => Scalar(CollapseText(mixed)),
+            _ => new YamlScalarNode("null") { Style = ScalarStyle.Plain },
+        };
     }
 
-    private static void WriteArrayItem(TextWriter writer, IntermediateNode item, int indent)
+    /// <summary>
+    /// Attributes have nowhere to live on a bare value, so the value takes a key of its own
+    /// beside them: <c>{'@currency': EUR, '#text': '9.99'}</c>.
+    /// </summary>
+    private static YamlMappingNode BuildTextWrapper(ScalarNode scalar, ConversionSettings settings)
     {
-        var pad = new string(' ', indent * 2);
-        switch (item)
-        {
-            case ObjectNode obj:
-                var first = true;
-                foreach (var child in obj.Children)
-                {
-                    if (first) { first = false; writer.Write($"{YamlKey(child.Name ?? "item")}: "); WriteNode(writer, child, indent + 1, isRoot: false); }
-                    else { writer.Write($"{pad}  {YamlKey(child.Name ?? "item")}: "); WriteNode(writer, child, indent + 1, isRoot: false); }
-                }
-                if (obj.Children.Count == 0) writer.WriteLine("{}");
-                break;
-
-            case ScalarNode scalar:
-                writer.WriteLine(FormatScalar(scalar));
-                break;
-
-            default:
-                WriteNode(writer, item, indent, isRoot: false);
-                break;
-        }
+        var mapping = new YamlMappingNode();
+        foreach (var (key, value) in MetadataConvention.Emittable(scalar, settings))
+            mapping.Add(Key(key), Scalar(value));
+        if (MetadataConvention.WrapperCarriesText(scalar))
+            mapping.Add(Key(settings.TextProperty), BuildScalar(scalar));
+        return mapping;
     }
 
-    private static string FormatScalar(ScalarNode scalar) => scalar.Type switch
+    private static YamlMappingNode BuildMapping(ObjectNode obj, ConversionSettings settings)
     {
-        ScalarType.Null => "null",
-        ScalarType.Boolean => scalar.RawValue!,
-        ScalarType.Integer => scalar.RawValue!,
-        ScalarType.Decimal => scalar.RawValue!,
-        _ => QuoteYamlString(scalar.RawValue ?? string.Empty),
+        var mapping = new YamlMappingNode();
+        foreach (var (key, value) in MetadataEntries(obj, settings))
+            mapping.Add(Key(key), Scalar(value));
+        foreach (var child in obj.Children)
+            mapping.Add(Key(child.Name ?? "item"), BuildYaml(child, settings, isRoot: false));
+        return mapping;
+    }
+
+    private static YamlNode BuildSequence(ArrayNode arr, ConversionSettings settings)
+    {
+        var sequence = new YamlSequenceNode();
+        foreach (var item in arr.Items)
+            sequence.Add(BuildYaml(item, settings, isRoot: false));
+
+        // Metadata on an array has nowhere to live in a sequence; wrap so it is not dropped.
+        var metadata = MetadataEntries(arr, settings).ToList();
+        if (metadata.Count == 0)
+            return sequence;
+
+        var mapping = new YamlMappingNode();
+        foreach (var (key, value) in metadata)
+            mapping.Add(Key(key), Scalar(value));
+        mapping.Add(Key(arr.Name ?? "item"), sequence);
+        return mapping;
+    }
+
+    private static IEnumerable<KeyValuePair<string, string>> MetadataEntries(
+        IntermediateNode node, ConversionSettings settings) =>
+        MetadataConvention.Emittable(node, settings);
+
+    private static YamlNode BuildScalar(ScalarNode scalar) => scalar.Type switch
+    {
+        ScalarType.Null => new YamlScalarNode("null") { Style = ScalarStyle.Plain },
+        ScalarType.Boolean or ScalarType.Integer or ScalarType.Decimal =>
+            new YamlScalarNode(scalar.RawValue!) { Style = ScalarStyle.Plain },
+        _ => Scalar(scalar.RawValue ?? string.Empty),
     };
 
-    private static string QuoteYamlString(string value)
-    {
-        if (NeedsQuoting(value))
-            return $"'{value.Replace("'", "''")}'";
-        return value;
-    }
+    /// <summary>
+    /// A string scalar. Anything that would read back as a number, a boolean, null or a
+    /// structural token is single-quoted so the value survives <c>inferTypes</c> on the way in.
+    /// </summary>
+    private static YamlScalarNode Scalar(string value) =>
+        new(value) { Style = NeedsQuoting(value) ? ScalarStyle.SingleQuoted : ScalarStyle.Any };
+
+    private static YamlScalarNode Key(string key) =>
+        new(key) { Style = NeedsQuoting(key) ? ScalarStyle.SingleQuoted : ScalarStyle.Any };
 
     private static bool NeedsQuoting(string value)
     {
         if (string.IsNullOrEmpty(value)) return true;
-        if (value.Contains(':') || value.Contains('#') || value.Contains('\'') ||
-            value.Contains('"') || value.Contains('\n') || value.Contains('\r') ||
-            value.StartsWith(' ') || value.EndsWith(' ')) return true;
         if (string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(value, "false", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(value, "null", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(value, "~")) return true;
+            value == "~") return true;
         if (long.TryParse(value, out _) || double.TryParse(value, System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out _)) return true;
         return false;
     }
 
-    private static string YamlKey(string key) => NeedsQuoting(key) ? $"'{key}'" : key;
-
-    private static string ExtractText(IntermediateNode node) => node switch
-    {
-        ScalarNode s => s.RawValue ?? string.Empty,
-        MixedContentNode m => string.Concat(m.Content.Select(c => c switch
+    private static string CollapseText(MixedContentNode mixed) =>
+        string.Concat(mixed.Content.Select(c => c switch
         {
             TextRun tr => tr.Text,
             ChildNode cn => ExtractText(cn.Node),
             _ => string.Empty,
-        })),
+        }));
+
+    private static string ExtractText(IntermediateNode node) => node switch
+    {
+        ScalarNode s => s.RawValue ?? string.Empty,
+        MixedContentNode m => CollapseText(m),
         _ => string.Empty,
     };
 }

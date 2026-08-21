@@ -28,6 +28,16 @@ public abstract class CommandBase<TNode> : ICommand<TNode>
         }
     }
 
+    /// <summary>
+    /// Free text from the script, carried so tooling and readers can see it. Set by the script
+    /// parsers from the "title" field in whichever notation the script is written in; never read
+    /// during execution.
+    /// </summary>
+    public string? Title { get; set; }
+
+    /// <inheritdoc cref="Title" />
+    public string? Description { get; set; }
+
     public abstract TLioExecutionResult<TNode> Execute(TNode dataContext, IExecutionContext<TNode> context);
 
     public abstract ValidationResult ValidateCommandInstance();

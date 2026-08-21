@@ -87,12 +87,12 @@ public sealed class RoundTripTests
     {
         var dir = FixtureDir("RoundTrip", "yaml-json-yaml");
         var input = File.ReadAllText(Path.Combine(dir, "input.yaml"));
-        var expected = File.ReadAllText(Path.Combine(dir, "expected.yaml")).TrimEnd().Replace("\r\n", "\n");
+        var expected = File.ReadAllText(Path.Combine(dir, "expected.yaml"));
 
         var json = _converter.Convert("yaml", input, "json", new ConversionSettings { InferTypes = true });
-        var yaml = _converter.Convert("json", json, "yaml", ConversionSettings.Empty).TrimEnd().Replace("\r\n", "\n");
+        var yaml = _converter.Convert("json", json, "yaml", ConversionSettings.Empty);
 
-        Assert.That(yaml, Is.EqualTo(expected));
+        YamlAssert.Equivalent(yaml, expected, "yaml → json → yaml");
     }
 
     [Test]

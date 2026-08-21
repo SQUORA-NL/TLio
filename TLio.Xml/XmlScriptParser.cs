@@ -43,6 +43,9 @@ namespace TLio.Xml;
 ///   a nested script (<c>&lt;ifScript&gt;</c>), a structured value (<c>&lt;value&gt;</c>), or a
 ///   settings object (<c>&lt;settings&gt;</c>)
 /// - Text content = the <c>Value</c> property, same as a <c>value</c> attribute would be
+/// - <c>title</c> and <c>description</c> attributes are free text about the step, read by
+///   nobody at run time; they must be attributes, because a <c>&lt;title&gt;</c> child element is
+///   part of the value being written
 ///
 /// The property set is the same one the JSON notation accepts — the two notations describe the
 /// same commands, so a script that works against JSON has an XML spelling that does the same
@@ -125,7 +128,13 @@ public class XmlScriptParser<TNode> : IScriptParser<TNode>
         var valueContent = new List<XElement>();
         foreach (var child in el.Elements())
         {
-            var prop = FindProperty(commandType, child.Name.LocalName);
+            // title and description are attributes in this notation, never child elements:
+            // <put path="$.p"><title>Sale</title></put> writes an object with a title in it, and
+            // that has to keep meaning what it always meant. Documentation is metadata about the
+            // step, so it goes where XML puts metadata.
+            var prop = IsDocumentationField(child.Name.LocalName)
+                ? null
+                : FindProperty(commandType, child.Name.LocalName);
             if (prop == null) { valueContent.Add(child); continue; }
 
             var converted = ConvertElement(child, prop.PropertyType);
@@ -158,6 +167,14 @@ public class XmlScriptParser<TNode> : IScriptParser<TNode>
 
         return command;
     }
+
+    /// <summary>
+    /// The two fields that describe the step rather than configure it — see
+    /// <see cref="ICommand{TNode}.Title"/>.
+    /// </summary>
+    private static bool IsDocumentationField(string name) =>
+        name.Equals("title", StringComparison.OrdinalIgnoreCase) ||
+        name.Equals("description", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// The property a script field names. Mostly the PascalCase spelling of the field, with the

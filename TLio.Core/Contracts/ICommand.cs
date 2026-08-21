@@ -13,6 +13,20 @@ public interface ICommand<TNode>
     /// <summary>Canonical name used in script serialisation.</summary>
     string CommandName { get; }
 
+    /// <summary>
+    /// Optional free-text title a script author gives this step ("normalise the driver block").
+    /// Documentation only: nothing in the engine reads it, and a script behaves identically with
+    /// it and without it. Null when the script did not write one.
+    /// </summary>
+    string? Title => null;
+
+    /// <summary>
+    /// Optional free-text description — the longer half of <see cref="Title"/>: why the step is
+    /// there, what it assumes, what it deliberately leaves alone. Documentation only, exactly as
+    /// <see cref="Title"/> is. Null when the script did not write one.
+    /// </summary>
+    string? Description => null;
+
     /// <summary>Execute the command against the supplied data root.</summary>
     TLioExecutionResult<TNode> Execute(TNode dataContext, IExecutionContext<TNode> context);
 
