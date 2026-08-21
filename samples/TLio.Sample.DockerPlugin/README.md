@@ -23,17 +23,69 @@ docker compose up -d
 
 | Endpoint | Description |
 |---|---|
-| `POST /transform/{format}` | Execute a TLio script (`format`: `json`, `xml`, `yaml`) |
+| `POST /transform/{format}` | Execute a script supplied in the request (`format`: `json`, `xml`, `yaml`) |
+| `POST /scripts` | Register a script under a slug |
+| `POST /run/{slug}` | Execute a registered script; the input format is detected from the body |
 | `GET /plugins` | List currently loaded extensions and built-in functions |
 | `GET /plugins/status` | Full NuPlane load-state catalog |
 | `GET /health` | Liveness probe |
+
+### The `/transform/{format}` body
+
+`{format}` picks the document format, and the script's **paths must speak that format's path
+language** — JSONPath for `json` and `yaml`, XPath for `xml`.
+
+```jsonc
+{
+  // JSON value for `json`; a string holding the document for `xml`; either for `yaml`
+  // (JSON is a subset of YAML).
+  "input": { "city": "Utrecht" },
+  // A JSON array, or a string in JSON, XML or YAML script notation.
+  "script": [ { "command": "add", "path": "$.country", "value": "NL" } ]
+}
+```
+
+`data` comes back as a JSON value for `json`, and as a string holding the document for `xml`
+and `yaml`:
+
+```bash
+curl -X POST http://localhost:5000/transform/xml \
+  -H "Content-Type: application/json" \
+  -d '{"input":"<order><city>Utrecht</city></order>","script":[{"command":"add","path":"/order/country","value":"NL"}]}'
+# → {"success":true,"data":"<order><city>Utrecht</city><country>NL</country></order>"}
+```
+
+Functions from hot-loaded plugin packs are available on `json` only — packs register as
+`FunctionsProvider<JToken>`, and there is no `XElement` or `YamlNode` equivalent to hand them.
+`xml` and `yaml` see the built-in functions.
+
+## Building a plugin package
+
+A pack destined for `/plugins` must be built **without its `TLio.Core` dependency**:
+
+```bash
+dotnet pack TLio.Extensions.Math/TLio.Extensions.Math.csproj -c Release \
+  -o ./plugins -p:SuppressDependenciesWhenPacking=true
+```
+
+This is not a workaround, it is the contract. NuPlane resolves a package's declared NuGet
+dependencies and loads the whole resulting graph into the pack's own `AssemblyLoadContext`. If
+`TLio.Core` is in that graph, the pack gets its *own* copy of it, and the
+`IFunctionsProviderRegistrar<JToken>` its registrar asks for is then a different type from the
+host's — same name, different assembly instance — so the host recognises nothing and logs
+`no recognisable TLio extension assemblies`. Leaving the dependency out keeps `TLio.Core` off the
+graph, and the host supplies it instead through the shared-assembly policy in `Program.cs`.
+
+The packages published to NuGet.org keep their normal dependencies — `dotnet add package
+TLio.Extensions.Math` still brings `TLio.Core` with it. Only the plugin flavour drops it, because
+only in the plugin case is the contract already in the process.
 
 ## Scenario 1: Baseline (no plugins)
 
 ```bash
 curl -X POST http://localhost:5000/transform/json \
   -H "Content-Type: application/json" \
-  -d '{"input":{"value":3.7},"script":[{"command":"set","path":"$.rounded","value":"=round($.value)"}]}'
+  -d '{"input":{"value":3.7},"script":[{"command":"add","path":"$.rounded","value":"=round($.value)"}]}'
 # → { "success": false, "error": "Unknown function: round" }
 
 curl http://localhost:5000/plugins
@@ -43,7 +95,7 @@ curl http://localhost:5000/plugins
 ## Scenario 2: Add a plugin
 
 ```bash
-cp path/to/TLio.Extensions.Math.0.1.0.nupkg ./plugins/
+cp path/to/TLio.Extensions.Math.*.nupkg ./plugins/
 sleep 10
 
 curl http://localhost:5000/plugins
@@ -51,27 +103,33 @@ curl http://localhost:5000/plugins
 
 curl -X POST http://localhost:5000/transform/json \
   -H "Content-Type: application/json" \
-  -d '{"input":{"value":3.7},"script":[{"command":"set","path":"$.rounded","value":"=round($.value)"}]}'
+  -d '{"input":{"value":3.7},"script":[{"command":"add","path":"$.rounded","value":"=round($.value)"}]}'
 # → { "success": true, "data": { "value": 3.7, "rounded": 4 } }
 ```
 
 ## Scenario 3: Remove the plugin
 
 ```bash
-rm ./plugins/TLio.Extensions.Math.0.1.0.nupkg
+rm ./plugins/TLio.Extensions.Math.*.nupkg
 sleep 10
 
 curl -X POST http://localhost:5000/transform/json \
   -H "Content-Type: application/json" \
-  -d '{"input":{"value":3.7},"script":[{"command":"set","path":"$.rounded","value":"=round($.value)"}]}'
+  -d '{"input":{"value":3.7},"script":[{"command":"add","path":"$.rounded","value":"=round($.value)"}]}'
 # → { "success": false, "error": "Unknown function: round" }
 ```
+
+> **Not currently working.** Deleting the file triggers a reconciliation cycle, but the change
+> set comes back empty (`Removed = []`) and the functions stay registered, so `round` keeps
+> answering. The directory feed's role is `DesiredAndCache`, and the cache half appears to hold
+> the package alive after the source file is gone — `NuplaneDirectoryFeedSetupOptions.Role` is
+> where to look. Adding and updating packages (Scenarios 2 and 4) both work.
 
 ## Scenario 4: Multiple plugins
 
 ```bash
-cp path/to/TLio.Extensions.Math.0.1.0.nupkg ./plugins/
-cp path/to/TLio.Extensions.Text.0.1.0.nupkg ./plugins/
+cp path/to/TLio.Extensions.Math.*.nupkg ./plugins/
+cp path/to/TLio.Extensions.Text.*.nupkg ./plugins/
 sleep 10
 
 curl -X POST http://localhost:5000/transform/json \

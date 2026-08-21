@@ -1,10 +1,16 @@
 # Quickstart: NuGet Package Deployment (011)
 
+> **Versioning has moved on since this spec.** The `0.1.0-preview.{run_number}` scheme
+> described here was replaced by tag-derived versioning (MinVer) — see
+> [`docs/versioning.md`](../../docs/versioning.md), which is the current reference. The
+> summary below is kept in step with it; everything else on this page still holds.
+
 ## How Packages Are Published
 
 ### Preview (automatic — every `main` push)
 
-Every merge to `main` triggers a preview publish. Packages are versioned `0.1.0-preview.{N}` where `N` is the GitHub Actions run number.
+Every merge to `main` triggers a preview publish, versioned as the next **minor** of the last
+release tag plus the commit height — `0.9.0-preview.3` after `v0.8.0`.
 
 Install a preview package:
 
@@ -21,7 +27,9 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-The pipeline extracts `1.0.0` from the tag and publishes all 12 packages with that version.
+All 12 packages are published at exactly `1.0.0` — the tag is the version, and the pipeline
+refuses to push if the produced packages say anything else. The **Release** workflow does the
+same thing from the Actions tab, computing the next patch / minor / major tag for you.
 
 ## Consuming TLio from NuGet
 

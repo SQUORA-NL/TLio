@@ -6,12 +6,52 @@ on:
       - main
     tags:
       - 'v*'
+  # Called by release.yml right after it pushes a tag. A tag pushed with GITHUB_TOKEN does not
+  # start another workflow run, so the release flow has to invoke this one directly.
+  workflow_call:
+    inputs:
+      expected_version:
+        description: 'Version the caller expects the packages to carry (without the v).'
+        type: string
+        required: false
+        default: ''
 
 jobs:
+  # A tag *is* the version, so a malformed one is caught here, before anything is built: a tag
+  # like `v0.9` or `0.9.0` would otherwise be ignored by MinVer as unparseable and quietly
+  # publish a preview version under what everyone believes is a release.
+  validate-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate tag
+        run: |
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then
+            echo "Not a tag push — nothing to validate."
+            exit 0
+          fi
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+            echo "::error::Tag '$TAG' is not a valid version tag."
+            echo "Expected vX.Y.Z (e.g. v1.2.3) or vX.Y.Z-prerelease (e.g. v1.2.3-rc.1)."
+            exit 1
+          fi
+          if [[ "$TAG" == *-preview.* ]]; then
+            echo "::error::Tag '$TAG' uses the -preview identifier, which is reserved for the"
+            echo "automatic previews built from untagged commits on main. Use -alpha, -beta or -rc."
+            exit 1
+          fi
+          echo "Tag '$TAG' accepted."
+
   test:
+    needs: [validate-tag]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # MinVer computes the version from the git history, so the whole history and every tag
+          # has to be present. With the default shallow checkout it finds no tag at all and
+          # stamps 0.0.0-alpha.0.
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -28,10 +68,12 @@ jobs:
         run: dotnet test --no-build -c Release
 
   publish:
-    needs: test
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -41,26 +83,60 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-      # The version is computed before the build and passed to BOTH build and pack:
-      # pack --no-build reuses the built assemblies, so a version passed only to pack
-      # produced packages whose metadata said one version while the DLLs inside
-      # identified as the VersionPrefix default (0.8.0 package, 0.1.0.0 assembly).
-      - name: Compute version
-        id: version
-        run: |
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/v}"
-          else
-            VERSION="0.1.0-preview.${{ github.run_number }}"
-          fi
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Publishing version: $VERSION"
-
+      # No /p:Version anywhere: MinVer derives it from the tag during both build and pack, so
+      # the assemblies and the package metadata cannot disagree. (They used to — a version
+      # passed only to `pack --no-build` produced a 0.8.0 package holding a 0.1.0.0 assembly.)
       - name: Build
-        run: dotnet build --no-restore -c Release /p:Version=${{ steps.version.outputs.VERSION }}
+        run: dotnet build --no-restore -c Release
 
       - name: Pack
-        run: dotnet pack --no-build -c Release /p:Version=${{ steps.version.outputs.VERSION }} -o ./nupkg-out
+        run: dotnet pack --no-build -c Release -o ./nupkg-out
+
+      # Read the version back off the packages that were actually produced and hold it against
+      # the tag. This is what makes the tag and NuGet provably the same number, rather than two
+      # numbers that are merely computed the same way.
+      - name: Verify packaged version
+        id: verify
+        env:
+          # Via the environment rather than inline `${{ }}`, so the value is data to the shell
+          # rather than script text.
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+        run: |
+          shopt -s nullglob
+          PACKAGES=(./nupkg-out/*.nupkg)
+          if [[ ${#PACKAGES[@]} -eq 0 ]]; then
+            echo "::error::No packages were produced."
+            exit 1
+          fi
+
+          # TLio.Json.SystemText.1.2.3-preview.4.nupkg -> 1.2.3-preview.4
+          # (package ids are letters and dots only, so the version starts at the first digit)
+          VERSIONS=$(for p in "${PACKAGES[@]}"; do
+            basename "$p" .nupkg | sed -E 's/^[A-Za-z.]+\.([0-9].*)$/\1/'
+          done | sort -u)
+
+          if [[ $(echo "$VERSIONS" | wc -l) -ne 1 ]]; then
+            echo "::error::Packages do not share one version:"
+            echo "$VERSIONS"
+            exit 1
+          fi
+          VERSION="$VERSIONS"
+
+          EXPECTED=""
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            EXPECTED="${GITHUB_REF#refs/tags/v}"
+          elif [[ -n "${EXPECTED_VERSION:-}" ]]; then
+            EXPECTED="${EXPECTED_VERSION}"
+          fi
+
+          if [[ -n "$EXPECTED" && "$VERSION" != "$EXPECTED" ]]; then
+            echo "::error::Expected version $EXPECTED but the packages say $VERSION."
+            echo "MinVer did not see the tag — usually a shallow checkout (needs fetch-depth: 0)."
+            exit 1
+          fi
+
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing ${#PACKAGES[@]} packages at version $VERSION"
 
       - name: Push to NuGet.org
         run: |
@@ -68,3 +144,11 @@ jobs:
             --api-key ${{ secrets.NUGET_API_KEY }} \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
+
+      - name: Summary
+        run: |
+          echo "### Published \`${{ steps.verify.outputs.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ls -1 ./nupkg-out/*.nupkg | xargs -n1 basename >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

@@ -22,7 +22,7 @@ public sealed class YamlAdapterTests
 
     // ── Fixture-based round-trip tests ───────────────────────────────────────
 
-    private static IEnumerable<string[]> YamlFixtureDirectories()
+    private static IEnumerable<string> YamlFixtureDirectories()
     {
         var fixtureRoot = Path.Combine(TestContext.CurrentContext.TestDirectory, "Fixtures", "Yaml");
         foreach (var dir in Directory.GetDirectories(fixtureRoot))
@@ -30,7 +30,7 @@ public sealed class YamlAdapterTests
             var input = Path.Combine(dir, "input.yaml");
             var expected = Path.Combine(dir, "expected-roundtrip.yaml");
             if (File.Exists(input) && File.Exists(expected))
-                yield return new[] { dir };
+                yield return dir;
         }
     }
 

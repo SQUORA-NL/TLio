@@ -113,6 +113,43 @@ dotnet build
 dotnet test
 ```
 
+## Versioning
+
+The git tag is the version. No version number is written down in this repository — MinVer reads
+the nearest `v*` tag at build time and stamps it on the assemblies *and* the packages, so a
+local `dotnet pack` produces exactly what the pipeline produces. Never add a `VersionPrefix`,
+`<Version>` or a `/p:Version=` to a build: that is how `0.1.0-preview.N` packages came to be
+published for months after `v0.8.0` was released.
+
+- Untagged commit on `main` → next **minor** of the last release tag plus the commit height,
+  e.g. `0.9.0-preview.3`.
+- Tag `vX.Y.Z` → exactly `X.Y.Z`.
+
+Cut a release with the **Release** workflow (patch / minor / major / exact), or by hand with
+`git tag vX.Y.Z && git push origin vX.Y.Z` — the two are equivalent. Steering the previews
+toward a major or a patch is done by pushing a pre-release tag (`v2.0.0-alpha.1`), not by
+editing a number. Full rules: `docs/versioning.md`.
+
+Anything that builds this repo in CI needs `fetch-depth: 0`; a shallow checkout has no tags and
+MinVer falls back to `0.0.0-alpha.0`.
+
+`AssemblyVersion` stays major-only (`0.9.0` → `0.0.0.0`) and must not be widened to
+major.minor. `TLio.Sample.DockerPlugin` hot-loads extension packs at runtime and the CLR binds
+them by AssemblyVersion — moving it on every minor breaks every plugin already in the wild.
+`Directory.Build.targets` says so at the point of temptation.
+
+## Strong naming
+
+Every assembly is signed with `tlio.snk`, committed at the repo root. Strong naming here is an
+identity mechanism, not a security one: NuPlane's shared-assembly policy is keyed on
+`(name, publicKeyToken, majorVersion)` and refuses a token that is not 16 hex characters, so an
+unsigned TLio.Core cannot be shared with a plugin's load context. Public key and token live once
+in `Directory.Build.props` as `TlioPublicKey` / `TlioPublicKeyToken`; `InternalsVisibleTo` is
+declared in the two csproj files that need it so it can interpolate the key.
+
+Consequence for consumers: assembly identity changed, so anything compiled against an unsigned
+TLio build must be recompiled. Pre-1.0, that is the moment to do it.
+
 ## Code Style
 
 C# / .NET 10: Follow standard conventions

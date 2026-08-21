@@ -115,6 +115,21 @@ dotnet build
 dotnet test
 ```
 
+## Versioning and releases
+
+The git tag is the version — no version number is written down in this repository. MinVer reads
+the nearest `v*` tag at build time, so `dotnet pack` on a laptop produces exactly what the
+pipeline publishes to NuGet.org.
+
+| | |
+|---|---|
+| commit on `main` | next minor of the last tag, e.g. `0.9.0-preview.3` |
+| tag `v0.9.0` | `0.9.0` |
+
+Cut a release with the **Release** workflow (choose patch / minor / major), or by hand with
+`git tag v0.9.0 && git push origin v0.9.0`. Steering, pre-releases and the rules the pipeline
+enforces: [`docs/versioning.md`](docs/versioning.md).
+
 ## Development approach
 
 TLio is built using **Spec-Driven Development** via [SpecKit](https://github.com/github/spec-kit).

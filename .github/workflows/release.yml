@@ -1,0 +1,161 @@
+name: Release
+
+# The one place a release version is decided. Pick patch / minor / major (or type an exact
+# version) and this computes the next tag from the latest existing one, pushes it, and hands
+# it to the publish workflow. The tag stays the source of truth — this only spares you the
+# arithmetic and the typo.
+#
+# Doing it by hand is exactly equivalent and always allowed:
+#     git tag v1.3.0 && git push origin v1.3.0
+#
+# See docs/versioning.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Which part of the version to raise'
+        type: choice
+        required: true
+        default: minor
+        options:
+          - patch
+          - minor
+          - major
+          - exact
+      exact_version:
+        description: 'Used only when bump = exact. With or without the v (e.g. 1.0.0, v2.0.0-rc.1).'
+        type: string
+        required: false
+        default: ''
+      dry_run:
+        description: 'Compute and print the tag without creating it'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.compute.outputs.version }}
+      tag: ${{ steps.compute.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute the next tag
+        id: compute
+        env:
+          # Via the environment rather than inline `${{ }}`: exact_version is free text typed
+          # into the dispatch form, and inline it would be pasted into the script itself.
+          BUMP: ${{ inputs.bump }}
+          EXACT_VERSION: ${{ inputs.exact_version }}
+        run: |
+          set -euo pipefail
+
+          # Latest release tag by version order, ignoring pre-releases: a release is bumped from
+          # the last *release*, so v1.0.0-rc.1 does not become the base for v1.0.1.
+          LATEST=$(git tag --list 'v[0-9]*' --sort=-v:refname \
+                   | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)
+          if [[ -z "$LATEST" ]]; then
+            LATEST="v0.0.0"
+            echo "No release tag yet — treating the base as $LATEST."
+          fi
+          echo "Latest release tag: $LATEST"
+
+          BASE="${LATEST#v}"
+          MAJOR="${BASE%%.*}"
+          REST="${BASE#*.}"
+          MINOR="${REST%%.*}"
+          PATCH="${REST#*.}"
+
+          case "$BUMP" in
+            patch) VERSION="$MAJOR.$MINOR.$((PATCH + 1))" ;;
+            minor) VERSION="$MAJOR.$((MINOR + 1)).0" ;;
+            major) VERSION="$((MAJOR + 1)).0.0" ;;
+            exact)
+              VERSION="${EXACT_VERSION:-}"
+              VERSION="${VERSION#v}"
+              if [[ -z "$VERSION" ]]; then
+                echo "::error::bump = exact requires exact_version."
+                exit 1
+              fi
+              ;;
+          esac
+
+          TAG="v$VERSION"
+
+          # Same rules the publish workflow enforces on a hand-pushed tag.
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+            echo "::error::'$TAG' is not a valid version tag (expected vX.Y.Z or vX.Y.Z-rc.1)."
+            exit 1
+          fi
+          if [[ "$TAG" == *-preview.* ]]; then
+            echo "::error::'-preview.' is reserved for the automatic previews built from main."
+            echo "Use -alpha, -beta or -rc for a hand-cut pre-release."
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::error::Tag $TAG already exists."
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+          {
+            echo "### ${{ inputs.dry_run == true && 'Dry run — no tag created' || 'Releasing' }} \`$TAG\`"
+            echo ''
+            echo "| | |"
+            echo "|---|---|"
+            echo "| previous release | \`$LATEST\` |"
+            echo "| bump | \`$BUMP\` |"
+            echo "| new tag | \`$TAG\` |"
+            echo "| commit | \`$GITHUB_SHA\` |"
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Create and push the tag
+        if: ${{ inputs.dry_run == false }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.compute.outputs.tag }}" \
+                  -m "Release ${{ steps.compute.outputs.tag }}"
+          git push origin "${{ steps.compute.outputs.tag }}"
+
+  # A tag pushed with GITHUB_TOKEN does not trigger the tag-push workflow, so publish is
+  # invoked directly. The checked-out ref carries the tag we just pushed, so MinVer computes
+  # the release version — expected_version makes the pipeline prove it did.
+  publish:
+    needs: [tag]
+    if: ${{ inputs.dry_run == false }}
+    uses: ./.github/workflows/publish.yml
+    with:
+      expected_version: ${{ needs.tag.outputs.version }}
+    secrets: inherit
+
+  github-release:
+    needs: [tag, publish]
+    if: ${{ inputs.dry_run == false }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ needs.tag.outputs.tag }}" \
+            --title "${{ needs.tag.outputs.tag }}" \
+            --generate-notes \
+            ${{ contains(needs.tag.outputs.tag, '-') && '--prerelease' || '' }}

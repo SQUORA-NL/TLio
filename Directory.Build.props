@@ -23,14 +23,84 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
+  <!--
+    Strong naming.
+
+    Every assembly in this repository is signed with the same key, and the key is committed
+    next to it. That is deliberate and not a security hole: strong naming is an identity
+    mechanism, not a tamper-proofing one — Microsoft says so outright — and .NET Core does not
+    verify strong-name signatures at load time anyway.
+
+    The reason TLio needs an identity at all is the plugin host. A NuPlane extension pack is
+    loaded into its own AssemblyLoadContext, and the host has to declare which assemblies must
+    come from *its* context instead so that `IFunctionsProviderRegistrar<JToken>` means one type
+    on both sides. NuPlane expresses that as `SharedAssembly(name, publicKeyToken, major)` and
+    validates that the token is 16 hex characters, i.e. it will not share an unsigned assembly.
+    Without a strong name there is no way to say "this one is mine" — see
+    samples/TLio.Sample.DockerPlugin/Program.cs.
+
+    Signing everything, tests and samples included, keeps `InternalsVisibleTo` working: a signed
+    assembly may only grant access to another signed assembly, and the attribute has to name the
+    grantee's full public key.
+  -->
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)tlio.snk</AssemblyOriginatorKeyFile>
+
+    <!-- tlio.snk's public half, in the two forms that need it: the full key for
+         InternalsVisibleTo (which will not take a token) and the token for NuPlane's
+         SharedAssembly(). Both are derived from the key file, so they change only if it does.
+         Read them back off any built assembly with AssemblyName.GetAssemblyName(). -->
+    <TlioPublicKey>002400000480000014010000060200000024000052534131000800000100010039401c3ba865903ed21a55a385a3a7bf2d6ba8535825bb66df0489ee9b53540243497829a5bd71a49ed91069e11e6d471001c1c6f770772e68ec553af76b115907db13afbbba0f58ea6d976474192fb6c1ec90a8001f4607480faeb1f9386a7c1c452a2259b445ef1050d9ed0daeb81bf6477af067042d8e0491c5a70428e1cfb6a9f4a600c3669a59efabcc3fbb4da583a6a8003003f6ba44da3f0203bed3e31e609b92e597f2e2c69c24dc898c3116706fbde289b1074b10ebba160686cf9c1044259f5587ebf21e3ebbdff3c59eb7b416d19142de5b04531a987b6e010ad1ab7babd8adcaacebeda42b432b720bd1c89220dfcc0e6bf95cc80acebd42d4bb</TlioPublicKey>
+    <TlioPublicKeyToken>356c904b6d1035c0</TlioPublicKeyToken>
+  </PropertyGroup>
+
   <!-- NuGet packaging defaults — library projects opt in with <IsPackable>true</IsPackable> -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>
-    <VersionPrefix>0.1.0</VersionPrefix>
     <Authors>Frans van Ek</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/FransVanEk/TLio</PackageProjectUrl>
     <RepositoryUrl>https://github.com/FransVanEk/TLio</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
+
+  <!--
+    Versioning — the git tag is the only source of truth.
+
+    MinVer reads the nearest `v*` tag and stamps Version, AssemblyVersion, FileVersion and the
+    package version from it, at build time. There is deliberately no VersionPrefix here: a
+    number written in this file drifts from the tags the moment someone forgets to bump it,
+    which is exactly how `0.1.0-preview.N` packages kept being published after v0.8.0 was
+    released. Because MinVer runs on every build, `dotnet pack` on a laptop produces the same
+    version the pipeline does.
+
+      on tag v1.2.3          ->  1.2.3
+      3 commits past v1.2.3  ->  1.3.0-preview.3      (untagged main; auto-increment: minor)
+      on tag v2.0.0-rc.1     ->  2.0.0-rc.1
+      1 commit past that     ->  2.0.0-rc.1.1
+
+    Steering a patch / minor / major release: docs/versioning.md.
+
+    `preview` is a single identifier, so the commit height appends as `-preview.3` rather than
+    MinVer's default `-alpha.0.3`. The price of that shorter form: never hand-push a
+    `vX.Y.Z-preview.N` tag, or it interleaves with the automatic ones. Hand-tagged pre-releases
+    use `-alpha`, `-beta` or `-rc`.
+  -->
+  <PropertyGroup>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+    <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>
+
+    <!-- No git repository to read (the Docker sample build copies sources only): MinVer would
+         warn MINVER0001 and stamp 0.0.0-alpha.0, which reads like a real release. Skip it and
+         say plainly what the build was. -->
+    <MinVerSkip Condition="'$(MinVerSkip)' == '' And !Exists('$(MSBuildThisFileDirectory).git')">true</MinVerSkip>
+    <Version Condition="'$(MinVerSkip)' == 'true'">0.0.0-nogit</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
 </Project>
