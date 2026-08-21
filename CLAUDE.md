@@ -172,6 +172,12 @@ var engine = new ScriptEngine<JToken>(commands, functions).UseXmlScripts().UseYa
 engine.Execute(scriptText, data, context);   // notation detected from the text
 ```
 
+Any command in any notation may carry an optional `title` and `description` — free text about
+the step, never read during execution. They live on `CommandBase`, so every command has them and
+each parser binds them like any other string property. XML is the one exception worth
+remembering: there they are **attributes only**, because a `<title>` child element is part of the
+value being written. `CommandDocumentationTests` in `TLio.Parity.Tests` holds both halves.
+
 `ScriptFormatDetector` decides from the first meaningful character: `<` XML, `[`/`{` JSON,
 anything else YAML. All three parsers implement `IScriptParser<TNode>`.
 

@@ -100,6 +100,7 @@ YAML uses the same `$.a.b` paths as JSON. XML uses XPath — see
 | Null value | empty `<value/>` | `<set path="…"><value/></set>` |
 | Nested script | child element named after the property | `<ifScript>…</ifScript>` |
 | Settings object | child element, same field names as JSON | see below |
+| Title / description | **attribute only** | `title="Name the customer"` |
 
 A settings object is written with the same field names the JSON notation uses, following the
 [document shape](document-shape.md) for nesting and lists:
@@ -119,6 +120,44 @@ A settings object is written with the same field names the JSON notation uses, f
 
 Child elements that do not name a command property are read as the value, so
 `<set path="…"><a>1</a></set>` means the same as `<set path="…"><value><a>1</a></value></set>`.
+
+---
+
+## Documenting a step
+
+Any command in any notation takes two optional fields, `title` and `description`. They are free
+text about the step — nothing reads them at run time, and a script behaves identically with them
+and without them. They exist so the next person to open the script can see what a path was for.
+
+```json
+[
+  { "command": "put", "path": "$.policy.premium", "value": "=calculate('#$.base# * 1.21')",
+    "title": "Gross premium",
+    "description": "Base rate plus 21% insurance tax. The rate itself is set two steps up." }
+]
+```
+
+```yaml
+- command: put
+  path: $.policy.premium
+  value: "=calculate('#$.base# * 1.21')"
+  title: Gross premium
+  description: >-
+    Base rate plus 21% insurance tax. The rate itself is set two steps up.
+```
+
+```xml
+<put path="/policy/premium"
+     title="Gross premium"
+     description="Base rate plus 21% insurance tax.">=calculate('#/policy/base# * 1.21')</put>
+```
+
+In XML they are **attributes, never child elements**: a `<title>` child is part of the value
+being written, so `<put path="/p"><title>Sale</title></put>` still writes an object with a title
+in it, as it always did.
+
+Commands inside a nested script (`ifScript`, `elseScript`) take them too, and both fields
+survive `TLioConvert.Serialize` — a script that is read and written again keeps its documentation.
 
 ---
 

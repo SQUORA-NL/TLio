@@ -19,6 +19,9 @@ namespace TLio.Yaml;
 ///   value: Alice
 /// - command: remove
 ///   path: $.obsolete
+///   title: Drop the scratch field
+///   description: |
+///     Written by the previous step and of no interest downstream.
 /// - command: copy
 ///   fromPath: $.src
 ///   toPath: $.dst
