@@ -1,0 +1,5 @@
+{
+  "input": { "name": "Sanne" },
+  "script": [{ "command": "add", "path": "$.tier", "value": "=if($.vip,'gold','bronze')" }],
+  "result": { "name": "Sanne", "tier": "bronze" }
+}

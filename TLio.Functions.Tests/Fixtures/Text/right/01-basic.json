@@ -1,0 +1,5 @@
+{
+  "input": { "str": "Hello World" },
+  "script": [{ "command": "put", "path": "$.last", "value": "=right($.str, 5)" }],
+  "result": { "str": "Hello World", "last": "World" }
+}

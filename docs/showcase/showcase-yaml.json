@@ -128,5 +128,32 @@
     "restoreSettings": { "delimiter": "__", "metadataPath": "", "removeMetadata": true } },
 
   { "command": "put", "path": "$.core.scriptPath", "value": "=scriptPath()" },
-  { "command": "put", "path": "$.core.path",       "value": "=path()" }
+  { "command": "put", "path": "$.core.path",       "value": "=path()" },
+
+  { "command": "add", "path": "$.dupes", "value": ["a", "b", "a", "c"] },
+  { "command": "add", "path": "$.rows", "value": [{"k": "r2", "n": 5}, {"k": "r1", "n": 2}, {"k": "r3", "n": 9}] },
+  { "command": "add", "path": "$.dutchDate", "value": "31-12-2026" },
+  { "command": "add", "path": "$.plate", "value": "AB-123-C" },
+
+  { "command": "put", "path": "$.math.multiply",     "value": "=multiply('2','3','4')" },
+  { "command": "put", "path": "$.math.divide",       "value": "=divide('10','4')" },
+  { "command": "put", "path": "$.math.clamp",        "value": "=clamp('9','1','5')" },
+  { "command": "put", "path": "$.math.sign",         "value": "=sign('-7')" },
+  { "command": "put", "path": "$.date.diff",         "value": "=dateDiff($.dates[1],$.dates[0],'days')" },
+  { "command": "put", "path": "$.date.add",          "value": "=dateAdd($.dates[1],1,'years')" },
+  { "command": "put", "path": "$.date.part",         "value": "=datePart($.dates[0],'quarter')" },
+  { "command": "put", "path": "$.date.formatted",    "value": "=formatDate($.dates[0],'yyyyMMdd')" },
+  { "command": "put", "path": "$.date.parsed",       "value": "=parseDate($.dutchDate,'dd-MM-yyyy')" },
+  { "command": "put", "path": "$.date.startOfMonth", "value": "=startOfMonth($.dates[0])" },
+  { "command": "put", "path": "$.date.endOfMonth",   "value": "=endOfMonth($.dates[0])" },
+  { "command": "put", "path": "$.check.between",     "value": "=between($.people[0].score,'1','100')" },
+  { "command": "put", "path": "$.text.regexReplace", "value": "=regexReplace($.plate,'[0-9]+','000')" },
+  { "command": "put", "path": "$.text.regexExtract", "value": "=regexExtract($.plate,'[0-9]+')" },
+  { "command": "put", "path": "$.text.right",        "value": "=right($.name,6)" },
+  { "command": "put", "path": "$.core.if",           "value": "=if(=equals($.tags[0],'alpha'),'yes','no')" },
+  { "command": "put", "path": "$.core.coalesce",     "value": "=coalesce($.nowhere,$.emptyField,$.name)" },
+  { "command": "put", "path": "$.core.last",         "value": "=last($.tags[*])" },
+  { "command": "put", "path": "$.core.distinct",     "value": "=distinct($.dupes)" },
+  { "command": "put", "path": "$.core.sorted",       "value": "=sort($.numbers,'asc')" },
+  { "command": "put", "path": "$.core.sortedBy",     "value": "=sortby($.rows,'n','asc')" }
 ]

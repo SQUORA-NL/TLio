@@ -1,0 +1,26 @@
+{
+  "input": {
+    "request": {
+      "requestedStartDate": "2026-09-01"
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.old",
+      "value": "=concat(=sum(=substring($.request.requestedStartDate,0,4),1),=substring($.request.requestedStartDate,4,6))"
+    },
+    {
+      "command": "put",
+      "path": "$.new",
+      "value": "=dateadd($.request.requestedStartDate,1,'years')"
+    }
+  ],
+  "result": {
+    "request": {
+      "requestedStartDate": "2026-09-01"
+    },
+    "old": "2027-09-01",
+    "new": "2027-09-01"
+  }
+}

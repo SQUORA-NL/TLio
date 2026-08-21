@@ -126,15 +126,26 @@ var result  = engine.Execute(scriptJson, data, JsonExecutionContext.CreateDefaul
 // ETL commands: flatten, restore, resolve, tocsv
 options.CommandsProvider.RegisterETL<JToken>();
 
-// Text functions: concat, format, substring, toLower, toUpper, trim, split, join,
-//   contains, startsWith, endsWith, indexOf, isEmpty, replace, parse, toString,
-//   toFixed, newguid, padleft, padright, length
+// Text functions: concat, format, substring, right, toLower, toUpper, trim, split, join,
+//   contains, startsWith, endsWith, indexOf, isEmpty, replace, regexReplace, regexExtract,
+//   parse, toString, toFixed, newguid, padleft, padright, length
 options.FunctionsProvider.RegisterText<JToken>();
+
+// Math functions: sum, subtract, multiply, divide, clamp, sign, round, ceiling, floor,
+//   abs, sqrt, pow, modulo, calculate, avg, count, min, max, median + the conditional
+//   aggregates (sumIf(s), countIf(s), averageIf(s), minIfs, maxIfs)
+options.FunctionsProvider.RegisterMath<JToken>();
+
+// Date functions: dateDiff, dateAdd, datePart, formatDate, parseDate, startOfMonth,
+//   endOfMonth, dateCompare, isDateBetween, minDate, maxDate, avgDate
+options.FunctionsProvider.RegisterTimeDate<JToken>();
 ```
 
 Predicates for `ifElse` / `decisionTable` conditions — equals, notEquals, greaterThan,
-greaterOrEqual, lessThan, lessOrEqual, and, or, not, exists, isNull, isString, isNumber,
-isBoolean, isArray, isObject, in, matches — are built in and need no registration.
+greaterOrEqual, lessThan, lessOrEqual, between, and, or, not, exists, isNull, isString,
+isNumber, isBoolean, isArray, isObject, in, matches — are built in and need no registration.
+
+So are the value-choosing and collection functions: if, coalesce, distinct, sort, sortBy, last.
 
 ### Minimal script example
 

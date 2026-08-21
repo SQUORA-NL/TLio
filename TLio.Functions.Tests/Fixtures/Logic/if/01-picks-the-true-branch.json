@@ -1,0 +1,5 @@
+{
+  "input": { "age": 22, "excess": 300 },
+  "script": [{ "command": "add", "path": "$.band", "value": "=if(=lessThan($.age,24),'young','standard')" }],
+  "result": { "age": 22, "excess": 300, "band": "young" }
+}

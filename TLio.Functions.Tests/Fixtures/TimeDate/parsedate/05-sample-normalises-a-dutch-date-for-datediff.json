@@ -1,0 +1,40 @@
+{
+  "input": {
+    "request": {
+      "quotedOn": "21-08-2026",
+      "applicant": {
+        "birthDate": "04-11-1991"
+      }
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.calc.quotedOn",
+      "value": "=parsedate($.request.quotedOn,'dd-MM-yyyy')"
+    },
+    {
+      "command": "put",
+      "path": "$.calc.birthDate",
+      "value": "=parsedate($.request.applicant.birthDate,'dd-MM-yyyy')"
+    },
+    {
+      "command": "put",
+      "path": "$.calc.driverAge",
+      "value": "=datediff($.calc.birthDate,$.calc.quotedOn,'years')"
+    }
+  ],
+  "result": {
+    "request": {
+      "quotedOn": "21-08-2026",
+      "applicant": {
+        "birthDate": "04-11-1991"
+      }
+    },
+    "calc": {
+      "quotedOn": "2026-08-21",
+      "birthDate": "1991-11-04",
+      "driverAge": 34
+    }
+  }
+}

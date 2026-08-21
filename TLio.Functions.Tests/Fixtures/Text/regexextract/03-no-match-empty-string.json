@@ -1,0 +1,5 @@
+{
+  "input": { "postcode": "1234 AB" },
+  "script": [{ "command": "put", "path": "$.digitsOnly", "value": "=regexExtract($.postcode, '^\\d{9}$')" }],
+  "result": { "postcode": "1234 AB", "digitsOnly": "" }
+}

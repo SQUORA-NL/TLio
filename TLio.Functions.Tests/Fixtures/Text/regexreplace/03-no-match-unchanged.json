@@ -1,0 +1,5 @@
+{
+  "input": { "postcode": "1234ab" },
+  "script": [{ "command": "put", "path": "$.formatted", "value": "=regexReplace($.postcode, '^\\d{6}$', 'X')" }],
+  "result": { "postcode": "1234ab", "formatted": "1234ab" }
+}

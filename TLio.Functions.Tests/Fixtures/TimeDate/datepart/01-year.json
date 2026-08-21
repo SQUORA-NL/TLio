@@ -1,0 +1,26 @@
+{
+  "input": {
+    "stamp": "2026-08-21T14:35:09Z",
+    "monday": "2024-03-11",
+    "sunday": "2024-03-17",
+    "isoEdge": "2021-01-01",
+    "feb2024": "2024-02-10",
+    "marchFirst": "2024-03-01"
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.result",
+      "value": "=datepart($.stamp,'year')"
+    }
+  ],
+  "result": {
+    "stamp": "2026-08-21T14:35:09Z",
+    "monday": "2024-03-11",
+    "sunday": "2024-03-17",
+    "isoEdge": "2021-01-01",
+    "feb2024": "2024-02-10",
+    "marchFirst": "2024-03-01",
+    "result": 2026
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "input": { "a": 6, "missingFactor": null },
+  "script": [{ "command": "put", "path": "$.result", "value": "=multiply($.a, $.missingFactor)" }],
+  "result": { "a": 6, "missingFactor": null, "result": 0 }
+}

@@ -41,7 +41,8 @@ TLio.UnitTests/             ← Core / Commands / Engine tests only (no function
 TLio.Json.Tests/            ← JSON (Newtonsoft) adapter tests (JsonNodeAdapter, JsonPathItemsFetcher)
 TLio.Json.SystemText.Tests/ ← System.Text.Json adapter fixture tests
 TLio.Functions.Tests/       ← Built-in function tests + extension-pack fixture tests (Math, Text, TimeDate, ETL, TextPack)
-TLio.Extensions.Text/      ← Optional text function pack: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim (008)
+TLio.Extensions.Text/      ← Optional text function pack: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim (008), regexReplace, regexExtract, right (023)
+TLio.Functions/Collections/ ← distinct, sort, sortBy, last — built in, registered by ParseOptions (023)
 TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtures
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
 TLio.Mcp/                   ← MCP stdio server (tlio_list_commands, tlio_describe, tlio_execute, tlio_analyze, 019)
@@ -219,6 +220,12 @@ One asymmetry to know: TLio's XML adapter ignores attributes by design, but afte
 JSON or YAML they are ordinary `@name` properties. Converting is how a script edits an attribute.
 
 ## Recent Changes
+- 023-function-gaps: 21 functions added so one idea stops costing four levels of nesting —
+  Math `multiply` / `divide` / `clamp` / `sign`; TimeDate `dateDiff` / `dateAdd` / `datePart` /
+  `formatDate` / `parseDate` / `startOfMonth` / `endOfMonth`; Text `regexReplace` /
+  `regexExtract` / `right`; built-in `if` / `coalesce` / `between` / `distinct` / `sort` /
+  `sortBy` / `last`. The two car-insurance samples were rewritten onto them with byte-identical
+  output. Analysis and rationale: `docs/function-gaps.md`.
 - 022-format-convert-command: `convert` usable mid-script — section executors, canonical shape,
   `convertValue` for in-place values, `textProperty`/`namespacePrefix` honoured, YAML emitted
   through YamlDotNet, FormatConverter folded into `TLio.sln`.

@@ -60,6 +60,81 @@ public abstract class TimeDateFunctionBase<TNode> : FunctionBase<TNode>
     }
 
     /// <summary>
+    /// Resolve one argument to a string (a unit, a part name or a format string).
+    /// Path not found or found-but-null → false + log error: the TimeDate pack has no
+    /// empty-string substitute the way the Text pack does — a missing unit is not "no unit".
+    /// </summary>
+    protected static bool TryGetStringArg(
+        IFunctionSupportedValue<TNode> arg,
+        out string value,
+        TNode currentNode, TNode dataContext,
+        IExecutionContext<TNode> context, string funcName)
+    {
+        value = string.Empty;
+        var result = ResolveArg(arg, currentNode, dataContext, context);
+        if (!result.Success || result.Data.Count == 0)
+        {
+            context.LogError(funcName, $"{funcName}: argument path not found.");
+            return false;
+        }
+        var node = result.Data.First!;
+        if (context.NodeAdapter.IsNull(node))
+        {
+            context.LogError(funcName, $"{funcName}: string argument is null.");
+            return false;
+        }
+        value = context.NodeAdapter.TryGetString(node) ?? string.Empty;
+        return true;
+    }
+
+    /// <summary>
+    /// Resolve one argument to a whole number — the amount in <c>=dateadd(...)</c>.
+    /// Fractional values are truncated toward zero; null or non-numeric → false + log error.
+    /// </summary>
+    protected static bool TryGetLongArg(
+        IFunctionSupportedValue<TNode> arg,
+        out long value,
+        TNode currentNode, TNode dataContext,
+        IExecutionContext<TNode> context, string funcName)
+    {
+        value = 0;
+        var result = ResolveArg(arg, currentNode, dataContext, context);
+        if (!result.Success || result.Data.Count == 0)
+        {
+            context.LogError(funcName, $"{funcName}: argument path not found.");
+            return false;
+        }
+        var node = result.Data.First!;
+        if (context.NodeAdapter.IsNull(node))
+        {
+            context.LogError(funcName, $"{funcName}: numeric argument is null.");
+            return false;
+        }
+
+        var num = context.NodeAdapter.TryGetDouble(node);
+        if (!num.HasValue)
+        {
+            var text = context.NodeAdapter.TryGetString(node);
+            if (text == null || !double.TryParse(text, NumberStyles.Float,
+                    CultureInfo.InvariantCulture, out var parsed))
+            {
+                context.LogError(funcName, $"{funcName}: argument is not a number.");
+                return false;
+            }
+            num = parsed;
+        }
+
+        var truncated = System.Math.Truncate(num.Value);
+        if (double.IsNaN(truncated) || truncated < long.MinValue || truncated > long.MaxValue)
+        {
+            context.LogError(funcName, $"{funcName}: numeric argument is out of range.");
+            return false;
+        }
+        value = (long)truncated;
+        return true;
+    }
+
+    /// <summary>
     /// Resolve one argument and collect ALL its date values (handles arrays).
     /// Returns false on any path-not-found or parse error.
     /// </summary>
@@ -103,7 +178,12 @@ public abstract class TimeDateFunctionBase<TNode> : FunctionBase<TNode>
         return true;
     }
 
-    private static bool TryParseDate(
+    /// <summary>
+    /// Parse a string with the shared <see cref="DateFormats"/> list. Exposed so
+    /// <c>=parsedate(...)</c> without an explicit format uses exactly the same vocabulary as
+    /// every other TimeDate function.
+    /// </summary>
+    protected static bool TryParseDate(
         string str, out DateTimeOffset value,
         string funcName, IExecutionContext<TNode> context)
     {

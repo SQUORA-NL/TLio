@@ -1,0 +1,8 @@
+{
+  "input": { "age": 25, "band": { "from": 25, "to": 39 } },
+  "script": [
+    { "command": "add", "path": "$.atLow",  "value": "=between($.band.from,$.band.from,$.band.to)" },
+    { "command": "add", "path": "$.atHigh", "value": "=between($.band.to,$.band.from,$.band.to)" }
+  ],
+  "result": { "age": 25, "band": { "from": 25, "to": 39 }, "atLow": true, "atHigh": true }
+}

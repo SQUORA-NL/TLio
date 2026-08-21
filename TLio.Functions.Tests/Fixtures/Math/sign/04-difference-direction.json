@@ -1,0 +1,5 @@
+{
+  "input": { "quoted": 412.5, "renewal": 398.2 },
+  "script": [{ "command": "put", "path": "$.direction", "value": "=sign(=subtract($.renewal, $.quoted))" }],
+  "result": { "quoted": 412.5, "renewal": 398.2, "direction": -1 }
+}

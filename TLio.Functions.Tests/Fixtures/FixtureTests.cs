@@ -45,6 +45,34 @@ public class FixtureTests
     public void Notation(JToken input, string script, JToken expected)
         => RunFixture(input, script, expected);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Logic/if" })]
+    public void Logic_If(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Logic/coalesce" })]
+    public void Logic_Coalesce(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Logic/between" })]
+    public void Logic_Between(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Collections/distinct" })]
+    public void Collections_Distinct(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Collections/sort" })]
+    public void Collections_Sort(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Collections/sortby" })]
+    public void Collections_SortBy(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Collections/last" })]
+    public void Collections_Last(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
     private void RunFixture(JToken input, string script, JToken expected)
     {
         var context = JsonExecutionContext.CreateDefault();

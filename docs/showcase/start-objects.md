@@ -3,7 +3,8 @@
 This folder holds one showcase script per format, each executing **every registered command**
 (15: `add`, `set`, `put`, `remove`, `copy`, `move`, `rename`, `merge`, `compare`,
 `decisionTable`, `ifElse`, `flatten`, `restore`, `resolve`, `tocsv`) and **every registered
-function** (76, across the core, Text, Math and TimeDate packs) against a start document.
+function** (98 names across the core, Text, Math and TimeDate packs — 97 implementations, since
+`path` is an alias for `scriptPath`) against a start document.
 The three start documents are the *same* document, written in each format's canonical shape
 (see `docs/ai-ref/adapters/document-shape.md`), and every script produces the equivalent
 result — that parity is what `TLio.Parity.Tests` guards.

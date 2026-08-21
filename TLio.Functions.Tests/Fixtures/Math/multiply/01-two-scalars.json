@@ -1,0 +1,5 @@
+{
+  "input": { "a": 6, "b": 7 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=multiply($.a, $.b)" }],
+  "result": { "a": 6, "b": 7, "result": 42 }
+}

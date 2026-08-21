@@ -1,0 +1,26 @@
+{
+  "input": {
+    "request": {
+      "quotedOn": "2026-08-21"
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.old",
+      "value": "=replace($.request.quotedOn,'-','')"
+    },
+    {
+      "command": "put",
+      "path": "$.new",
+      "value": "=formatdate($.request.quotedOn,'yyyyMMdd')"
+    }
+  ],
+  "result": {
+    "request": {
+      "quotedOn": "2026-08-21"
+    },
+    "old": "20260821",
+    "new": "20260821"
+  }
+}

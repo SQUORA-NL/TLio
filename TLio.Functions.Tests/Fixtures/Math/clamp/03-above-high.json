@@ -1,0 +1,5 @@
+{
+  "input": { "bonusMalusFactor": 1.9, "low": 0.5, "high": 1.5 },
+  "script": [{ "command": "put", "path": "$.cappedFactor", "value": "=clamp($.bonusMalusFactor, $.low, $.high)" }],
+  "result": { "bonusMalusFactor": 1.9, "low": 0.5, "high": 1.5, "cappedFactor": 1.5 }
+}

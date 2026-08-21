@@ -102,6 +102,18 @@ public class ExtensionFixtureTests
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Math/sumifs" })]
     public void Math_SumIfs(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Math/multiply" })]
+    public void Math_Multiply(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Math/divide" })]
+    public void Math_Divide(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Math/clamp" })]
+    public void Math_Clamp(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Math/sign" })]
+    public void Math_Sign(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
     // ── Text ──────────────────────────────────────────────────────────────────
 
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Text/toupper" })]
@@ -127,6 +139,15 @@ public class ExtensionFixtureTests
 
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Text/isempty" })]
     public void Text_IsEmpty(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Text/regexreplace" })]
+    public void Text_RegexReplace(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Text/regexextract" })]
+    public void Text_RegexExtract(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Text/right" })]
+    public void Text_Right(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
 
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Text/join" })]
     public void Text_Join(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
@@ -183,6 +204,27 @@ public class ExtensionFixtureTests
 
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "TimeDate/maxdate" })]
     public void TimeDate_MaxDate(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "TimeDate/datediff" })]
+    public void TimeDate_DateDiff(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "TimeDate/dateadd" })]
+    public void TimeDate_DateAdd(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "TimeDate/datepart" })]
+    public void TimeDate_DatePart(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "TimeDate/formatdate" })]
+    public void TimeDate_FormatDate(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "TimeDate/parsedate" })]
+    public void TimeDate_ParseDate(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "TimeDate/startofmonth" })]
+    public void TimeDate_StartOfMonth(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "TimeDate/endofmonth" })]
+    public void TimeDate_EndOfMonth(JToken input, string script, JToken expected) => RunFixture(input, script, expected);
 
     // ── Helper ────────────────────────────────────────────────────────────────
 

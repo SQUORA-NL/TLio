@@ -1,0 +1,5 @@
+{
+  "input": { "v": 0.4, "low": 1, "high": 5 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=clamp($.v, $.low, $.high)" }],
+  "result": { "v": 0.4, "low": 1, "high": 5, "result": 1 }
+}

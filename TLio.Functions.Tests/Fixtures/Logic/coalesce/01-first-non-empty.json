@@ -1,0 +1,5 @@
+{
+  "input": { "work": null, "home": "", "mobile": "+31 6 1234 5678" },
+  "script": [{ "command": "add", "path": "$.phone", "value": "=coalesce($.work,$.home,$.mobile)" }],
+  "result": { "work": null, "home": "", "mobile": "+31 6 1234 5678", "phone": "+31 6 1234 5678" }
+}

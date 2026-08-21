@@ -1,0 +1,5 @@
+{
+  "input": { "age": 30, "band": { "from": 25, "to": 39 } },
+  "script": [{ "command": "add", "path": "$.inBand", "value": "=between($.age,$.band.from,$.band.to)" }],
+  "result": { "age": 30, "band": { "from": 25, "to": 39 }, "inBand": true }
+}

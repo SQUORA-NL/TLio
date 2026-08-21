@@ -153,7 +153,25 @@ Pinned: `IndirectDepthTests.AFailedIndirect_AbortsTheRestOfTheScript`,
 
 Setting shape: on-step-failure — `Abort` (today) / `ContinueAndCollect`.
 
-### B3. ETL commands do not resolve `=indirect()` in their paths
+### B3. `between` answers `false` where `isDateBetween` fails
+
+The two range predicates disagree about an operand that cannot be resolved. `=between($.v,1,5)`
+on a missing `$.v` logs a warning and answers `false`; `=isDateBetween($.d,$.from,$.to)` on a
+missing `$.d` fails and stops the script.
+
+Neither is wrong for where it lives, which is why both stand. `isDateBetween` is in the TimeDate
+pack, whose null contract is fail-on-unresolvable because null is not a date. `between` is a
+core predicate and had to behave exactly like the `=and(=greaterOrEqual(…),=lessOrEqual(…))`
+pair it was added to replace — and in a core predicate a path that matches nothing is an
+*answer*, not a failure (that is the whole reason `PredicateFunctionBase` exists separately).
+Making `between` fail would have changed the meaning of every band check rewritten to use it.
+
+The consequence to know: swapping one for the other when the value is a date changes the
+script's failure behaviour, not just its type handling.
+
+Documented in `docs/ai-ref/functions/Between.md` and in the class summary.
+
+### B4. ETL commands do not resolve `=indirect()` in their paths
 
 Every core command now resolves `=indirect(...)` in **every** path it takes. `flatten`, `restore`,
 `resolve` and `tocsv` do not — they fail (without throwing) instead.

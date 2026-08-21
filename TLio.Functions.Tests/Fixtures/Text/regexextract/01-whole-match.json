@@ -1,0 +1,5 @@
+{
+  "input": { "iban": "NL91ABNA0417164300" },
+  "script": [{ "command": "put", "path": "$.bank", "value": "=regexExtract($.iban, '[A-Z]{4}')" }],
+  "result": { "iban": "NL91ABNA0417164300", "bank": "ABNA" }
+}

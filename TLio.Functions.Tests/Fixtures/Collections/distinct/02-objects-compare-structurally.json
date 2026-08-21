@@ -1,0 +1,21 @@
+{
+  "input": {
+    "coverages": [
+      { "code": "wa", "premium": 120 },
+      { "code": "casco", "premium": 240 },
+      { "code": "wa", "premium": 120 }
+    ]
+  },
+  "script": [{ "command": "put", "path": "$.unique", "value": "=distinct($.coverages)" }],
+  "result": {
+    "coverages": [
+      { "code": "wa", "premium": 120 },
+      { "code": "casco", "premium": 240 },
+      { "code": "wa", "premium": 120 }
+    ],
+    "unique": [
+      { "code": "wa", "premium": 120 },
+      { "code": "casco", "premium": 240 }
+    ]
+  }
+}

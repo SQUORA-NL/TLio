@@ -1,0 +1,26 @@
+{
+  "input": {
+    "request": {
+      "requestedStartDate": "2026-09-01"
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.old",
+      "value": "=substring($.request.requestedStartDate,0,4)"
+    },
+    {
+      "command": "put",
+      "path": "$.new",
+      "value": "=datepart($.request.requestedStartDate,'year')"
+    }
+  ],
+  "result": {
+    "request": {
+      "requestedStartDate": "2026-09-01"
+    },
+    "old": "2026",
+    "new": 2026
+  }
+}

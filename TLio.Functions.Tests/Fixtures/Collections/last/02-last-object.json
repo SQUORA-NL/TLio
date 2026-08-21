@@ -1,0 +1,16 @@
+{
+  "input": {
+    "events": [
+      { "on": "2024-01-01", "type": "start" },
+      { "on": "2024-06-01", "type": "renewal" }
+    ]
+  },
+  "script": [{ "command": "put", "path": "$.mostRecent", "value": "=last($.events[*])" }],
+  "result": {
+    "events": [
+      { "on": "2024-01-01", "type": "start" },
+      { "on": "2024-06-01", "type": "renewal" }
+    ],
+    "mostRecent": { "on": "2024-06-01", "type": "renewal" }
+  }
+}

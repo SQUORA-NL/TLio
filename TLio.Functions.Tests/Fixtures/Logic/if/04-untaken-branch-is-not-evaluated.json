@@ -1,0 +1,5 @@
+{
+  "input": { "name": "Sanne" },
+  "script": [{ "command": "add", "path": "$.nickname", "value": "=if(=exists($.nick),=fetch($.nick),'-')" }],
+  "result": { "name": "Sanne", "nickname": "-" }
+}
