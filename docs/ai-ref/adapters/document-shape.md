@@ -175,8 +175,27 @@ XML attributes are outside the JSON data model and the adapter ignores them: the
 properties, they are not read, and no command writes one. An attribute already on an element
 is left alone by everything except a command that replaces that element wholesale.
 
-`FormatConverter` (see `FormatConverter/`) does carry attributes, as `@name` metadata, for
-conversion work. That is a separate concern from script execution.
+`FormatConverter` (see `FormatConverter/`) does carry attributes, for conversion work. That is a
+separate concern from script execution, and it produces an **asymmetry worth knowing**:
+
+| | attributes are | so a command can |
+|---|---|---|
+| in XML | outside the data model | not read or write them |
+| after `convert` to JSON or YAML | ordinary `@name` properties | read and write them like any other |
+
+So `xml → json`, edit `@id`, `json → xml` works, while editing `@id` *while the document is
+XML* does not. Converting is the way to touch an attribute from a script.
+
+An element that carries both attributes and text cannot be a bare scalar elsewhere — it becomes
+`{"@currency": "EUR", "#text": "9.99"}`, with the value's key named by the `textProperty`
+setting. Namespace declarations travel the same way, under `namespacePrefix`.
+
+**Conversion output is this page.** `convert` writes the canonical shape above — arrays wrapped,
+`item` as the item name, `<k/>` for null — precisely so that the commands *after* a mid-script
+`convert` address the tree described here. `CanonicalShapeTests` in `FormatConverter.Tests`
+walks converted output with `XmlNodeAdapter` and `YamlNodeAdapter` and fails when it drifts.
+The legacy repeated-sibling shape is still reachable as `arrayHandling: "repeated"`, and is not
+the default because in that shape the parent element is what reads as the array.
 
 ---
 

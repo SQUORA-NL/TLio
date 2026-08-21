@@ -77,24 +77,34 @@ public sealed class JsonFormatAdapter : IFormatAdapter
         };
     }
 
-    private static ObjectNode ConvertObject(JsonElement element, string? name, ConversionSettings settings)
+    private static IntermediateNode ConvertObject(JsonElement element, string? name, ConversionSettings settings)
     {
         var node = new ObjectNode { Name = name };
-        var prefix = settings.AttributePrefix;
         foreach (var prop in element.EnumerateObject())
         {
-            if (prop.Name.StartsWith(prefix, StringComparison.Ordinal)
-                && prop.Name.Length > prefix.Length
-                && prop.Value.ValueKind == JsonValueKind.String)
-            {
+            if (MetadataConvention.IsMetadataKey(prop.Name, settings) && prop.Value.ValueKind == JsonValueKind.String)
                 node.Metadata[prop.Name] = prop.Value.GetString()!;
-            }
             else
-            {
                 node.Children.Add(ConvertElement(prop.Value, prop.Name, settings));
-            }
         }
-        return node;
+
+        return Unwrap(node, settings);
+    }
+
+    /// <summary>
+    /// Fold <c>{"@currency": "EUR", "#text": "9.99"}</c> back into the scalar with attributes that
+    /// it was on the way out, so an XML element with both survives a JSON round trip.
+    /// </summary>
+    private static IntermediateNode Unwrap(ObjectNode node, ConversionSettings settings)
+    {
+        if (!MetadataConvention.IsTextWrapper(node.Children.Select(c => c.Name ?? string.Empty), settings))
+            return node;
+        if (node.Children[0] is not ScalarNode text) return node;
+
+        var scalar = new ScalarNode(text.Type, text.RawValue) { Name = node.Name };
+        foreach (var entry in node.Metadata)
+            scalar.Metadata[entry.Key] = entry.Value;
+        return scalar;
     }
 
     private static ArrayNode ConvertArray(JsonElement element, string? name, ConversionSettings settings)
@@ -115,16 +125,19 @@ public sealed class JsonFormatAdapter : IFormatAdapter
 
     private static void WriteNode(Utf8JsonWriter writer, IntermediateNode node, ConversionSettings settings, bool isRoot = false)
     {
+        // A named root is wrapped as {"name": …} so the XML element name survives the round trip.
+        // This holds for a scalar root too: <price>9.99</price> is {"price":"9.99"}, not "9.99".
+        if (isRoot && node.Name is not null)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName(node.Name);
+            WriteNode(writer, node, settings);
+            writer.WriteEndObject();
+            return;
+        }
+
         switch (node)
         {
-            case ObjectNode obj when isRoot && obj.Name is not null:
-                // Wrap named root: {"Name": {metadata + children}}
-                writer.WriteStartObject();
-                writer.WritePropertyName(obj.Name);
-                WriteObjectContent(writer, obj, settings);
-                writer.WriteEndObject();
-                break;
-
             case ObjectNode obj:
                 WriteObjectContent(writer, obj, settings);
                 break;
@@ -134,6 +147,20 @@ public sealed class JsonFormatAdapter : IFormatAdapter
                 foreach (var item in arr.Items)
                     WriteNode(writer, item, settings);
                 writer.WriteEndArray();
+                break;
+
+            case ScalarNode scalar when MetadataConvention.NeedsTextWrapper(scalar, settings):
+                // Attributes have nowhere to live on a bare value, so the value takes a key of
+                // its own beside them.
+                writer.WriteStartObject();
+                foreach (var entry in MetadataConvention.Emittable(scalar, settings))
+                    writer.WriteString(entry.Key, entry.Value);
+                if (MetadataConvention.WrapperCarriesText(scalar))
+                {
+                    writer.WritePropertyName(settings.TextProperty);
+                    WriteScalar(writer, scalar);
+                }
+                writer.WriteEndObject();
                 break;
 
             case ScalarNode scalar:
@@ -159,12 +186,8 @@ public sealed class JsonFormatAdapter : IFormatAdapter
     private static void WriteObjectContent(Utf8JsonWriter writer, ObjectNode obj, ConversionSettings settings)
     {
         writer.WriteStartObject();
-        var prefix = settings.AttributePrefix;
-        foreach (var kv in obj.Metadata)
-        {
-            if (kv.Key.StartsWith(prefix, StringComparison.Ordinal) && kv.Key.Length > prefix.Length)
-                writer.WriteString(kv.Key, kv.Value);
-        }
+        foreach (var entry in MetadataConvention.Emittable(obj, settings))
+            writer.WriteString(entry.Key, entry.Value);
         foreach (var child in obj.Children)
         {
             writer.WritePropertyName(child.Name ?? string.Empty);

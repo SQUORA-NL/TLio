@@ -42,18 +42,23 @@ public sealed class ConvertCommand<TNode> : ICommand<TNode>
     public static ConvertCommand<TNode> Parse(JsonElement element)
     {
         var to = element.TryGetProperty("to", out var toProp) ? toProp.GetString() ?? string.Empty : string.Empty;
-        var settings = ParseSettings(element);
-        return new ConvertCommand<TNode>(to, settings);
+        return new ConvertCommand<TNode>(to, ConvertSettingsReader.Read(element));
     }
 
     /// <summary>
-    /// When executed directly (outside <see cref="MultiFormatScriptRunner"/>), this is a no-op.
+    /// Outside <see cref="MultiFormatScriptRunner"/> this cannot do anything, and reports failure
+    /// rather than pretending otherwise.
     /// </summary>
     public TLioExecutionResult<TNode> Execute(TNode dataContext, IExecutionContext<TNode> context)
     {
-        context.LogWarning("ConvertCommand",
-            $"'convert' command to '{To}' was executed inline — it has no effect outside MultiFormatScriptRunner.");
-        return TLioExecutionResult<TNode>.Successful(dataContext);
+        // Failure rather than a warning: the document is still in the format it started in, and
+        // reporting success would tell the caller a conversion happened that did not.
+        context.LogError("ConvertCommand",
+            $"'convert' to '{To}' did nothing: it marks a format boundary, and only " +
+            "MultiFormatScriptRunner can split a script at one — the engine works in a single " +
+            "node type from start to finish. Run the script through the runner, or use " +
+            "'convertValue' to convert one value in place.");
+        return TLioExecutionResult<TNode>.Failed(dataContext);
     }
 
     /// <inheritdoc/>
@@ -67,30 +72,4 @@ public sealed class ConvertCommand<TNode> : ICommand<TNode>
 
     /// <inheritdoc/>
     public ICommand<TNode> Clone() => new ConvertCommand<TNode>(To, Settings);
-
-    private static ConversionSettings ParseSettings(JsonElement element)
-    {
-        if (!element.TryGetProperty("settings", out var settingsEl) || settingsEl.ValueKind != JsonValueKind.Object)
-            return ConversionSettings.Empty;
-
-        return new ConversionSettings
-        {
-            TextProperty = GetString(settingsEl, "textProperty", "#text"),
-            AttributePrefix = GetString(settingsEl, "attributePrefix", "@"),
-            NamespacePrefix = GetString(settingsEl, "namespacePrefix", "xmlns:"),
-            InferTypes = GetBool(settingsEl, "inferTypes", false),
-            CdataAsText = GetBool(settingsEl, "cdataAsText", false),
-            FlattenAnchors = GetBool(settingsEl, "flattenAnchors", true),
-        };
-    }
-
-    private static string GetString(JsonElement el, string prop, string defaultValue) =>
-        el.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String
-            ? v.GetString() ?? defaultValue
-            : defaultValue;
-
-    private static bool GetBool(JsonElement el, string prop, bool defaultValue) =>
-        el.TryGetProperty(prop, out var v) && v.ValueKind is JsonValueKind.True or JsonValueKind.False
-            ? v.GetBoolean()
-            : defaultValue;
 }
