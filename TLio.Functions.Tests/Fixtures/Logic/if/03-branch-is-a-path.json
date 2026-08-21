@@ -1,0 +1,5 @@
+{
+  "input": { "requested": 500, "standard": 300, "useRequested": true },
+  "script": [{ "command": "add", "path": "$.excess", "value": "=if($.useRequested,$.requested,$.standard)" }],
+  "result": { "requested": 500, "standard": 300, "useRequested": true, "excess": 500 }
+}

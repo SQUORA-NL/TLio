@@ -29,10 +29,15 @@
 
 | Branches | Rule evolution | Command |
 |----------|----------------|---------|
+| **One value, two ways** | Simple | **`if` function** — not a command |
 | Two outcomes, one condition | Simple | `ifElse` |
 | Three or more outcomes | May grow | `decisionTable` |
 | Produce equal/greater/less/different label | Classification | `compare` |
 | Produce a structural diff of two sub-trees | Classification | `compare` (with `settings`) |
+
+**Quick rule:** if both branches only write **one value to one path**, use the `if` *function*
+inside a single `put`. Reach for `ifElse` when a branch does something structural — adds an
+object, removes a node, runs several commands.
 
 ### Combining data
 
@@ -80,7 +85,10 @@
 |------|----------|
 | Split on delimiter → array | `split` |
 | Extract by start position + length | `substring` |
+| **Extract the last N characters** | **`right`** (`left` is `substring(s,0,n)`) |
 | Find position of substring | `indexOf` |
+| **Pull a fragment out by pattern** | **`regexExtract`** — `""` when no match |
+| **Rewrite by pattern** | **`regexReplace`** — `replace` is literal-only |
 
 ### Case and whitespace
 
@@ -105,6 +113,24 @@
 | Filtered total | `sumif` | Yes — arrays must be parallel |
 | Filtered count | `countif` | Yes |
 
+### Arithmetic
+
+| Goal | Function | Shape |
+|------|----------|-------|
+| Add | `sum` | variadic; flattens arrays |
+| Subtract | `subtract` | binary |
+| **Multiply** | **`multiply`** | variadic; flattens arrays — mirrors `sum` |
+| **Divide** | **`divide`** | binary — mirrors `subtract` |
+| Remainder | `modulo` | binary |
+| Raise to a power | `pow` | binary |
+| **Bound to a range** | **`clamp`** | `value, low, high`, both inclusive |
+| **Direction of a number** | **`sign`** | `-1` / `0` / `1` |
+| Free-form expression string | `calculate` | one string, parsed at run time |
+
+**Quick rule:** reach for `multiply`/`divide` for a product or quotient of values. `calculate`
+is for a genuinely free-form expression — not for multiplying a list of numbers through
+`concat`.
+
 ### Rounding
 
 | Goal | Function | 7.5 → | -7.5 → |
@@ -119,10 +145,45 @@
 |------|----------|---------|
 | Is date within a range? | `isDateBetween` | boolean (both bounds inclusive) |
 | Which date is earlier/later? | `dateCompare` | **long** -1/0/1 — NOT a string |
+| **How far apart? (age, term, tenure)** | **`dateDiff`** | **long**, whole units, truncated toward zero |
+| **Shift a date** | **`dateAdd`** | date string; month-end clamps |
+| **One component of a date** | **`datePart`** | **long** |
 | Earliest date in array | `minDate` | date string |
 | Latest date in array | `maxDate` | date string |
 | Average date of array | `avgDate` | date string |
 | Current UTC timestamp | `datetime` | date string (always UTC) |
+| **Render a stored date** | **`formatDate`** | string — `datetime` can only format *now* |
+| **Read a non-ISO date** | **`parseDate`** | canonical ISO date string |
+| **First / last day of the month** | **`startOfMonth`** / **`endOfMonth`** | date string, leap-year correct |
+
+Units for `dateDiff` and `dateAdd`, singular or plural: `years`, `months`, `weeks`, `days`,
+`hours`, `minutes`, `seconds`. `years` and `months` are **calendar-aware** — `years` means
+birthdays passed, not `days/365.25`.
+
+`datePart` parts: `year`, `month`, `day`, `hour`, `minute`, `second`, `quarter`, `dayofweek`
+(**ISO: 1 = Monday**), `dayofyear`, `weekofyear` (ISO 8601), `daysinmonth`.
+
+### Choosing a value
+
+| Goal | Function |
+|------|----------|
+| One value, two ways | `if` — lazy, the untaken branch is never evaluated |
+| One fallback | `fetch($.path, default)` |
+| Several candidate sources | `coalesce` — first that is neither null nor `""` |
+| Is a number inside a range? | `between` — inclusive; the numeric `isDateBetween` |
+
+### Collections
+
+| Goal | Function | Note |
+|------|----------|------|
+| Remove duplicates | `distinct` | order-preserving, first occurrence wins |
+| Order scalars | `sort` | `asc`/`desc`; numeric only when *every* element is numeric |
+| Order objects by a field | `sortBy` | key is a plain property chain, not a path expression |
+| Last match of a path | `last` | `partial` counts from the front only |
+
+These four return a **collection** — the containing command is normally a `put` to an array
+path. They are the only new capability here rather than a shorthand: before them, de-duplicating
+needed `merge` with `uniqueItemsWithoutKeys` and a second document, and ordering was unreachable.
 
 ### Advanced / path functions
 

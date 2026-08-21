@@ -1,0 +1,5 @@
+{
+  "input": { "basePremium": 42.5, "regionFactor": 1.2, "ageFactor": 0.8 },
+  "script": [{ "command": "put", "path": "$.premium", "value": "=round(=multiply($.basePremium, $.regionFactor, $.ageFactor), 2)" }],
+  "result": { "basePremium": 42.5, "regionFactor": 1.2, "ageFactor": 0.8, "premium": 40.8 }
+}

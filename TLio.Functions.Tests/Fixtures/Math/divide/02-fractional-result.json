@@ -1,0 +1,5 @@
+{
+  "input": { "a": 10, "b": 4 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=divide($.a, $.b)" }],
+  "result": { "a": 10, "b": 4, "result": 2.5 }
+}

@@ -1,0 +1,32 @@
+{
+  "input": {
+    "request": {
+      "quotedOn": "2026-08-21",
+      "applicant": {
+        "birthDate": "1991-11-04"
+      }
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.old",
+      "value": "=floor(=calculate(=concat('(',=replace($.request.quotedOn,'-',''),'-',=replace($.request.applicant.birthDate,'-',''),')/10000')))"
+    },
+    {
+      "command": "put",
+      "path": "$.new",
+      "value": "=datediff($.request.applicant.birthDate,$.request.quotedOn,'years')"
+    }
+  ],
+  "result": {
+    "request": {
+      "quotedOn": "2026-08-21",
+      "applicant": {
+        "birthDate": "1991-11-04"
+      }
+    },
+    "old": 34,
+    "new": 34
+  }
+}

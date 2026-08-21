@@ -1,0 +1,5 @@
+{
+  "input": { "codes": [] },
+  "script": [{ "command": "put", "path": "$.unique", "value": "=distinct($.codes)" }],
+  "result": { "codes": [], "unique": [] }
+}

@@ -1,0 +1,5 @@
+{
+  "input": { "items": ["first", "second", "third"] },
+  "script": [{ "command": "put", "path": "$.latest", "value": "=last($.items[*])" }],
+  "result": { "items": ["first", "second", "third"], "latest": "third" }
+}

@@ -86,16 +86,30 @@ options.CommandsProvider.RegisterETL<JToken>();
 
 ### Text Extension Pack
 
-`concat`, `length`, `substring`, `toLower`, `toUpper`, `trim`, `trimStart`, `trimEnd`,
-`startswith`, `endswith`, `contains`, `replace`, `split`, `join`, `indexof`, `format`,
-`parse`, `padleft`, `padright`, `newguid`, `isempty`, `toString` are in `TLio.Extensions.Text`.
-Register explicitly:
+`concat`, `length`, `substring`, `right`, `toLower`, `toUpper`, `trim`, `trimStart`, `trimEnd`,
+`startswith`, `endswith`, `contains`, `replace`, `regexreplace`, `regexextract`, `split`,
+`join`, `indexof`, `format`, `parse`, `padleft`, `padright`, `newguid`, `isempty`, `toFixed`,
+`toString` are in `TLio.Extensions.Text`. Register explicitly:
 
 ```csharp
 options.FunctionsProvider.RegisterText<JToken>();
 // or JLio-compatible name:
 options.FunctionsProvider.RegisterTextPack<JToken>();
 ```
+
+### Math and TimeDate Extension Packs
+
+Neither is in `CreateDefault()` either. `multiply`, `divide`, `clamp` and `sign` are in the Math
+pack; `dateDiff`, `dateAdd`, `datePart`, `formatDate`, `parseDate`, `startOfMonth` and
+`endOfMonth` are in the TimeDate pack.
+
+```csharp
+options.FunctionsProvider.RegisterMath<JToken>();
+options.FunctionsProvider.RegisterTimeDate<JToken>();
+```
+
+`if`, `coalesce`, `between`, `distinct`, `sort`, `sortBy` and `last` need no registration —
+they are built in, like the other predicates and path functions.
 
 ---
 
@@ -173,7 +187,10 @@ Use this decision tree to pick the command in one step.
 |------|----------|
 | Split on delimiter | `split` |
 | Extract by position | `substring` |
+| Extract the last N characters | `right` (`left` is `substring(s,0,n)`) |
 | Find position of substring | `indexOf` |
+| Pull a fragment out by pattern | `regexExtract` — `""` when no match, not a failure |
+| Rewrite by pattern | `regexReplace` — `replace` is literal-only |
 
 ### Case and whitespace
 
@@ -198,6 +215,23 @@ Use this decision tree to pick the command in one step.
 | Conditional total | `sumif` | |
 | Conditional count | `countif` | |
 
+### Arithmetic
+
+| Goal | Function | Notes |
+|------|----------|-------|
+| Add | `sum` | Variadic; flattens arrays |
+| Subtract | `subtract` | Binary |
+| Multiply | `multiply` | Variadic; flattens arrays — mirrors `sum`. Found-null multiplies as **0** |
+| Divide | `divide` | Binary — mirrors `subtract`. Zero divisor fails |
+| Remainder | `modulo` | Binary |
+| Power | `pow` | Binary |
+| Bound to a range | `clamp` | `value, low, high`, both inclusive; `low > high` fails |
+| Direction of a number | `sign` | `-1` / `0` / `1` as a long |
+| Free-form expression string | `calculate` | Parses one expression at run time |
+
+Use `multiply`/`divide` for a product or quotient of values. `calculate` is for a genuinely
+free-form expression — not for multiplying a list of numbers assembled with `concat`.
+
 ### Rounding
 
 | Goal | Function |
@@ -212,9 +246,54 @@ Use this decision tree to pick the command in one step.
 |------|----------|-------------|
 | Is date in range? | `isDateBetween` | Boolean; both bounds inclusive |
 | Which date is earlier? | `dateCompare` | Long: -1 (d1 before d2) / 0 (equal) / 1 (d1 after d2) — NOT a string |
+| How far apart? (age, term, tenure) | `dateDiff` | Long; whole units truncated toward zero; negative when `to` precedes `from` |
+| Shift a date | `dateAdd` | Date string; month-end clamps (31 Jan + 1 month → 28/29 Feb) |
+| One component of a date | `datePart` | Long |
 | Earliest in array | `minDate` | Date value |
 | Latest in array | `maxDate` | Date value |
-| Current UTC time | `datetime` | Formatted string |
+| Current UTC time | `datetime` | Formatted string — can only ever format *now* |
+| Render a stored date | `formatDate` | String; this is the one `datetime` cannot do |
+| Read a non-ISO date | `parseDate` | Canonical ISO date string — the normaliser |
+| First / last day of month | `startOfMonth` / `endOfMonth` | Date string; leap-year correct |
+
+Units for `dateDiff` and `dateAdd`, singular or plural: `years`, `months`, `weeks`, `days`,
+`hours`, `minutes`, `seconds`. **`years` and `months` are calendar-aware** — `years` counts
+birthdays passed, not `days/365.25`.
+
+`datePart` parts: `year`, `month`, `day`, `hour`, `minute`, `second`, `quarter`, `dayofweek`
+(**ISO: 1 = Monday, 7 = Sunday** — not .NET's 0 = Sunday), `dayofyear`, `weekofyear`
+(ISO 8601), `daysinmonth`.
+
+### Choosing a value
+
+| Goal | Function | Notes |
+|------|----------|-------|
+| One value, two ways | `if` | **Lazy** — the untaken branch is never evaluated, so `=if(=exists($.a),=fetch($.a),'-')` is safe. Exactly 3 arguments |
+| One fallback | `fetch($.path, default)` | The single-fallback case |
+| Several candidate sources | `coalesce` | First argument that is neither null nor `""`; fails if none qualify, so end with a literal |
+| Is a number inside a range? | `between` | Inclusive both ends; the numeric sibling of `isDateBetween` |
+
+`if` does not replace `ifElse`. Structural branching — adding an object, removing a node,
+running several commands — still needs the command. `if` replaces `ifElse`-used-as-a-ternary.
+
+`coalesce` skips only null and `""`. `0`, `false`, `[]` and `{}` all qualify, which is where it
+differs from a JavaScript `||`.
+
+### Collections
+
+| Goal | Function | Notes |
+|------|----------|-------|
+| Remove duplicates | `distinct` | Order-preserving, first occurrence wins; equality is deep |
+| Order scalars | `sort` | `asc` (default) / `desc`; stable. Numeric **only** when every element is numeric, otherwise ordinal string order |
+| Order objects by a field | `sortBy` | Key is a plain property chain (`'premium'`, `'$.rating.factor'`), **not** a path expression — no wildcards or predicates. Missing keys sort last in both directions |
+| Last match of a path | `last` | `partial` counts from the front only |
+
+These return a **collection**, so the containing command is normally a `put` to an array path.
+They are new capability rather than shorthand: before them, de-duplicating required `merge` with
+`uniqueItemsWithoutKeys` and a second document, and ordering was unreachable.
+
+Note `=distinct($.items)` on an empty array answers `[]`, but `=distinct($.items[*])` on the
+same document **fails** — `[*]` genuinely matches nothing, and path-not-found is an error.
 
 ### Advanced and path functions
 
@@ -1714,6 +1793,29 @@ Input: `{ "name": "  Alice" }` → `"name": "Alice"`
 | trimEnd | `=trimEnd(str)` | Trailing whitespace removal | Text |
 | trimStart | `=trimStart(str)` | Leading whitespace removal | Text |
 | toFixed | `=toFixed(v,n)` / `=toFixed(v,n,sep)` | Money-style text with exactly n decimals | Text |
+| right | `=right(str,n)` | Last n characters | Text |
+| regexReplace | `=regexReplace(str,pattern,repl)` | Rewrite by pattern; `$1` backreferences work | Text |
+| regexExtract | `=regexExtract(str,pattern)` / `=regexExtract(str,pattern,group)` | Pull a fragment out; `""` when no match | Text |
+| multiply | `=multiply(a,b,...)` | Product of values — mirrors `sum` | Math |
+| divide | `=divide(a,b)` | Quotient — mirrors `subtract` | Math |
+| clamp | `=clamp(v,low,high)` | Bound a value to a range | Math |
+| sign | `=sign(v)` | `-1` / `0` / `1` | Math |
+| dateDiff | `=dateDiff(from,to)` / `=dateDiff(from,to,unit)` | How far apart two dates are; unit defaults to `days` | TimeDate |
+| dateAdd | `=dateAdd(date,n)` / `=dateAdd(date,n,unit)` | Shift a date; `n` may be negative | TimeDate |
+| datePart | `=datePart(date,part)` | One component of a date, as a long | TimeDate |
+| formatDate | `=formatDate(date,fmt)` | Render a **stored** date — `datetime` only formats now | TimeDate |
+| parseDate | `=parseDate(text)` / `=parseDate(text,fmt)` | Normalise a non-ISO date to canonical ISO | TimeDate |
+| startOfMonth | `=startOfMonth(date)` | First day of that month | TimeDate |
+| endOfMonth | `=endOfMonth(date)` | Last day of that month; leap-year correct | TimeDate |
+| if | `=if(cond,whenTrue,whenFalse)` | One value, two ways — lazy | built-in |
+| coalesce | `=coalesce(a,b,...)` | First value that is neither null nor `""` | built-in |
+| distinct | `=distinct(array)` | Remove duplicates, order-preserving | built-in |
+| sort | `=sort(array)` / `=sort(array,dir)` | Order scalars, stable | built-in |
+| sortBy | `=sortby(array,keyPath)` / `=sortby(array,keyPath,dir)` | Order objects by a field | built-in |
+| last | `=last(path)` | Last match of a path | built-in |
+
+Full pages for every function, including the traps, live in `docs/ai-ref/functions/` and are
+what `tlio_describe` serves.
 
 ### Predicate Summary (conditions)
 
@@ -1728,6 +1830,7 @@ Every one returns a boolean node; a path that matches nothing is an answer, not 
 | greaterOrEqual | `=greaterOrEqual(a,b)` | Inclusive lower threshold / range start |
 | lessThan | `=lessThan(a,b)` | Exclusive upper threshold |
 | lessOrEqual | `=lessOrEqual(a,b)` | Inclusive upper threshold / range end |
+| between | `=between(v,low,high)` | A whole range in one call, both bounds inclusive |
 | and | `=and(c1,c2,...)` | All conditions must hold |
 | or | `=or(c1,c2,...)` | Any condition may hold |
 | not | `=not(c)` | Invert a predicate that has no negative twin |

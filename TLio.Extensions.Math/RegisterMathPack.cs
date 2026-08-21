@@ -10,8 +10,8 @@ namespace TLio.Extensions.Math;
 /// </code>
 ///
 /// Registers: sum, avg, count, min, max, median, abs, ceiling, floor, round, sqrt, pow,
-///            subtract, modulo, calculate, sumif, sumifs, countif, countifs,
-///            averageif, averageifs, minifs, maxifs.
+///            subtract, multiply, divide, modulo, clamp, sign, calculate, sumif, sumifs,
+///            countif, countifs, averageif, averageifs, minifs, maxifs.
 ///
 /// Ported from JLio.Extensions.Math.RegisterMathPack.RegisterMath().
 /// </summary>
@@ -33,7 +33,11 @@ public static class RegisterMathPack
         registrar.Register("sqrt",       () => new Sqrt<TNode>());
         registrar.Register("pow",        () => new Pow<TNode>());
         registrar.Register("subtract",   () => new Subtract<TNode>());
+        registrar.Register("multiply",   () => new Multiply<TNode>());
+        registrar.Register("divide",     () => new Divide<TNode>());
         registrar.Register("modulo",     () => new Modulo<TNode>());
+        registrar.Register("clamp",      () => new Clamp<TNode>());
+        registrar.Register("sign",       () => new Sign<TNode>());
         registrar.Register("calculate",  () => new Calculate<TNode>());
         registrar.Register("sumif",      () => new SumIf<TNode>());
         registrar.Register("sumifs",     () => new SumIfs<TNode>());

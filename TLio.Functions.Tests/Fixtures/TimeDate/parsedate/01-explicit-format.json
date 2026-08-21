@@ -1,0 +1,22 @@
+{
+  "input": {
+    "dutch": "31-12-2026",
+    "us": "12/25/2026",
+    "compact": "20260821",
+    "withTime": "2024-03-15 14:05"
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.result",
+      "value": "=parsedate($.dutch,'dd-MM-yyyy')"
+    }
+  ],
+  "result": {
+    "dutch": "31-12-2026",
+    "us": "12/25/2026",
+    "compact": "20260821",
+    "withTime": "2024-03-15 14:05",
+    "result": "2026-12-31"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "input": { "codes": ["wa", "casco", "wa", "rechtsbijstand", "casco"] },
+  "script": [{ "command": "put", "path": "$.unique", "value": "=distinct($.codes)" }],
+  "result": {
+    "codes": ["wa", "casco", "wa", "rechtsbijstand", "casco"],
+    "unique": ["wa", "casco", "rechtsbijstand"]
+  }
+}

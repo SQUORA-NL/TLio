@@ -1,0 +1,22 @@
+{
+  "input": {
+    "request": {
+      "requestedStartDate": "2026-09-15"
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.policy.termEnd",
+      "value": "=endofmonth($.request.requestedStartDate)"
+    }
+  ],
+  "result": {
+    "request": {
+      "requestedStartDate": "2026-09-15"
+    },
+    "policy": {
+      "termEnd": "2026-09-30"
+    }
+  }
+}

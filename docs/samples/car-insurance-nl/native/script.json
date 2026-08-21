@@ -238,14 +238,14 @@
   } },
 
   { "command": "put", "path": "$.calc.driverAge",
-    "description": "Age in whole years on the quote date: (20260821 - 19911104) / 10000, floored.",
-    "value": "=floor(=calculate(=concat('(',=replace($.request.quotedOn,'-',''),'-',=replace($.request.applicant.birthDate,'-',''),')/10000')))" },
+    "description": "Age in whole years on the quote date.",
+    "value": "=dateDiff($.request.applicant.birthDate,$.request.quotedOn,'years')" },
   { "command": "put", "path": "$.calc.licenceYears",
-    "description": "Same trick for years of driving experience.",
-    "value": "=floor(=calculate(=concat('(',=replace($.request.quotedOn,'-',''),'-',=replace($.request.applicant.licenceIssuedOn,'-',''),')/10000')))" },
+    "description": "Years of driving experience, the same way.",
+    "value": "=dateDiff($.request.applicant.licenceIssuedOn,$.request.quotedOn,'years')" },
   { "command": "put", "path": "$.calc.vehicleAge",
-    "description": "Same trick for the age of the car.",
-    "value": "=floor(=calculate(=concat('(',=replace($.request.quotedOn,'-',''),'-',=replace($.request.vehicle.firstRegistration,'-',''),')/10000')))" },
+    "description": "Age of the car, the same way.",
+    "value": "=dateDiff($.request.vehicle.firstRegistration,$.request.quotedOn,'years')" },
 
   { "command": "put",   "path": "$.calc.lookup", "value": {},
     "description": "One node holding every lookup key, so one resolve can fill in every rate." },
@@ -397,8 +397,8 @@
       "defaultResults": { "decision": "geaccepteerd", "reason": "Voldoet aan de standaard acceptatierichtlijnen." } } },
 
   { "command": "put", "path": "$.calc.wa",
-    "description": "A product needs calculate(): the Math pack adds and subtracts, it does not multiply.",
-    "value": "=round(=calculate(=concat($.calc.lookup.waBasePremium,'*',$.calc.lookup.regionFactor,'*',$.calc.ageFactor,'*',$.calc.mileageFactor,'*',$.calc.lookup.usageFactor,'*',$.calc.lookup.bmWaFactor)),2)" },
+    "description": "Six rating factors over the WA base premium.",
+    "value": "=round(=multiply($.calc.lookup.waBasePremium,$.calc.lookup.regionFactor,$.calc.ageFactor,$.calc.mileageFactor,$.calc.lookup.usageFactor,$.calc.lookup.bmWaFactor),2)" },
 
   { "command": "ifElse",
     "description": "Casco over the current value, or beperkt casco at its own rate, or nothing at all.",
@@ -406,13 +406,13 @@
     "ifScript": [
       { "command": "put", "path": "$.calc.cascoBasis", "value": "volledig casco over dagwaarde" },
       { "command": "put", "path": "$.calc.casco",
-        "value": "=round(=calculate(=concat($.request.vehicle.currentValue,'*',$.calc.lookup.cascoRate,'/12*',$.calc.lookup.regionFactor,'*',$.calc.lookup.bmCascoFactor,'*',$.calc.lookup.excessFactor,'*',$.calc.lookup.securityFactor,'*',$.calc.lookup.parkingFactor)),2)" } ],
+        "value": "=round(=divide(=multiply($.request.vehicle.currentValue,$.calc.lookup.cascoRate,$.calc.lookup.regionFactor,$.calc.lookup.bmCascoFactor,$.calc.lookup.excessFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2)" } ],
     "elseScript": [
       { "command": "ifElse", "condition": "=equals($.calc.grantedCover,'beperkt-casco')",
         "ifScript": [
           { "command": "put", "path": "$.calc.cascoBasis", "value": "beperkt casco over dagwaarde" },
           { "command": "put", "path": "$.calc.casco",
-            "value": "=round(=calculate(=concat($.request.vehicle.currentValue,'*',$.calc.lookup.limitedCascoRate,'/12*',$.calc.lookup.regionFactor,'*',$.calc.lookup.securityFactor,'*',$.calc.lookup.parkingFactor)),2)" } ],
+            "value": "=round(=divide(=multiply($.request.vehicle.currentValue,$.calc.lookup.limitedCascoRate,$.calc.lookup.regionFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2)" } ],
         "elseScript": [
           { "command": "put", "path": "$.calc.cascoBasis", "value": "geen cascodekking" },
           { "command": "put", "path": "$.calc.casco",      "value": 0 } ] } ] },
@@ -431,12 +431,12 @@
     "description": "Sums and differences take paths straight — no expression string needed.",
     "value": "=round(=sum($.calc.lookup.options[*].premiumPerMonth),2)" },
   { "command": "put", "path": "$.calc.netPerMonth",  "value": "=round(=sum($.calc.wa,$.calc.casco,$.calc.options),2)" },
-  { "command": "put", "path": "$.calc.netPerTerm",   "value": "=round(=calculate(=concat($.calc.netPerMonth,'*',$.calc.lookup.monthsPerTerm,'*',$.calc.lookup.termFactor)),2)" },
+  { "command": "put", "path": "$.calc.netPerTerm",   "value": "=round(=multiply($.calc.netPerMonth,$.calc.lookup.monthsPerTerm,$.calc.lookup.termFactor),2)" },
   { "command": "put", "path": "$.calc.taxableBase",  "value": "=round(=sum($.calc.netPerTerm,$.calc.lookup.policyCostsPerTerm),2)" },
-  { "command": "put", "path": "$.calc.insuranceTax", "value": "=round(=calculate(=concat($.calc.taxableBase,'*',$.rates.rules.insuranceTaxRate)),2)",
+  { "command": "put", "path": "$.calc.insuranceTax", "value": "=round(=multiply($.calc.taxableBase,$.rates.rules.insuranceTaxRate),2)",
     "description": "Assurantiebelasting, 21% over premium plus policy costs." },
   { "command": "put", "path": "$.calc.grossPerTerm", "value": "=round(=sum($.calc.taxableBase,$.calc.insuranceTax),2)" },
-  { "command": "put", "path": "$.calc.grossPerYear", "value": "=round(=calculate(=concat($.calc.grossPerTerm,'*',$.calc.lookup.termsPerYear)),2)" },
+  { "command": "put", "path": "$.calc.grossPerYear", "value": "=round(=multiply($.calc.grossPerTerm,$.calc.lookup.termsPerYear),2)" },
 
   { "command": "put", "path": "$.policy.policyNumber", "value": "=replace($.request.quoteId,'OFF','POL')",
     "description": "OFF-2026-004821 becomes POL-2026-004821." },
@@ -447,8 +447,8 @@
   { "command": "put", "path": "$.policy.status",      "value": "=fetch($.calc.decision)" },
   { "command": "put", "path": "$.policy.issuedOn",    "value": "=fetch($.request.quotedOn)" },
   { "command": "put", "path": "$.policy.startDate",   "value": "=fetch($.request.requestedStartDate)" },
-  { "command": "put", "path": "$.policy.renewalDate", "value": "=concat(=sum(=substring($.request.requestedStartDate,0,4),1),=substring($.request.requestedStartDate,4,6))",
-    "description": "Same day, next year: the year plus one, then the month and day back on." },
+  { "command": "put", "path": "$.policy.renewalDate", "value": "=dateAdd($.request.requestedStartDate,1,'years')",
+    "description": "Same day, next year." },
   { "command": "put", "path": "$.policy.intermediary", "value": {
       "agentNumber": "=fetch($.request.intermediary.agentNumber)",
       "name":        "=fetch($.request.intermediary.name)" } },

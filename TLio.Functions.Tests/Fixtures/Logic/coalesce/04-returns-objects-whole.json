@@ -1,0 +1,9 @@
+{
+  "input": { "billing": null, "postal": { "city": "Utrecht", "zip": "3511" } },
+  "script": [{ "command": "add", "path": "$.address", "value": "=coalesce($.billing,$.postal)" }],
+  "result": {
+    "billing": null,
+    "postal": { "city": "Utrecht", "zip": "3511" },
+    "address": { "city": "Utrecht", "zip": "3511" }
+  }
+}

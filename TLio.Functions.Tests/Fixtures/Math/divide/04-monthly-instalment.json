@@ -1,0 +1,5 @@
+{
+  "input": { "currentValue": 18000, "cascoRate": 0.042 },
+  "script": [{ "command": "put", "path": "$.perMonth", "value": "=round(=divide(=multiply($.currentValue, $.cascoRate), 12), 2)" }],
+  "result": { "currentValue": 18000, "cascoRate": 0.042, "perMonth": 63 }
+}

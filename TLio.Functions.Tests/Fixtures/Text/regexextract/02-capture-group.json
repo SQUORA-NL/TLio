@@ -1,0 +1,5 @@
+{
+  "input": { "postcode": "1234 AB" },
+  "script": [{ "command": "put", "path": "$.letters", "value": "=regexExtract($.postcode, '^(\\d{4})\\s*([A-Z]{2})$', 2)" }],
+  "result": { "postcode": "1234 AB", "letters": "AB" }
+}

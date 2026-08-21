@@ -77,9 +77,9 @@ Per-command detail is in [`docs/ai-ref/commands/`](docs/ai-ref/commands/); notat
 | Project | Purpose |
 |---|---|
 | `TLio.Extensions.ETL` | ETL commands: flatten, restore, resolve, tocsv |
-| `TLio.Extensions.Math` | 23 math functions: abs, avg, calculate, ceiling, count, floor, max, median, min, modulo, pow, round, sqrt, subtract, sum and the conditional aggregates (sumIf(s), countIf(s), averageIf(s), maxIfs, minIfs) |
-| `TLio.Extensions.Text` | 23 text functions: concat, contains, endsWith, format, indexOf, isEmpty, join, length, newGuid, padLeft/Right, parse, replace, split, startsWith, substring, toFixed, toLower, toString, toUpper, trim, trimStart/End |
-| `TLio.Extensions.TimeDate` | avgDate, dateCompare, datetime, isDateBetween, maxDate, minDate |
+| `TLio.Extensions.Math` | 27 math functions: abs, avg, calculate, ceiling, clamp, count, divide, floor, max, median, min, modulo, multiply, pow, round, sign, sqrt, subtract, sum and the conditional aggregates (sumIf(s), countIf(s), averageIf(s), maxIfs, minIfs) |
+| `TLio.Extensions.Text` | 26 text functions: concat, contains, endsWith, format, indexOf, isEmpty, join, length, newGuid, padLeft/Right, parse, regexExtract, regexReplace, replace, right, split, startsWith, substring, toFixed, toLower, toString, toUpper, trim, trimStart/End |
+| `TLio.Extensions.TimeDate` | 12 date functions: avgDate, dateAdd, dateCompare, dateDiff, datePart, endOfMonth, formatDate, isDateBetween, maxDate, minDate, parseDate, startOfMonth (`datetime` is core, not in this pack) |
 
 `JLio.Extensions.JSchema` has no TLio counterpart — deliberately deferred
 (`specs/002-migration-from-jlio/spec.md`), since the JSON Schema library JLio uses is AGPL /

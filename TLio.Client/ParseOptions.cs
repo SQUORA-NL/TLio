@@ -2,6 +2,7 @@ using TLio.Commands;
 using TLio.Commands.Advanced;
 using TLio.Core.Contracts;
 using TLio.Functions;
+using TLio.Functions.Collections;
 using TLio.Functions.Logic;
 
 namespace TLio.Client;
@@ -90,6 +91,17 @@ public class ParseOptions<TNode>
         options.FunctionsProvider.Register("isObject",       () => new IsObjectFunction<TNode>());
         options.FunctionsProvider.Register("in",             () => new InFunction<TNode>());
         options.FunctionsProvider.Register("matches",        () => new MatchesFunction<TNode>());
+        options.FunctionsProvider.Register("if",             () => new IfFunction<TNode>());
+        options.FunctionsProvider.Register("coalesce",       () => new CoalesceFunction<TNode>());
+        options.FunctionsProvider.Register("between",        () => new BetweenFunction<TNode>());
+
+        // Collections — built in for the same reason the predicates are: ordering and
+        // de-duplicating a node set is not a format concern, and until these existed neither
+        // was reachable at all without a second document to merge against.
+        options.FunctionsProvider.Register("distinct",       () => new Distinct<TNode>());
+        options.FunctionsProvider.Register("sort",           () => new Sort<TNode>());
+        options.FunctionsProvider.Register("sortby",         () => new SortBy<TNode>());
+        options.FunctionsProvider.Register("last",           () => new Last<TNode>());
 
         return options;
     }

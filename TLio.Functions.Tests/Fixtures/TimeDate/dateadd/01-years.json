@@ -1,0 +1,22 @@
+{
+  "input": {
+    "janEnd": "2024-01-31",
+    "leapDay": "2024-02-29",
+    "mid": "2024-03-15",
+    "stamp": "2024-03-15T10:30:00Z"
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.result",
+      "value": "=dateadd($.mid,1,'years')"
+    }
+  ],
+  "result": {
+    "janEnd": "2024-01-31",
+    "leapDay": "2024-02-29",
+    "mid": "2024-03-15",
+    "stamp": "2024-03-15T10:30:00Z",
+    "result": "2025-03-15"
+  }
+}

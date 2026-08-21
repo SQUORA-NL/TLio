@@ -1,0 +1,22 @@
+{
+  "input": {
+    "mid": "2024-02-17",
+    "stamp": "2024-04-10T22:15:00Z",
+    "feb2023": "2023-02-10",
+    "december": "2024-12-05"
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.result",
+      "value": "=endofmonth($.december)"
+    }
+  ],
+  "result": {
+    "mid": "2024-02-17",
+    "stamp": "2024-04-10T22:15:00Z",
+    "feb2023": "2023-02-10",
+    "december": "2024-12-05",
+    "result": "2024-12-31"
+  }
+}

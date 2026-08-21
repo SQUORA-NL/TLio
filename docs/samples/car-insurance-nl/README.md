@@ -69,44 +69,62 @@ through the file and dropped at parse time:
 
 ```json
 { "command": "put", "path": "$.calc.driverAge",
-  "description": "Age in whole years on the quote date: (20260821 - 19911104) / 10000, floored.",
-  "value": "=floor(=calculate(=concat('(',=replace($.request.quotedOn,'-',''),'-',=replace($.request.applicant.birthDate,'-',''),')/10000')))" }
+  "description": "Age in whole years on the quote date.",
+  "value": "=dateDiff($.request.applicant.birthDate,$.request.quotedOn,'years')" }
 ```
 
 Every command in both samples carries one. Two caveats: it is an ignored key, not a feature —
 nothing validates or logs it — and `"name"` is **not** free, because `rename` uses it.
 
-## Why the string functions, if this is arithmetic?
+## Ages and products
 
-Nothing to do with SIVI. Two things about TLio decide it:
+**Dates are strings.** In JSON, XML and YAML alike a date is text, so an age is a function call,
+not subtraction. `dateCompare` answers *which is earlier*; `dateDiff` answers *how many*:
 
-**Dates are strings.** In JSON, XML and YAML alike a date is text, and there is no
-date-difference function — `dateCompare` answers *which is earlier*, not *how many years*. So
-an age is computed from the digits: strip the hyphens, subtract, drop the last four digits.
-One command, and correct on the birthday:
-
-```
-(20260821 - 19911104) / 10000 = 34.97…  → floor → 34
+```json
+{ "command": "put", "path": "$.calc.driverAge",
+  "value": "=dateDiff($.request.applicant.birthDate,$.request.quotedOn,'years')" }
 ```
 
-**The Math pack adds but does not multiply.** `sum`, `subtract`, `avg`, `min`, `max` take paths
-directly, so additions need no string work at all:
+`'years'` means birthdays passed — calendar arithmetic, so it is right on the birthday and right
+in a leap year. The same call shape gives licence years and vehicle age.
+
+**Arithmetic takes paths directly**, so nothing here goes through a string:
 
 ```json
 { "command": "put", "path": "$.calc.netPerMonth", "value": "=round(=sum($.calc.wa,$.calc.casco,$.calc.options),2)" }
-{ "command": "put", "path": "$.policy.underwriting.totalExcess", "value": "=sum($.request.cover.voluntaryExcess,$.rates.rules.youngDriverExtraExcess)" }
+{ "command": "put", "path": "$.calc.wa",
+  "value": "=round(=multiply($.calc.lookup.waBasePremium,$.calc.lookup.regionFactor,$.calc.ageFactor,$.calc.mileageFactor,$.calc.lookup.usageFactor,$.calc.lookup.bmWaFactor),2)" }
 ```
 
-There is no `multiply` or `divide`, so a **product** goes through `=calculate('a*b')`, which
-takes one expression string — and `concat` is what builds that string from the fetched values:
+`multiply` is variadic like `sum`; `divide` is binary like `subtract`. The casco premium is the
+one that needs both — a product over the current value, at a monthly twelfth of the annual rate:
 
 ```json
-{ "command": "put", "path": "$.calc.wa",
-  "value": "=round(=calculate(=concat($.calc.lookup.waBasePremium,'*',$.calc.lookup.regionFactor,'*',$.calc.ageFactor,'*',$.calc.mileageFactor,'*',$.calc.lookup.usageFactor,'*',$.calc.lookup.bmWaFactor)),2)" }
+{ "command": "put", "path": "$.calc.casco",
+  "value": "=round(=divide(=multiply($.request.vehicle.currentValue,$.calc.lookup.cascoRate,$.calc.lookup.regionFactor,$.calc.lookup.bmCascoFactor,$.calc.lookup.excessFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2)" }
 ```
 
-That leaves exactly five `concat`s per script — the five products — where the first version had
-one for every arithmetic step.
+### These samples are why those functions exist
+
+Both scripts were originally written before `dateDiff`, `dateAdd`, `multiply` and `divide`
+existed, and the workarounds were instructive enough to be worth recording. An age was digit
+arithmetic on the date text —
+
+```
+=floor(=calculate(=concat('(',=replace(quotedOn,'-',''),'-',=replace(birthDate,'-',''),')/10000')))
+(20260821 - 19911104) / 10000 = 34.97…  → floor → 34
+```
+
+— which is correct on the birthday by construction and wrong for any unit other than years. A
+product went through `=calculate('a*b')`, whose single expression string had to be assembled by
+`concat` from the fetched values, so every premium round-tripped through text and
+`DataTable.Compute`. The renewal date was built by slicing the year out, adding one, and gluing
+the month and day back on.
+
+Rewriting the twenty expressions produced **byte-identical output** for both samples — which is
+the point: the functions did not change the rating, they made it legible. `docs/function-gaps.md`
+is the analysis that came out of reading these two files.
 
 ## The rating model
 

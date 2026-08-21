@@ -457,4 +457,103 @@
   <put path="/root/core/path">
     <value>=path()</value>
   </put>
+  <add path="/root/dupes/item[1]">
+    <value>a</value>
+  </add>
+  <add path="/root/dupes/item[2]">
+    <value>b</value>
+  </add>
+  <add path="/root/dupes/item[3]">
+    <value>a</value>
+  </add>
+  <add path="/root/dupes/item[4]">
+    <value>c</value>
+  </add>
+  <add path="/root/rows/item[1]">
+    <value>
+      <k>r2</k>
+      <n>5</n>
+    </value>
+  </add>
+  <add path="/root/rows/item[2]">
+    <value>
+      <k>r1</k>
+      <n>2</n>
+    </value>
+  </add>
+  <add path="/root/rows/item[3]">
+    <value>
+      <k>r3</k>
+      <n>9</n>
+    </value>
+  </add>
+  <add path="/root/dutchDate">
+    <value>31-12-2026</value>
+  </add>
+  <add path="/root/plate">
+    <value>AB-123-C</value>
+  </add>
+  <put path="/root/math/multiply">
+    <value>=multiply('2','3','4')</value>
+  </put>
+  <put path="/root/math/divide">
+    <value>=divide('10','4')</value>
+  </put>
+  <put path="/root/math/clamp">
+    <value>=clamp('9','1','5')</value>
+  </put>
+  <put path="/root/math/sign">
+    <value>=sign('-7')</value>
+  </put>
+  <put path="/root/date/diff">
+    <value>=dateDiff(/root/dates/item[2],/root/dates/item[1],'days')</value>
+  </put>
+  <put path="/root/date/add">
+    <value>=dateAdd(/root/dates/item[2],1,'years')</value>
+  </put>
+  <put path="/root/date/part">
+    <value>=datePart(/root/dates/item[1],'quarter')</value>
+  </put>
+  <put path="/root/date/formatted">
+    <value>=formatDate(/root/dates/item[1],'yyyyMMdd')</value>
+  </put>
+  <put path="/root/date/parsed">
+    <value>=parseDate(/root/dutchDate,'dd-MM-yyyy')</value>
+  </put>
+  <put path="/root/date/startOfMonth">
+    <value>=startOfMonth(/root/dates/item[1])</value>
+  </put>
+  <put path="/root/date/endOfMonth">
+    <value>=endOfMonth(/root/dates/item[1])</value>
+  </put>
+  <put path="/root/check/between">
+    <value>=between(/root/people/item[1]/score,'1','100')</value>
+  </put>
+  <put path="/root/text/regexReplace">
+    <value>=regexReplace(/root/plate,'[0-9]+','000')</value>
+  </put>
+  <put path="/root/text/regexExtract">
+    <value>=regexExtract(/root/plate,'[0-9]+')</value>
+  </put>
+  <put path="/root/text/right">
+    <value>=right(/root/name,6)</value>
+  </put>
+  <put path="/root/core/if">
+    <value>=if(=equals(/root/tags/item[1],'alpha'),'yes','no')</value>
+  </put>
+  <put path="/root/core/coalesce">
+    <value>=coalesce(/root/nowhere,/root/emptyField,/root/name)</value>
+  </put>
+  <put path="/root/core/last">
+    <value>=last(/root/tags/item)</value>
+  </put>
+  <put path="/root/core/distinct">
+    <value>=distinct(/root/dupes)</value>
+  </put>
+  <put path="/root/core/sorted">
+    <value>=sort(/root/numbers,'asc')</value>
+  </put>
+  <put path="/root/core/sortedBy">
+    <value>=sortby(/root/rows,'n','asc')</value>
+  </put>
 </script>

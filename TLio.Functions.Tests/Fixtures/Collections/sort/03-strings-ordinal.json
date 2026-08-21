@@ -1,0 +1,5 @@
+{
+  "input": { "codes": ["pear", "Apple", "banana"] },
+  "script": [{ "command": "put", "path": "$.ordered", "value": "=sort($.codes)" }],
+  "result": { "codes": ["pear", "Apple", "banana"], "ordered": ["Apple", "banana", "pear"] }
+}

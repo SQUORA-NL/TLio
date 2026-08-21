@@ -11,7 +11,8 @@ namespace TLio.Extensions.Text;
 ///
 /// Registers: concat, length, substring, toupper, tolower, trim, trimstart, trimend,
 ///            startswith, endswith, contains, replace, split, join, indexof,
-///            format, parse, padleft, padright, newguid, isempty, toString.
+///            format, parse, padleft, padright, newguid, isempty, toString,
+///            toFixed, right, regexreplace, regexextract.
 ///
 /// Function lookup is case-insensitive (see FunctionsProvider), so each name also matches
 /// its camelCase spelling — =toUpper(...) and =toupper(...) resolve to the same function.
@@ -55,6 +56,9 @@ public static class TextRegistrar
         // New in 008: toString function
         registrar.Register("toString",   () => new ToStringFunction<TNode>());
         registrar.Register("toFixed",    () => new ToFixed<TNode>());
+        registrar.Register("right",        () => new Right<TNode>());
+        registrar.Register("regexreplace", () => new RegexReplace<TNode>());
+        registrar.Register("regexextract", () => new RegexExtract<TNode>());
         return registrar;
     }
 }

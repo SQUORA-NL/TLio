@@ -1,0 +1,5 @@
+{
+  "input": { "v": 0 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=sign($.v)" }],
+  "result": { "v": 0, "result": 0 }
+}

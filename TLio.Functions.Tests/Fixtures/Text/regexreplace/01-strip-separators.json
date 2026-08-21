@@ -1,0 +1,5 @@
+{
+  "input": { "plate": "XX-99-YY" },
+  "script": [{ "command": "put", "path": "$.compact", "value": "=regexReplace($.plate, '[^A-Z0-9]', '')" }],
+  "result": { "plate": "XX-99-YY", "compact": "XX99YY" }
+}

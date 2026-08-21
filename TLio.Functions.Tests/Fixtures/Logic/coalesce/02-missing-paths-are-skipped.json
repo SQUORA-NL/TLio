@@ -1,0 +1,5 @@
+{
+  "input": { "party": { "role": "policyholder" } },
+  "script": [{ "command": "add", "path": "$.email", "value": "=coalesce($.party.email,$.contact.email,'unknown')" }],
+  "result": { "party": { "role": "policyholder" }, "email": "unknown" }
+}

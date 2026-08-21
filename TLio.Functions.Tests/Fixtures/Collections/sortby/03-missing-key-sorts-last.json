@@ -1,0 +1,22 @@
+{
+  "input": {
+    "claims": [
+      { "id": "b", "amount": 200 },
+      { "id": "x" },
+      { "id": "a", "amount": 100 }
+    ]
+  },
+  "script": [{ "command": "put", "path": "$.ranked", "value": "=sortby($.claims, '$.amount', 'desc')" }],
+  "result": {
+    "claims": [
+      { "id": "b", "amount": 200 },
+      { "id": "x" },
+      { "id": "a", "amount": 100 }
+    ],
+    "ranked": [
+      { "id": "b", "amount": 200 },
+      { "id": "a", "amount": 100 },
+      { "id": "x" }
+    ]
+  }
+}

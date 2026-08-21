@@ -1,0 +1,22 @@
+{
+  "input": {
+    "coverages": [
+      { "code": "wa", "premium": 120 },
+      { "code": "rechtsbijstand", "premium": 60 },
+      { "code": "casco", "premium": 240 }
+    ]
+  },
+  "script": [{ "command": "put", "path": "$.ranked", "value": "=sortby($.coverages, '$.premium', 'desc')" }],
+  "result": {
+    "coverages": [
+      { "code": "wa", "premium": 120 },
+      { "code": "rechtsbijstand", "premium": 60 },
+      { "code": "casco", "premium": 240 }
+    ],
+    "ranked": [
+      { "code": "casco", "premium": 240 },
+      { "code": "wa", "premium": 120 },
+      { "code": "rechtsbijstand", "premium": 60 }
+    ]
+  }
+}

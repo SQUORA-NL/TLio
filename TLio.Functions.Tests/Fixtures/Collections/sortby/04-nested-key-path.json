@@ -1,0 +1,19 @@
+{
+  "input": {
+    "drivers": [
+      { "name": "Bea", "rating": { "factor": 1.4 } },
+      { "name": "Ada", "rating": { "factor": 0.9 } }
+    ]
+  },
+  "script": [{ "command": "put", "path": "$.ranked", "value": "=sortby($.drivers, '$.rating.factor')" }],
+  "result": {
+    "drivers": [
+      { "name": "Bea", "rating": { "factor": 1.4 } },
+      { "name": "Ada", "rating": { "factor": 0.9 } }
+    ],
+    "ranked": [
+      { "name": "Ada", "rating": { "factor": 0.9 } },
+      { "name": "Bea", "rating": { "factor": 1.4 } }
+    ]
+  }
+}

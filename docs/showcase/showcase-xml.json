@@ -128,5 +128,32 @@
     "restoreSettings": { "delimiter": "__", "metadataPath": "", "removeMetadata": true } },
 
   { "command": "put", "path": "/showcase/core/scriptPath", "value": "=scriptPath()" },
-  { "command": "put", "path": "/showcase/core/path",       "value": "=path()" }
+  { "command": "put", "path": "/showcase/core/path",       "value": "=path()" },
+
+  { "command": "add", "path": "/showcase/dupes", "value": ["a", "b", "a", "c"] },
+  { "command": "add", "path": "/showcase/rows", "value": [{"k": "r2", "n": 5}, {"k": "r1", "n": 2}, {"k": "r3", "n": 9}] },
+  { "command": "add", "path": "/showcase/dutchDate", "value": "31-12-2026" },
+  { "command": "add", "path": "/showcase/plate", "value": "AB-123-C" },
+
+  { "command": "put", "path": "/showcase/math/multiply",     "value": "=multiply('2','3','4')" },
+  { "command": "put", "path": "/showcase/math/divide",       "value": "=divide('10','4')" },
+  { "command": "put", "path": "/showcase/math/clamp",        "value": "=clamp('9','1','5')" },
+  { "command": "put", "path": "/showcase/math/sign",         "value": "=sign('-7')" },
+  { "command": "put", "path": "/showcase/date/diff",         "value": "=dateDiff(/showcase/dates/item[2],/showcase/dates/item[1],'days')" },
+  { "command": "put", "path": "/showcase/date/add",          "value": "=dateAdd(/showcase/dates/item[2],1,'years')" },
+  { "command": "put", "path": "/showcase/date/part",         "value": "=datePart(/showcase/dates/item[1],'quarter')" },
+  { "command": "put", "path": "/showcase/date/formatted",    "value": "=formatDate(/showcase/dates/item[1],'yyyyMMdd')" },
+  { "command": "put", "path": "/showcase/date/parsed",       "value": "=parseDate(/showcase/dutchDate,'dd-MM-yyyy')" },
+  { "command": "put", "path": "/showcase/date/startOfMonth", "value": "=startOfMonth(/showcase/dates/item[1])" },
+  { "command": "put", "path": "/showcase/date/endOfMonth",   "value": "=endOfMonth(/showcase/dates/item[1])" },
+  { "command": "put", "path": "/showcase/check/between",     "value": "=between(/showcase/people/item[1]/score,'1','100')" },
+  { "command": "put", "path": "/showcase/text/regexReplace", "value": "=regexReplace(/showcase/plate,'[0-9]+','000')" },
+  { "command": "put", "path": "/showcase/text/regexExtract", "value": "=regexExtract(/showcase/plate,'[0-9]+')" },
+  { "command": "put", "path": "/showcase/text/right",        "value": "=right(/showcase/name,6)" },
+  { "command": "put", "path": "/showcase/core/if",           "value": "=if(=equals(/showcase/tags/item[1],'alpha'),'yes','no')" },
+  { "command": "put", "path": "/showcase/core/coalesce",     "value": "=coalesce(/showcase/nowhere,/showcase/emptyField,/showcase/name)" },
+  { "command": "put", "path": "/showcase/core/last",         "value": "=last(/showcase/tags/item)" },
+  { "command": "put", "path": "/showcase/core/distinct",     "value": "=distinct(/showcase/dupes)" },
+  { "command": "put", "path": "/showcase/core/sorted",       "value": "=sort(/showcase/numbers,'asc')" },
+  { "command": "put", "path": "/showcase/core/sortedBy",     "value": "=sortby(/showcase/rows,'n','asc')" }
 ]

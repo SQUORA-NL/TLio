@@ -1,0 +1,5 @@
+{
+  "input": { "voluntaryExcess": 0, "standardExcess": 300 },
+  "script": [{ "command": "add", "path": "$.excess", "value": "=coalesce($.voluntaryExcess,$.standardExcess)" }],
+  "result": { "voluntaryExcess": 0, "standardExcess": 300, "excess": 0 }
+}
