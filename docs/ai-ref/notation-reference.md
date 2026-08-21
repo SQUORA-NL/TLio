@@ -17,6 +17,24 @@ inside JSON string delimiters `"..."`.
 ]
 ```
 
+## 1a. Documenting a command
+
+Every command takes two optional fields that configure nothing: `title` and `description`.
+They are free text for whoever reads the script next — the engine never looks at either, and a
+script produces the same result with them and without them.
+
+```json
+[
+  { "command": "put", "path": "$.policy.premium", "value": "=calculate('#$.base# * 1.21')",
+    "title": "Gross premium",
+    "description": "Base rate plus 21% insurance tax." }
+]
+```
+
+Both fields are available in all three notations and on commands inside a nested script. In the
+XML notation they are attributes only — a `<title>` child element is part of the value being
+written. See [adapters/script-notation.md](adapters/script-notation.md#documenting-a-step).
+
 ## 2. Value Types
 
 | Type | Trigger | Example |
