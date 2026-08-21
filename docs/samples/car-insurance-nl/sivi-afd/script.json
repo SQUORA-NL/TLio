@@ -1,5 +1,6 @@
 [
   { "command": "add", "path": "$.rates",
+    "title": "The rate book",
     "description": "Rate book 2026.08 — identical to the one in the native sample. Only the keys that address it differ, because the message model differs.",
     "value": {
     "version": "2026.08",
@@ -238,17 +239,21 @@
   } },
 
   { "command": "put", "path": "$.calc.driverAge",
-    "description": "Age in whole years on the message date: (20260821 - 20030217) / 10000, floored.",
+    "title": "Driver age",
+    "description": "Whole years on the message date. dateDiff counts birthdays, so it is right on the birthday and right in a leap year.",
     "value": "=dateDiff($.afdMessage.policy.parties[1].dateOfBirth,$.afdMessage.messageHeader.messageDate,'years')" },
   { "command": "put", "path": "$.calc.licenceYears",
-    "description": "Years since the driving licence was issued.",
+    "title": "Licence years",
+    "description": "Years since the driving licence was issued — it feeds the acceptance table.",
     "value": "=dateDiff($.afdMessage.policy.parties[1].drivingLicenceIssueDate,$.afdMessage.messageHeader.messageDate,'years')" },
   { "command": "put", "path": "$.calc.vehicleAge",
-    "description": "Years since the date of first admission.",
+    "title": "Vehicle age",
+    "description": "Years since the date of first admission — what decides whether ALLRISK is still available.",
     "value": "=dateDiff($.afdMessage.policy.objects[0].dateOfFirstAdmission,$.afdMessage.messageHeader.messageDate,'years')" },
 
   { "command": "put", "path": "$.calc.lookup",
-    "description": "The AFD field names mapped onto the rate book's key names. From here down the lookup is identical to the native sample's.",
+    "title": "AFD names onto rate-book keys",
+    "description": "The whole mapping layer, in one object. bmStep is claim-free years plus two held inside the ladder's 1-20 range — a twenty-row decisionTable until clamp existed. From here down the lookup is identical to the native sample's.",
     "value": {
       "pc4":             "=substring($.afdMessage.policy.parties[0].postalCode,0,4)",
       "modelCode":       "=fetch($.afdMessage.policy.objects[0].vehicleModelCode)",
@@ -256,39 +261,12 @@
       "parking":         "=fetch($.afdMessage.policy.objects[0].parkingCode)",
       "primaryUse":      "=fetch($.afdMessage.policy.objects[0].usageCode)",
       "paymentTerm":     "=fetch($.afdMessage.policy.premiumFrequencyCode)",
-      "voluntaryExcess": "=fetch($.afdMessage.policy.voluntaryExcessAmount)" } },
-
-  { "command": "decisionTable", "path": "$",
-    "description": "Claim-free years to bonus-malus step: step = years + 2, capped at 20.",
-    "decisionTable": {
-      "inputs":  [ { "name": "years", "path": "$.afdMessage.policy.claimFreeYears" } ],
-      "outputs": [ { "name": "step",  "path": "$.calc.lookup.bmStep" } ],
-      "rules": [
-        { "priority": 1,  "conditions": { "years": "<0"   }, "results": { "step": 1  } },
-        { "priority": 2,  "conditions": { "years": "=0"   }, "results": { "step": 2  } },
-        { "priority": 3,  "conditions": { "years": "=1"   }, "results": { "step": 3  } },
-        { "priority": 4,  "conditions": { "years": "=2"   }, "results": { "step": 4  } },
-        { "priority": 5,  "conditions": { "years": "=3"   }, "results": { "step": 5  } },
-        { "priority": 6,  "conditions": { "years": "=4"   }, "results": { "step": 6  } },
-        { "priority": 7,  "conditions": { "years": "=5"   }, "results": { "step": 7  } },
-        { "priority": 8,  "conditions": { "years": "=6"   }, "results": { "step": 8  } },
-        { "priority": 9,  "conditions": { "years": "=7"   }, "results": { "step": 9  } },
-        { "priority": 10, "conditions": { "years": "=8"   }, "results": { "step": 10 } },
-        { "priority": 11, "conditions": { "years": "=9"   }, "results": { "step": 11 } },
-        { "priority": 12, "conditions": { "years": "=10"  }, "results": { "step": 12 } },
-        { "priority": 13, "conditions": { "years": "=11"  }, "results": { "step": 13 } },
-        { "priority": 14, "conditions": { "years": "=12"  }, "results": { "step": 14 } },
-        { "priority": 15, "conditions": { "years": "=13"  }, "results": { "step": 15 } },
-        { "priority": 16, "conditions": { "years": "=14"  }, "results": { "step": 16 } },
-        { "priority": 17, "conditions": { "years": "=15"  }, "results": { "step": 17 } },
-        { "priority": 18, "conditions": { "years": "=16"  }, "results": { "step": 18 } },
-        { "priority": 19, "conditions": { "years": "=17"  }, "results": { "step": 19 } },
-        { "priority": 20, "conditions": { "years": ">=18" }, "results": { "step": 20 } }
-      ],
-      "defaultResults": { "step": 2 } } },
+      "voluntaryExcess": "=fetch($.afdMessage.policy.voluntaryExcessAmount)",
+      "bmStep":          "=clamp(=sum($.afdMessage.policy.claimFreeYears,2),1,20)" } },
 
   { "command": "resolve", "path": "$.calc.lookup",
-    "description": "Eight lookups in one command: region, vehicle, bonus-malus, payment term, excess, security, parking and usage.",
+    "title": "Eight tables, one command",
+    "description": "Region, vehicle, bonus-malus, payment term, excess, security, parking and usage. Byte for byte the same block as in the native sample — the mapping above is what absorbed the difference in message model.",
     "resolveSettings": [
       { "referencesCollectionPath": "$.rates.postcodeZones[*]",
         "resolveKeys": [ { "keyPath": "@.pc4", "referenceKeyPath": "@.pc4" } ],
@@ -341,7 +319,8 @@
           { "targetPath": "@.usageFactor",      "value": "@.usageFactor" } ] } ] },
 
   { "command": "decisionTable", "path": "$",
-    "description": "Driver age band.",
+    "title": "Driver age band",
+    "description": "Bands are ranges, and a range is rule text — so this stays a table where the bonus-malus step became a sum.",
     "decisionTable": {
       "inputs":  [ { "name": "age", "path": "$.calc.driverAge" } ],
       "outputs": [ { "name": "band", "path": "$.calc.ageBand" }, { "name": "factor", "path": "$.calc.ageFactor" } ],
@@ -354,7 +333,8 @@
         { "priority": 6, "conditions": { "age": ">=75"        }, "results": { "band": "75 en ouder", "factor": 1.20 } } ] } },
 
   { "command": "decisionTable", "path": "$",
-    "description": "Annual mileage band.",
+    "title": "Annual mileage band",
+    "description": "Five bands over the declared kilometres per year.",
     "decisionTable": {
       "inputs":  [ { "name": "km", "path": "$.afdMessage.policy.objects[0].annualMileage" } ],
       "outputs": [ { "name": "band", "path": "$.calc.mileageBand" }, { "name": "factor", "path": "$.calc.mileageFactor" } ],
@@ -366,7 +346,8 @@
         { "priority": 5, "conditions": { "km": ">30000"            }, "results": { "band": "meer dan 30.000 km", "factor": 1.40 } } ] } },
 
   { "command": "decisionTable", "path": "$",
-    "description": "ALLRISK on a car older than ten years is granted as BEPERKTCASCO.",
+    "title": "Granted coverage code",
+    "description": "ALLRISK on a car older than ten years is granted as BEPERKTCASCO. The downgraded flag becomes an acceptance clause further down.",
     "decisionTable": {
       "inputs":  [ { "name": "requested", "path": "$.afdMessage.policy.requestedCoverageCode" }, { "name": "carAge", "path": "$.calc.vehicleAge" } ],
       "outputs": [
@@ -381,7 +362,8 @@
       "defaultResults": { "cover": "GEEN", "description": "Geen cascodekking", "downgraded": true } } },
 
   { "command": "decisionTable", "path": "$",
-    "description": "Acceptance: four inputs, first match wins, the default is the accept path.",
+    "title": "Acceptance",
+    "description": "Four inputs, first match wins, and defaultResults is the accept path — so the rules only have to state the exceptions.",
     "decisionTable": {
       "inputs":  [
         { "name": "age",     "path": "$.calc.driverAge" },
@@ -399,7 +381,8 @@
       "defaultResults": { "decision": "GEACCEPTEERD", "reason": "Voldoet aan de standaard acceptatierichtlijnen." } } },
 
   { "command": "resolve", "path": "$.afdMessage.policy.coverages[*]",
-    "description": "Price the requested additional coverage entities in place; WA and casco carry no tariff and stay untouched.",
+    "title": "Price the additional coverages",
+    "description": "In place, in the message itself: WA and casco carry no tariff row and are left untouched.",
     "resolveSettings": [
       { "referencesCollectionPath": "$.rates.coverageTariffs[*]",
         "resolveKeys": [ { "keyPath": "@.coverageCode", "referenceKeyPath": "@.code" } ],
@@ -408,36 +391,47 @@
           { "targetPath": "@.coverageTypeCode", "value": "AANVULLEND" },
           { "targetPath": "@.premiumAmount",    "value": "@.premiumPerMonth" } ] } ] },
   { "command": "put", "path": "$.calc.options",
-    "description": "Only the additional coverages carry a premium at this point, so this sums exactly those.",
+    "title": "Additional coverages per month",
+    "description": "Only the additional coverages carry a premium at this point, so this wildcard sum hits exactly those.",
     "value": "=round(=sum($.afdMessage.policy.coverages[*].premiumAmount),2)" },
 
   { "command": "put", "path": "$.calc.wa",
-    "description": "Six rating factors over the WA base premium.",
+    "title": "Liability premium",
+    "description": "Six rating factors over the WA base premium. multiply is variadic like sum, so the whole product is one call and nothing round-trips through an expression string.",
     "value": "=round(=multiply($.calc.lookup.waBasePremium,$.calc.lookup.regionFactor,$.calc.ageFactor,$.calc.mileageFactor,$.calc.lookup.usageFactor,$.calc.lookup.bmWaFactor),2)" },
-  { "command": "ifElse",
-    "description": "Casco over the current value, or beperkt casco at its own rate, or nothing at all.",
-    "condition": "=equals($.calc.grantedCover,'CASCO')",
-    "ifScript": [
-      { "command": "put", "path": "$.calc.casco",
-        "value": "=round(=divide(=multiply($.afdMessage.policy.objects[0].currentValueAmount,$.calc.lookup.cascoRate,$.calc.lookup.regionFactor,$.calc.lookup.bmCascoFactor,$.calc.lookup.excessFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2)" } ],
-    "elseScript": [
-      { "command": "ifElse", "condition": "=equals($.calc.grantedCover,'BEPERKTCASCO')",
-        "ifScript": [
-          { "command": "put", "path": "$.calc.casco",
-            "value": "=round(=divide(=multiply($.afdMessage.policy.objects[0].currentValueAmount,$.calc.lookup.limitedCascoRate,$.calc.lookup.regionFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2)" } ],
-        "elseScript": [ { "command": "put", "path": "$.calc.casco", "value": 0 } ] } ] },
+  { "command": "put", "path": "$.calc.casco",
+    "title": "Casco premium",
+    "description": "Three outcomes in one expression, where nested ifElse blocks used to take four levels: CASCO carries the bonus-malus and excess factors, BEPERKTCASCO does not, GEEN is zero. =if evaluates only the branch it picks.",
+    "value": "=if(=equals($.calc.grantedCover,'CASCO'),=round(=divide(=multiply($.afdMessage.policy.objects[0].currentValueAmount,$.calc.lookup.cascoRate,$.calc.lookup.regionFactor,$.calc.lookup.bmCascoFactor,$.calc.lookup.excessFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2),=if(=equals($.calc.grantedCover,'BEPERKTCASCO'),=round(=divide(=multiply($.afdMessage.policy.objects[0].currentValueAmount,$.calc.lookup.limitedCascoRate,$.calc.lookup.regionFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2),0))" },
 
-  { "command": "put", "path": "$.calc.netPerMonth",  "value": "=round(=sum($.calc.wa,$.calc.casco,$.calc.options),2)",
-    "description": "Sums and differences take paths straight — no expression string needed." },
-  { "command": "put", "path": "$.calc.netPerTerm",   "value": "=round(=multiply($.calc.netPerMonth,$.calc.lookup.monthsPerTerm,$.calc.lookup.termFactor),2)" },
-  { "command": "put", "path": "$.calc.taxableBase",  "value": "=round(=sum($.calc.netPerTerm,$.calc.lookup.policyCostsPerTerm),2)" },
-  { "command": "put", "path": "$.calc.insuranceTax", "value": "=round(=multiply($.calc.taxableBase,$.rates.rules.insuranceTaxRate),2)",
-    "description": "Assurantiebelasting, 21% over premium plus policy costs." },
-  { "command": "put", "path": "$.calc.grossPerTerm", "value": "=round(=sum($.calc.taxableBase,$.calc.insuranceTax),2)" },
-  { "command": "put", "path": "$.calc.grossPerYear", "value": "=round(=multiply($.calc.grossPerTerm,$.calc.lookup.termsPerYear),2)" },
+  { "command": "put", "path": "$.calc.netPerMonth",
+    "title": "Net per month",
+    "description": "Liability plus casco plus additional covers — everything is monthly until the next line.",
+    "value": "=round(=sum($.calc.wa,$.calc.casco,$.calc.options),2)" },
+  { "command": "put", "path": "$.calc.netPerTerm",
+    "title": "Net per term",
+    "description": "Months in the chosen premium frequency, times the term surcharge.",
+    "value": "=round(=multiply($.calc.netPerMonth,$.calc.lookup.monthsPerTerm,$.calc.lookup.termFactor),2)" },
+  { "command": "put", "path": "$.calc.taxableBase",
+    "title": "Taxable base",
+    "description": "Policy costs are taxed with the premium.",
+    "value": "=round(=sum($.calc.netPerTerm,$.calc.lookup.policyCostsPerTerm),2)" },
+  { "command": "put", "path": "$.calc.insuranceTax",
+    "title": "Assurantiebelasting",
+    "description": "21% over premium plus policy costs.",
+    "value": "=round(=multiply($.calc.taxableBase,$.rates.rules.insuranceTaxRate),2)" },
+  { "command": "put", "path": "$.calc.grossPerTerm",
+    "title": "Gross per term",
+    "description": "What is actually collected each term.",
+    "value": "=round(=sum($.calc.taxableBase,$.calc.insuranceTax),2)" },
+  { "command": "put", "path": "$.calc.grossPerYear",
+    "title": "Gross per year",
+    "description": "The comparison figure the customer asked for.",
+    "value": "=round(=multiply($.calc.grossPerTerm,$.calc.lookup.termsPerYear),2)" },
 
   { "command": "put", "path": "$.afdMessage.policy.coverages[0]",
-    "description": "The WA coverage entity, completed with the rated premium.",
+    "title": "WA coverage entity",
+    "description": "Completed with the rated premium. statusCode is spelled out here so it keeps its place in the entity; the wildcard write below is for the entities that came in with the request.",
     "value": {
       "entityType": "coverage",
       "coverageCode": "WA",
@@ -448,7 +442,8 @@
       "excessAmount": 0,
       "premiumAmount": "=fetch($.calc.wa)" } },
   { "command": "put", "path": "$.afdMessage.policy.coverages[1]",
-    "description": "The casco entity carries the granted code, which is not always the requested one.",
+    "title": "Casco coverage entity",
+    "description": "Carries the granted code, which is not always the requested one.",
     "value": {
       "entityType": "coverage",
       "coverageCode": "=fetch($.calc.grantedCover)",
@@ -459,22 +454,37 @@
       "excessAmount": "=fetch($.afdMessage.policy.voluntaryExcessAmount)",
       "premiumAmount": "=fetch($.calc.casco)" } },
   { "command": "put", "path": "$.afdMessage.policy.coverages[*].statusCode", "value": "GEACCEPTEERD",
+    "title": "Accept every coverage line",
     "description": "One wildcard write instead of one per coverage." },
 
   { "command": "put", "path": "$.afdMessage.messageHeader.messageTypeCode", "value": "POLISAANMAAK",
-    "description": "The request message becomes the policy message." },
-  { "command": "put", "path": "$.afdMessage.policy.policyNumber",       "value": "=replace($.afdMessage.policy.quotationNumber,'OFF','POL')" },
-  { "command": "put", "path": "$.afdMessage.policy.policyStatusCode",   "value": "=fetch($.calc.decision)" },
-  { "command": "put", "path": "$.afdMessage.policy.insurerCode",        "value": "=fetch($.rates.rules.insurerCode)" },
-  { "command": "put", "path": "$.afdMessage.policy.productName",        "value": "=fetch($.rates.rules.productName)" },
-  { "command": "put", "path": "$.afdMessage.policy.grantedCoverageCode","value": "=fetch($.calc.grantedCover)" },
-  { "command": "put", "path": "$.afdMessage.policy.expiryDate",
-    "description": "Same day, next year.",
-    "value": "=dateAdd($.afdMessage.policy.commencementDate,1,'years')" },
-  { "command": "put", "path": "$.afdMessage.policy.contractDurationYears", "value": 1 },
+    "title": "The message changes type",
+    "description": "A quotation request goes out as a policy creation message." },
+  { "command": "put", "path": "$.afdMessage.policy.policyNumber", "value": "=replace($.afdMessage.policy.quotationNumber,'OFF','POL')",
+    "title": "Policy number",
+    "description": "OFF-2026-005177 becomes POL-2026-005177." },
+  { "command": "put", "path": "$.afdMessage.policy.policyStatusCode", "value": "=fetch($.calc.decision)",
+    "title": "Policy status",
+    "description": "The acceptance table's verdict, on the policy entity." },
+  { "command": "put", "path": "$.afdMessage.policy.insurerCode", "value": "=fetch($.rates.rules.insurerCode)",
+    "title": "Insurer code",
+    "description": "From the rate book's rules block." },
+  { "command": "put", "path": "$.afdMessage.policy.productName", "value": "=fetch($.rates.rules.productName)",
+    "title": "Product name",
+    "description": "Also from the rate book — the product is part of the rating, not of the request." },
+  { "command": "put", "path": "$.afdMessage.policy.grantedCoverageCode", "value": "=fetch($.calc.grantedCover)",
+    "title": "Granted coverage code",
+    "description": "Beside requestedCoverageCode, which the message already carried." },
+  { "command": "put", "path": "$.afdMessage.policy.expiryDate", "value": "=dateAdd($.afdMessage.policy.commencementDate,1,'years')",
+    "title": "Expiry date",
+    "description": "Same day, next year — dateAdd does the calendar arithmetic that used to be string slicing." },
+  { "command": "put", "path": "$.afdMessage.policy.contractDurationYears", "value": 1,
+    "title": "Contract duration",
+    "description": "One year, matching the expiry date above." },
 
   { "command": "put", "path": "$.afdMessage.policy.riskProfile",
-    "description": "Insurer extension, not an AFD entity: every factor that priced this policy.",
+    "title": "Risk profile",
+    "description": "Insurer extension, not an AFD entity: every factor that priced this policy, so the premium can be explained back to the customer.",
     "value": {
       "entityType": "riskProfile",
       "regionDescription": "=fetch($.calc.lookup.region)",
@@ -503,7 +513,10 @@
       "bonusMalusCascoFactor": "=fetch($.calc.lookup.bmCascoFactor)",
       "excessFactor":      "=fetch($.calc.lookup.excessFactor)" } },
 
-  { "command": "put", "path": "$.afdMessage.policy.premium", "value": {
+  { "command": "put", "path": "$.afdMessage.policy.premium",
+    "title": "Premium entity",
+    "description": "Every intermediate figure, in the order the rating model produces them.",
+    "value": {
       "entityType": "premium",
       "currencyCode": "EUR",
       "premiumFrequencyCode": "=fetch($.afdMessage.policy.premiumFrequencyCode)",
@@ -520,33 +533,46 @@
       "grossPremiumAmount": "=fetch($.calc.grossPerTerm)",
       "annualGrossPremiumAmount": "=fetch($.calc.grossPerYear)" } },
 
-  { "command": "put", "path": "$.afdMessage.policy.acceptance", "value": {
+  { "command": "put", "path": "$.afdMessage.policy.acceptance",
+    "title": "Acceptance entity",
+    "description": "The total excess is the voluntary one plus the young-driver surcharge when it applies — one =if, where it used to be a second put inside the clause block below.",
+    "value": {
       "entityType": "acceptance",
       "statusCode":        "=fetch($.calc.decision)",
       "reason":            "=fetch($.calc.decisionReason)",
-      "totalExcessAmount": "=fetch($.afdMessage.policy.voluntaryExcessAmount)" } },
+      "totalExcessAmount": "=if(=lessThan($.calc.driverAge,$.rates.rules.youngDriverAge),=sum($.afdMessage.policy.voluntaryExcessAmount,$.rates.rules.youngDriverExtraExcess),=fetch($.afdMessage.policy.voluntaryExcessAmount))" } },
 
   { "command": "ifElse",
-    "description": "Under 24: extra own risk on casco claims.",
+    "title": "Young-driver clause",
+    "description": "Under 24: extra own risk on casco claims, stated on the policy.",
     "condition": "=lessThan($.calc.driverAge,$.rates.rules.youngDriverAge)",
     "ifScript": [
-      { "command": "put", "path": "$.afdMessage.policy.acceptance.clauses.youngDriver", "value": {
+      { "command": "put", "path": "$.afdMessage.policy.acceptance.clauses.youngDriver",
+        "title": "JONGE-BESTUURDER",
+        "description": "clauses is created by writing into it — a path that does not exist yet is a container.",
+        "value": {
           "clauseCode": "JONGE-BESTUURDER",
           "clauseText": "Regelmatige bestuurder is jonger dan 24 jaar: extra eigen risico van toepassing op cascoschade.",
-          "extraExcessAmount": "=fetch($.rates.rules.youngDriverExtraExcess)" } },
-      { "command": "put", "path": "$.afdMessage.policy.acceptance.totalExcessAmount",
-        "value": "=sum($.afdMessage.policy.voluntaryExcessAmount,$.rates.rules.youngDriverExtraExcess)" } ] },
+          "extraExcessAmount": "=fetch($.rates.rules.youngDriverExtraExcess)" } } ] },
 
   { "command": "ifElse",
-    "description": "Cover downgraded by the rate table: say so on the policy.",
+    "title": "Cover-downgrade clause",
+    "description": "The granted-coverage table set this flag; the message has to say so in words.",
     "condition": "=fetch($.calc.coverDowngraded)",
     "ifScript": [
-      { "command": "put", "path": "$.afdMessage.policy.acceptance.clauses.coverDowngrade", "value": {
+      { "command": "put", "path": "$.afdMessage.policy.acceptance.clauses.coverDowngrade",
+        "title": "DEKKING-AANGEPAST",
+        "description": "concat builds the sentence from the requested code, the vehicle age and the granted description.",
+        "value": {
           "clauseCode": "DEKKING-AANGEPAST",
           "clauseText": "=concat('Aangevraagde dekking ',$.afdMessage.policy.requestedCoverageCode,' is niet mogelijk voor een voertuig van ',$.calc.vehicleAge,' jaar; toegekend is ',$.calc.grantedCoverDescription,'.')",
           "requestedCoverageCode": "=fetch($.afdMessage.policy.requestedCoverageCode)",
           "grantedCoverageCode":   "=fetch($.calc.grantedCover)" } } ] },
 
-  { "command": "remove", "path": "$.calc",  "description": "Working area — not part of the message." },
-  { "command": "remove", "path": "$.rates", "description": "The rate book came from the script, so it leaves with it." }
+  { "command": "remove", "path": "$.calc",
+    "title": "Drop the working area",
+    "description": "Scratch space, not part of the message." },
+  { "command": "remove", "path": "$.rates",
+    "title": "Drop the rate book",
+    "description": "It came from the script, so it leaves with it." }
 ]

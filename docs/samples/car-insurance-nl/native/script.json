@@ -1,5 +1,6 @@
 [
   { "command": "add", "path": "$.rates",
+    "title": "The rate book",
     "description": "Rate book 2026.08 — 78 postcode zones, 54 vehicle models, the 20-step bonus-malus ladder and six factor tables. The only command that carries data; everything below only looks things up in it.",
     "value": {
     "version": "2026.08",
@@ -238,55 +239,38 @@
   } },
 
   { "command": "put", "path": "$.calc.driverAge",
-    "description": "Age in whole years on the quote date.",
+    "title": "Driver age",
+    "description": "Whole years on the quote date. dateDiff counts birthdays, so it is right on the birthday and right in a leap year.",
     "value": "=dateDiff($.request.applicant.birthDate,$.request.quotedOn,'years')" },
   { "command": "put", "path": "$.calc.licenceYears",
-    "description": "Years of driving experience, the same way.",
+    "title": "Licence years",
+    "description": "Driving experience, the same call shape — it feeds the acceptance table.",
     "value": "=dateDiff($.request.applicant.licenceIssuedOn,$.request.quotedOn,'years')" },
   { "command": "put", "path": "$.calc.vehicleAge",
-    "description": "Age of the car, the same way.",
+    "title": "Vehicle age",
+    "description": "Years since first registration — what decides whether allrisk is still available.",
     "value": "=dateDiff($.request.vehicle.firstRegistration,$.request.quotedOn,'years')" },
 
-  { "command": "put",   "path": "$.calc.lookup", "value": {},
+  { "command": "put", "path": "$.calc.lookup", "value": {},
+    "title": "Open the lookup node",
     "description": "One node holding every lookup key, so one resolve can fill in every rate." },
   { "command": "merge", "path": "$.request.vehicle", "targetPath": "$.calc.lookup",
-    "description": "Keys from the vehicle: modelCode, alarmClass, parking, primaryUse." },
-  { "command": "merge", "path": "$.request.cover",   "targetPath": "$.calc.lookup",
-    "description": "Keys from the cover: paymentTerm, voluntaryExcess — and the requested options." },
-  { "command": "put",   "path": "$.calc.lookup.pc4", "value": "=substring($.request.applicant.postcode,0,4)",
+    "title": "Vehicle lookup keys",
+    "description": "modelCode, alarmClass, parking, primaryUse." },
+  { "command": "merge", "path": "$.request.cover", "targetPath": "$.calc.lookup",
+    "title": "Cover lookup keys",
+    "description": "paymentTerm, voluntaryExcess — and the requested options array." },
+  { "command": "put", "path": "$.calc.lookup.pc4", "value": "=substring($.request.applicant.postcode,0,4)",
+    "title": "Postcode to PC4",
     "description": "The rate book is zoned on PC4, the postcode's four digits." },
-
-  { "command": "decisionTable", "path": "$",
-    "description": "Claim-free years to bonus-malus step: step = years + 2, capped at 20.",
-    "decisionTable": {
-      "inputs":  [ { "name": "years", "path": "$.request.cover.claimFreeYears" } ],
-      "outputs": [ { "name": "step",  "path": "$.calc.lookup.bmStep" } ],
-      "rules": [
-        { "priority": 1,  "conditions": { "years": "<0"   }, "results": { "step": 1  } },
-        { "priority": 2,  "conditions": { "years": "=0"   }, "results": { "step": 2  } },
-        { "priority": 3,  "conditions": { "years": "=1"   }, "results": { "step": 3  } },
-        { "priority": 4,  "conditions": { "years": "=2"   }, "results": { "step": 4  } },
-        { "priority": 5,  "conditions": { "years": "=3"   }, "results": { "step": 5  } },
-        { "priority": 6,  "conditions": { "years": "=4"   }, "results": { "step": 6  } },
-        { "priority": 7,  "conditions": { "years": "=5"   }, "results": { "step": 7  } },
-        { "priority": 8,  "conditions": { "years": "=6"   }, "results": { "step": 8  } },
-        { "priority": 9,  "conditions": { "years": "=7"   }, "results": { "step": 9  } },
-        { "priority": 10, "conditions": { "years": "=8"   }, "results": { "step": 10 } },
-        { "priority": 11, "conditions": { "years": "=9"   }, "results": { "step": 11 } },
-        { "priority": 12, "conditions": { "years": "=10"  }, "results": { "step": 12 } },
-        { "priority": 13, "conditions": { "years": "=11"  }, "results": { "step": 13 } },
-        { "priority": 14, "conditions": { "years": "=12"  }, "results": { "step": 14 } },
-        { "priority": 15, "conditions": { "years": "=13"  }, "results": { "step": 15 } },
-        { "priority": 16, "conditions": { "years": "=14"  }, "results": { "step": 16 } },
-        { "priority": 17, "conditions": { "years": "=15"  }, "results": { "step": 17 } },
-        { "priority": 18, "conditions": { "years": "=16"  }, "results": { "step": 18 } },
-        { "priority": 19, "conditions": { "years": "=17"  }, "results": { "step": 19 } },
-        { "priority": 20, "conditions": { "years": ">=18" }, "results": { "step": 20 } }
-      ],
-      "defaultResults": { "step": 2 } } },
+  { "command": "put", "path": "$.calc.lookup.bmStep",
+    "title": "Bonus-malus step",
+    "description": "Claim-free years plus two, held inside the ladder's 1-20 range. This was a twenty-row decisionTable until clamp existed — twenty rows spelling out one sum.",
+    "value": "=clamp(=sum($.request.cover.claimFreeYears,2),1,20)" },
 
   { "command": "resolve", "path": "$.calc.lookup",
-    "description": "Eight lookups in one command: region, vehicle, bonus-malus, payment term, excess, security, parking and usage.",
+    "title": "Eight tables, one command",
+    "description": "Region, vehicle, bonus-malus, payment term, excess, security, parking and usage — every rate this quote needs, fetched in one pass over the rate book.",
     "resolveSettings": [
       { "referencesCollectionPath": "$.rates.postcodeZones[*]",
         "resolveKeys": [ { "keyPath": "@.pc4", "referenceKeyPath": "@.pc4" } ],
@@ -339,7 +323,8 @@
           { "targetPath": "@.usageFactor",      "value": "@.usageFactor" } ] } ] },
 
   { "command": "decisionTable", "path": "$",
-    "description": "Driver age band — ranges, so a table row rather than a lookup key.",
+    "title": "Driver age band",
+    "description": "Bands are ranges, and a range is rule text — so this stays a table where the bonus-malus step became a sum.",
     "decisionTable": {
       "inputs":  [ { "name": "age", "path": "$.calc.driverAge" } ],
       "outputs": [ { "name": "band", "path": "$.calc.ageBand" }, { "name": "factor", "path": "$.calc.ageFactor" } ],
@@ -352,7 +337,8 @@
         { "priority": 6, "conditions": { "age": ">=75"        }, "results": { "band": "75 en ouder", "factor": 1.20 } } ] } },
 
   { "command": "decisionTable", "path": "$",
-    "description": "Annual mileage band.",
+    "title": "Annual mileage band",
+    "description": "Five bands over the declared kilometres per year.",
     "decisionTable": {
       "inputs":  [ { "name": "km", "path": "$.request.vehicle.annualMileage" } ],
       "outputs": [ { "name": "band", "path": "$.calc.mileageBand" }, { "name": "factor", "path": "$.calc.mileageFactor" } ],
@@ -364,22 +350,25 @@
         { "priority": 5, "conditions": { "km": ">30000"            }, "results": { "band": "meer dan 30.000 km", "factor": 1.40 } } ] } },
 
   { "command": "decisionTable", "path": "$",
-    "description": "Allrisk on a car older than ten years is granted as beperkt casco — the downgraded flag drives the policy clause further down.",
+    "title": "Granted cover",
+    "description": "Allrisk on a car older than ten years is granted as beperkt casco. Four outputs: the cover, its label, the casco basis the premium step reads, and a downgraded flag that becomes a policy clause further down.",
     "decisionTable": {
       "inputs":  [ { "name": "product", "path": "$.request.cover.product" }, { "name": "carAge", "path": "$.calc.vehicleAge" } ],
       "outputs": [
         { "name": "cover",      "path": "$.calc.grantedCover" },
         { "name": "label",      "path": "$.calc.grantedCoverLabel" },
+        { "name": "basis",      "path": "$.calc.cascoBasis" },
         { "name": "downgraded", "path": "$.calc.coverDowngraded" } ],
       "rules": [
-        { "priority": 1, "conditions": { "product": "=allrisk", "carAge": "<=10" }, "results": { "cover": "casco",         "label": "Allrisk (volledig casco)",     "downgraded": false } },
-        { "priority": 2, "conditions": { "product": "=allrisk", "carAge": ">10"  }, "results": { "cover": "beperkt-casco", "label": "WA + beperkt casco",           "downgraded": true  } },
-        { "priority": 3, "conditions": { "product": "=beperkt-casco"             }, "results": { "cover": "beperkt-casco", "label": "WA + beperkt casco",           "downgraded": false } },
-        { "priority": 4, "conditions": { "product": "=wa"                        }, "results": { "cover": "wa",           "label": "WA (alleen aansprakelijkheid)", "downgraded": false } } ],
-      "defaultResults": { "cover": "wa", "label": "WA (alleen aansprakelijkheid)", "downgraded": true } } },
+        { "priority": 1, "conditions": { "product": "=allrisk", "carAge": "<=10" }, "results": { "cover": "casco",         "label": "Allrisk (volledig casco)",     "basis": "volledig casco over dagwaarde", "downgraded": false } },
+        { "priority": 2, "conditions": { "product": "=allrisk", "carAge": ">10"  }, "results": { "cover": "beperkt-casco", "label": "WA + beperkt casco",           "basis": "beperkt casco over dagwaarde",  "downgraded": true  } },
+        { "priority": 3, "conditions": { "product": "=beperkt-casco"             }, "results": { "cover": "beperkt-casco", "label": "WA + beperkt casco",           "basis": "beperkt casco over dagwaarde",  "downgraded": false } },
+        { "priority": 4, "conditions": { "product": "=wa"                        }, "results": { "cover": "wa",           "label": "WA (alleen aansprakelijkheid)", "basis": "geen cascodekking",             "downgraded": false } } ],
+      "defaultResults": { "cover": "wa", "label": "WA (alleen aansprakelijkheid)", "basis": "geen cascodekking", "downgraded": true } } },
 
   { "command": "decisionTable", "path": "$",
-    "description": "Acceptance: four inputs, first match wins, the default is the accept path.",
+    "title": "Acceptance",
+    "description": "Four inputs, first match wins, and defaultResults is the accept path — so the rules only have to state the exceptions.",
     "decisionTable": {
       "inputs":  [
         { "name": "age",     "path": "$.calc.driverAge" },
@@ -396,29 +385,9 @@
         { "priority": 4, "conditions": { "value": ">75000" }, "results": { "decision": "beoordelen", "reason": "Cataloguswaarde boven € 75.000 — handmatige acceptatie." } } ],
       "defaultResults": { "decision": "geaccepteerd", "reason": "Voldoet aan de standaard acceptatierichtlijnen." } } },
 
-  { "command": "put", "path": "$.calc.wa",
-    "description": "Six rating factors over the WA base premium.",
-    "value": "=round(=multiply($.calc.lookup.waBasePremium,$.calc.lookup.regionFactor,$.calc.ageFactor,$.calc.mileageFactor,$.calc.lookup.usageFactor,$.calc.lookup.bmWaFactor),2)" },
-
-  { "command": "ifElse",
-    "description": "Casco over the current value, or beperkt casco at its own rate, or nothing at all.",
-    "condition": "=equals($.calc.grantedCover,'casco')",
-    "ifScript": [
-      { "command": "put", "path": "$.calc.cascoBasis", "value": "volledig casco over dagwaarde" },
-      { "command": "put", "path": "$.calc.casco",
-        "value": "=round(=divide(=multiply($.request.vehicle.currentValue,$.calc.lookup.cascoRate,$.calc.lookup.regionFactor,$.calc.lookup.bmCascoFactor,$.calc.lookup.excessFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2)" } ],
-    "elseScript": [
-      { "command": "ifElse", "condition": "=equals($.calc.grantedCover,'beperkt-casco')",
-        "ifScript": [
-          { "command": "put", "path": "$.calc.cascoBasis", "value": "beperkt casco over dagwaarde" },
-          { "command": "put", "path": "$.calc.casco",
-            "value": "=round(=divide(=multiply($.request.vehicle.currentValue,$.calc.lookup.limitedCascoRate,$.calc.lookup.regionFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2)" } ],
-        "elseScript": [
-          { "command": "put", "path": "$.calc.cascoBasis", "value": "geen cascodekking" },
-          { "command": "put", "path": "$.calc.casco",      "value": 0 } ] } ] },
-
   { "command": "resolve", "path": "$.calc.lookup.options[*]",
-    "description": "The requested optional covers, priced from the tariff table — one setting, every element.",
+    "title": "Price the optional covers",
+    "description": "One setting, applied to every element of the requested options array.",
     "resolveSettings": [
       { "referencesCollectionPath": "$.rates.coverageTariffs[*]",
         "resolveKeys": [ { "keyPath": "@.code", "referenceKeyPath": "@.code" } ],
@@ -427,34 +396,64 @@
           { "targetPath": "@.basis",           "value": "aanvullende dekking" },
           { "targetPath": "@.premiumPerMonth", "value": "@.premiumPerMonth" } ] } ] },
 
+  { "command": "put", "path": "$.calc.wa",
+    "title": "Liability premium",
+    "description": "Six rating factors over the WA base premium. multiply is variadic like sum, so the whole product is one call and nothing round-trips through an expression string.",
+    "value": "=round(=multiply($.calc.lookup.waBasePremium,$.calc.lookup.regionFactor,$.calc.ageFactor,$.calc.mileageFactor,$.calc.lookup.usageFactor,$.calc.lookup.bmWaFactor),2)" },
+  { "command": "put", "path": "$.calc.casco",
+    "title": "Casco premium",
+    "description": "Three outcomes in one expression, where nested ifElse blocks used to take four levels: full casco carries the bonus-malus and excess factors, beperkt casco does not, WA-only is zero. =if evaluates only the branch it picks.",
+    "value": "=if(=equals($.calc.grantedCover,'casco'),=round(=divide(=multiply($.request.vehicle.currentValue,$.calc.lookup.cascoRate,$.calc.lookup.regionFactor,$.calc.lookup.bmCascoFactor,$.calc.lookup.excessFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2),=if(=equals($.calc.grantedCover,'beperkt-casco'),=round(=divide(=multiply($.request.vehicle.currentValue,$.calc.lookup.limitedCascoRate,$.calc.lookup.regionFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2),0))" },
   { "command": "put", "path": "$.calc.options",
-    "description": "Sums and differences take paths straight — no expression string needed.",
+    "title": "Optional covers per month",
+    "description": "sum takes a wildcard path straight — no expression string needed. An empty options array would fail here; a request that may have none needs an ifElse around this step.",
     "value": "=round(=sum($.calc.lookup.options[*].premiumPerMonth),2)" },
-  { "command": "put", "path": "$.calc.netPerMonth",  "value": "=round(=sum($.calc.wa,$.calc.casco,$.calc.options),2)" },
-  { "command": "put", "path": "$.calc.netPerTerm",   "value": "=round(=multiply($.calc.netPerMonth,$.calc.lookup.monthsPerTerm,$.calc.lookup.termFactor),2)" },
-  { "command": "put", "path": "$.calc.taxableBase",  "value": "=round(=sum($.calc.netPerTerm,$.calc.lookup.policyCostsPerTerm),2)" },
-  { "command": "put", "path": "$.calc.insuranceTax", "value": "=round(=multiply($.calc.taxableBase,$.rates.rules.insuranceTaxRate),2)",
-    "description": "Assurantiebelasting, 21% over premium plus policy costs." },
-  { "command": "put", "path": "$.calc.grossPerTerm", "value": "=round(=sum($.calc.taxableBase,$.calc.insuranceTax),2)" },
-  { "command": "put", "path": "$.calc.grossPerYear", "value": "=round(=multiply($.calc.grossPerTerm,$.calc.lookup.termsPerYear),2)" },
 
-  { "command": "put", "path": "$.policy.policyNumber", "value": "=replace($.request.quoteId,'OFF','POL')",
-    "description": "OFF-2026-004821 becomes POL-2026-004821." },
-  { "command": "put", "path": "$.policy.quoteId",     "value": "=fetch($.request.quoteId)" },
-  { "command": "put", "path": "$.policy.insurer",     "value": "=fetch($.rates.rules.insurerName)" },
-  { "command": "put", "path": "$.policy.product",     "value": "=fetch($.rates.rules.productName)" },
-  { "command": "put", "path": "$.policy.coverLabel",  "value": "=fetch($.calc.grantedCoverLabel)" },
-  { "command": "put", "path": "$.policy.status",      "value": "=fetch($.calc.decision)" },
-  { "command": "put", "path": "$.policy.issuedOn",    "value": "=fetch($.request.quotedOn)" },
-  { "command": "put", "path": "$.policy.startDate",   "value": "=fetch($.request.requestedStartDate)" },
-  { "command": "put", "path": "$.policy.renewalDate", "value": "=dateAdd($.request.requestedStartDate,1,'years')",
-    "description": "Same day, next year." },
-  { "command": "put", "path": "$.policy.intermediary", "value": {
-      "agentNumber": "=fetch($.request.intermediary.agentNumber)",
-      "name":        "=fetch($.request.intermediary.name)" } },
+  { "command": "put", "path": "$.calc.netPerMonth",
+    "title": "Net per month",
+    "description": "Liability plus casco plus options — everything is monthly until the next line.",
+    "value": "=round(=sum($.calc.wa,$.calc.casco,$.calc.options),2)" },
+  { "command": "put", "path": "$.calc.netPerTerm",
+    "title": "Net per term",
+    "description": "Months in the chosen payment term, times the term surcharge.",
+    "value": "=round(=multiply($.calc.netPerMonth,$.calc.lookup.monthsPerTerm,$.calc.lookup.termFactor),2)" },
+  { "command": "put", "path": "$.calc.taxableBase",
+    "title": "Taxable base",
+    "description": "Policy costs are taxed with the premium.",
+    "value": "=round(=sum($.calc.netPerTerm,$.calc.lookup.policyCostsPerTerm),2)" },
+  { "command": "put", "path": "$.calc.insuranceTax",
+    "title": "Assurantiebelasting",
+    "description": "21% over premium plus policy costs.",
+    "value": "=round(=multiply($.calc.taxableBase,$.rates.rules.insuranceTaxRate),2)" },
+  { "command": "put", "path": "$.calc.grossPerTerm",
+    "title": "Gross per term",
+    "description": "What is actually collected each term.",
+    "value": "=round(=sum($.calc.taxableBase,$.calc.insuranceTax),2)" },
+  { "command": "put", "path": "$.calc.grossPerYear",
+    "title": "Gross per year",
+    "description": "The comparison figure the customer asked for.",
+    "value": "=round(=multiply($.calc.grossPerTerm,$.calc.lookup.termsPerYear),2)" },
+
+  { "command": "put", "path": "$.policy",
+    "title": "The policy header",
+    "description": "One object-valued put instead of ten scalar ones: every =fetch(...) inside the object is evaluated as the object is written. OFF-2026-004821 becomes POL-2026-004821, and the renewal date is the same day next year.",
+    "value": {
+      "policyNumber": "=replace($.request.quoteId,'OFF','POL')",
+      "quoteId":      "=fetch($.request.quoteId)",
+      "insurer":      "=fetch($.rates.rules.insurerName)",
+      "product":      "=fetch($.rates.rules.productName)",
+      "coverLabel":   "=fetch($.calc.grantedCoverLabel)",
+      "status":       "=fetch($.calc.decision)",
+      "issuedOn":     "=fetch($.request.quotedOn)",
+      "startDate":    "=fetch($.request.requestedStartDate)",
+      "renewalDate":  "=dateAdd($.request.requestedStartDate,1,'years')",
+      "intermediary": {
+        "agentNumber": "=fetch($.request.intermediary.agentNumber)",
+        "name":        "=fetch($.request.intermediary.name)" } } },
 
   { "command": "put", "path": "$.policy.policyholder",
-    "description": "An object value whose =fetch(...) strings are evaluated — one command per entity.",
+    "title": "Policyholder",
+    "description": "One command per entity, each a whole object.",
     "value": {
       "name":         "=concat($.request.applicant.initials,' ',$.request.applicant.prefix,' ',$.request.applicant.lastName)",
       "birthDate":    "=fetch($.request.applicant.birthDate)",
@@ -467,7 +466,10 @@
       "email":        "=fetch($.request.applicant.email)",
       "iban":         "=fetch($.request.applicant.iban)" } },
 
-  { "command": "put", "path": "$.policy.vehicle", "value": {
+  { "command": "put", "path": "$.policy.vehicle",
+    "title": "Insured vehicle",
+    "description": "Half from the request, half from the rate book's model row — the script does not care which is which.",
+    "value": {
       "licencePlate":      "=fetch($.request.vehicle.licencePlate)",
       "make":              "=fetch($.calc.lookup.make)",
       "model":             "=fetch($.calc.lookup.model)",
@@ -484,6 +486,7 @@
       "security":          "=fetch($.calc.lookup.securityDescription)" } },
 
   { "command": "put", "path": "$.policy.riskProfile",
+    "title": "Risk profile",
     "description": "Every factor that priced this policy, so the premium can be explained back to the customer.",
     "value": {
       "region":          "=fetch($.calc.lookup.region)",
@@ -504,16 +507,25 @@
       "voluntaryExcess": "=fetch($.request.cover.voluntaryExcess)",
       "excessFactor":    "=fetch($.calc.lookup.excessFactor)" } },
 
-  { "command": "put", "path": "$.policy.coverages[0]", "value": {
+  { "command": "put", "path": "$.policy.coverages[0]",
+    "title": "WA coverage line",
+    "description": "Always present — it is the legally required one.",
+    "value": {
       "code": "WA",
       "name": "Wettelijke aansprakelijkheid",
       "basis": "wettelijk verplicht",
       "insuredAmount": "=fetch($.rates.rules.waInsuredAmount)",
       "excess": 0,
       "premiumPerMonth": "=fetch($.calc.wa)" } },
-  { "command": "ifElse", "condition": "=notEquals($.calc.grantedCover,'wa')",
+  { "command": "ifElse",
+    "title": "Casco coverage line",
+    "description": "A whole node that may not exist is still an ifElse — =if picks between values, not between writing and not writing.",
+    "condition": "=notEquals($.calc.grantedCover,'wa')",
     "ifScript": [
-      { "command": "put", "path": "$.policy.coverages[1]", "value": {
+      { "command": "put", "path": "$.policy.coverages[1]",
+        "title": "Casco line",
+        "description": "Name and basis come from the granted cover, which is not always the requested one.",
+        "value": {
           "code": "CASCO",
           "name": "=fetch($.calc.grantedCoverLabel)",
           "basis": "=fetch($.calc.cascoBasis)",
@@ -521,9 +533,13 @@
           "excess": "=fetch($.request.cover.voluntaryExcess)",
           "premiumPerMonth": "=fetch($.calc.casco)" } } ] },
   { "command": "merge", "path": "$.calc.lookup.options", "targetPath": "$.policy.coverages", "arrayMergeMode": "concat",
-    "description": "The priced optional covers are appended after WA and casco." },
+    "title": "Append the optional covers",
+    "description": "Already priced by the resolve above, so they only have to be moved." },
 
-  { "command": "put", "path": "$.policy.premium", "value": {
+  { "command": "put", "path": "$.policy.premium",
+    "title": "Premium build-up",
+    "description": "Every intermediate figure, in the order the rating model produces them.",
+    "value": {
       "currency": "EUR",
       "paymentTerm": "=fetch($.calc.lookup.paymentTermName)",
       "termsPerYear": "=fetch($.calc.lookup.termsPerYear)",
@@ -538,33 +554,48 @@
       "grossPerTerm": "=fetch($.calc.grossPerTerm)",
       "grossPerYear": "=fetch($.calc.grossPerYear)" } },
 
-  { "command": "put", "path": "$.policy.underwriting", "value": {
+  { "command": "put", "path": "$.policy.underwriting",
+    "title": "Underwriting outcome",
+    "description": "The total excess is the voluntary one plus the young-driver surcharge when it applies — one =if, where it used to be a second put inside the clause block below.",
+    "value": {
       "decision":    "=fetch($.calc.decision)",
       "reason":      "=fetch($.calc.decisionReason)",
-      "totalExcess": "=fetch($.request.cover.voluntaryExcess)" } },
+      "totalExcess": "=if(=lessThan($.calc.driverAge,$.rates.rules.youngDriverAge),=sum($.request.cover.voluntaryExcess,$.rates.rules.youngDriverExtraExcess),=fetch($.request.cover.voluntaryExcess))" } },
 
   { "command": "ifElse",
-    "description": "Under 24: extra own risk on casco claims.",
+    "title": "Young-driver clause",
+    "description": "Under 24: extra own risk on casco claims, stated on the policy.",
     "condition": "=lessThan($.calc.driverAge,$.rates.rules.youngDriverAge)",
     "ifScript": [
-      { "command": "put", "path": "$.policy.underwriting.clauses.youngDriver", "value": {
+      { "command": "put", "path": "$.policy.underwriting.clauses.youngDriver",
+        "title": "JONGE-BESTUURDER",
+        "description": "clauses is created by writing into it — a path that does not exist yet is a container.",
+        "value": {
           "code": "JONGE-BESTUURDER",
           "text": "Hoofdbestuurder is jonger dan 24 jaar: extra eigen risico van toepassing op cascoschade.",
-          "extraExcess": "=fetch($.rates.rules.youngDriverExtraExcess)" } },
-      { "command": "put", "path": "$.policy.underwriting.totalExcess",
-        "value": "=sum($.request.cover.voluntaryExcess,$.rates.rules.youngDriverExtraExcess)" } ] },
+          "extraExcess": "=fetch($.rates.rules.youngDriverExtraExcess)" } } ] },
 
   { "command": "ifElse",
-    "description": "Cover downgraded by the rate table: say so on the policy.",
+    "title": "Cover-downgrade clause",
+    "description": "The granted-cover table set this flag; the policy has to say so in words.",
     "condition": "=fetch($.calc.coverDowngraded)",
     "ifScript": [
-      { "command": "put", "path": "$.policy.underwriting.clauses.coverDowngrade", "value": {
+      { "command": "put", "path": "$.policy.underwriting.clauses.coverDowngrade",
+        "title": "DEKKING-AANGEPAST",
+        "description": "concat builds the sentence from the requested product, the vehicle age and the granted label.",
+        "value": {
           "code": "DEKKING-AANGEPAST",
           "text": "=concat('Aangevraagde dekking ',$.request.cover.product,' is niet mogelijk voor een voertuig van ',$.calc.vehicleAge,' jaar; toegekend is ',$.calc.grantedCoverLabel,'.')",
           "requested": "=fetch($.request.cover.product)",
           "granted":   "=fetch($.calc.grantedCover)" } } ] },
 
-  { "command": "remove", "path": "$.calc",  "description": "Working area — not part of the answer." },
-  { "command": "remove", "path": "$.rates", "description": "The rate book came from the script, so it leaves with it." },
-  { "command": "rename", "path": "$.request", "name": "quote", "description": "What is left is the quote as received plus the policy it produced." }
+  { "command": "remove", "path": "$.calc",
+    "title": "Drop the working area",
+    "description": "Scratch space, not part of the answer." },
+  { "command": "remove", "path": "$.rates",
+    "title": "Drop the rate book",
+    "description": "It came from the script, so it leaves with it." },
+  { "command": "rename", "path": "$.request", "name": "quote",
+    "title": "request becomes quote",
+    "description": "What is left is the quote as received plus the policy it produced." }
 ]

@@ -61,20 +61,27 @@ Adding a row is a data edit, not a script change — that is what makes this sha
 In a service you would `add` the rate book from your own store instead of inlining it; nothing
 below that command changes.
 
-## `description` — scripts can document themselves
+## `title` and `description` — scripts that document themselves
 
-A JSON script has no comments, but `CommandConverter` maps known camelCase keys onto command
-properties and **silently ignores the rest**, so a `"description"` on any command is carried
-through the file and dropped at parse time:
+A JSON script has no comments, so `title` and `description` are properties on **every**
+command. They live on `CommandBase`, each parser binds them like any other string property, and
+nothing reads them during execution: they are for whoever opens the file next.
 
 ```json
 { "command": "put", "path": "$.calc.driverAge",
-  "description": "Age in whole years on the quote date.",
+  "title": "Driver age",
+  "description": "Whole years on the quote date. dateDiff counts birthdays, so it is right on the birthday and right in a leap year.",
   "value": "=dateDiff($.request.applicant.birthDate,$.request.quotedOn,'years')" }
 ```
 
-Every command in both samples carries one. Two caveats: it is an ignored key, not a feature —
-nothing validates or logs it — and `"name"` is **not** free, because `rename` uses it.
+Every command in both samples carries both, nested ones included — the `put` inside an `ifElse`
+is a command like any other. The convention they follow here: **the title says what the step is,
+the description says why it is written that way.** A reader skimming titles gets the ten-step
+outline below without reading a single path.
+
+Two things to know. In **XML notation** they are attributes only — a `<title>` child element
+would be part of the value being written — and `"name"` is not free for this purpose, because
+`rename` uses it as the new name.
 
 ## Ages and products
 
@@ -98,12 +105,31 @@ in a leap year. The same call shape gives licence years and vehicle age.
 ```
 
 `multiply` is variadic like `sum`; `divide` is binary like `subtract`. The casco premium is the
-one that needs both — a product over the current value, at a monthly twelfth of the annual rate:
+one that needs both — a product over the current value, at a monthly twelfth of the annual rate.
+
+**A value produced three ways is still one command.** Casco is priced from one of two rates, or
+not at all, and `=if` chooses between the three *values* rather than between three blocks. Only
+the branch it picks is evaluated, so the arithmetic for a cover that was not granted never runs:
 
 ```json
 { "command": "put", "path": "$.calc.casco",
-  "value": "=round(=divide(=multiply($.request.vehicle.currentValue,$.calc.lookup.cascoRate,$.calc.lookup.regionFactor,$.calc.lookup.bmCascoFactor,$.calc.lookup.excessFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2)" }
+  "value": "=if(=equals($.calc.grantedCover,'casco'),=round(=divide(=multiply($.request.vehicle.currentValue,$.calc.lookup.cascoRate,$.calc.lookup.regionFactor,$.calc.lookup.bmCascoFactor,$.calc.lookup.excessFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2),=if(=equals($.calc.grantedCover,'beperkt-casco'),=round(=divide(=multiply($.request.vehicle.currentValue,$.calc.lookup.limitedCascoRate,$.calc.lookup.regionFactor,$.calc.lookup.securityFactor,$.calc.lookup.parkingFactor),12),2),0))" }
 ```
+
+`ifElse` is still the right command when what is conditional is a whole node — the two policy
+clauses at the end of both scripts are exactly that. `=if` is for a field with two or three
+sources; `ifElse` is for a field that may not be there at all.
+
+**A ladder is arithmetic until it stops being arithmetic.** The bonus-malus step is claim-free
+years plus two, floored at 1 and capped at 20 — twenty `decisionTable` rows saying one sum:
+
+```json
+{ "command": "put", "path": "$.calc.lookup.bmStep",
+  "value": "=clamp(=sum($.request.cover.claimFreeYears,2),1,20)" }
+```
+
+The *factors* on each step stay a table, because those really are twenty independent numbers.
+The age and mileage bands stay tables too: a band is a range, and a range is rule text.
 
 ### These samples are why those functions exist
 
@@ -123,8 +149,10 @@ product went through `=calculate('a*b')`, whose single expression string had to 
 the month and day back on.
 
 Rewriting the twenty expressions produced **byte-identical output** for both samples — which is
-the point: the functions did not change the rating, they made it legible. `docs/function-gaps.md`
-is the analysis that came out of reading these two files.
+the point: the functions did not change the rating, they made it legible. The second pass, which
+added the titles and descriptions, took `clamp` and `if` to the twenty-row ladder and the nested
+`ifElse` blocks and produced byte-identical output again. `docs/function-gaps.md` is the analysis
+that came out of reading these two files.
 
 ## The rating model
 
@@ -147,26 +175,42 @@ Worked out for `native/`: `21.40 × 1.28 × 1.00 × 1.00 × 1.00 × 0.40 = 10.96
 `14200 × 0.052 / 12 × 1.28 × 0.50 × 0.92 × 0.97 × 1.00 = 35.14` casco, `3.25 + 2.10 = 5.35`
 options → `51.45` net → `52.70` taxable → `11.07` tax → **€ 63.77 per month**.
 
-## How the script gets there, in eleven steps
+## How the script gets there, in ten steps
 
 1. `add` the rate book.
-2. Three `put`s: driver age, licence years, vehicle age.
-3. One node — `$.calc.lookup` — collects every lookup key. The native sample fills it with two
-   `merge`s from the request plus the PC4 `substring`; the SIVI sample maps AFD field names onto
-   the same key names in one object `put`.
-4. A `decisionTable` turns claim-free years into a bonus-malus step (20 rules).
-5. **One `resolve` with eight settings** fills that node from eight tables at once. Both scripts
+2. Three `put`s: driver age, licence years, vehicle age — all `dateDiff`.
+3. One node — `$.calc.lookup` — collects every lookup key, including the bonus-malus step:
+   `=clamp(=sum(claimFreeYears,2),1,20)`. The native sample fills the node with two `merge`s
+   from the request plus the PC4 `substring` and that one `put`; the SIVI sample maps AFD field
+   names onto the same key names in a single object `put`.
+4. **One `resolve` with eight settings** fills that node from eight tables at once. Both scripts
    contain this block identically.
-6. Three more `decisionTable`s: age band, mileage band, granted cover — ranges (`">=24 && <30"`,
-   `"<=10"`) are rule text, so they stay rows rather than nested `ifElse`.
-7. One `decisionTable` for acceptance over four inputs; `defaultResults` is the accept path.
-8. A second `resolve` prices the requested optional coverages, per array element.
-9. Nine `put`s build the premium: one product each for WA and casco, then sums, tax and totals.
-10. Object-valued `put`s write whole entities — policyholder, vehicle, risk profile, premium —
-    with their `=fetch(...)` strings evaluated inside the object. `ifElse` adds the young-driver
-    and cover-downgrade clauses.
-11. `remove` drops the working area and the rate book; the native sample `rename`s `request` to
+5. Four `decisionTable`s: age band, mileage band, granted cover, acceptance. Their conditions are
+   ranges (`">=24 && <30"`, `"<=10"`) — rule text, which is what keeps them tables. The granted-cover
+   table has four outputs, one of them the casco basis the premium step reads.
+6. A second `resolve` prices the requested optional coverages, per array element.
+7. Eight `put`s build the premium: one product each for WA and casco, then sums, tax and totals.
+8. Object-valued `put`s write whole entities — the policy header, policyholder, vehicle, risk
+   profile, coverages, premium — with their `=fetch(...)` strings evaluated inside the object.
+9. Two `ifElse` blocks add the young-driver and cover-downgrade clauses. They stay blocks because
+   what is conditional is a whole node's existence, not a value.
+10. `remove` drops the working area and the rate book; the native sample `rename`s `request` to
     `quote`, so what remains is the request as received plus the policy it produced.
+
+### What the new functions took out of these files
+
+The rewrite that added titles also shortened both scripts, and every cut came from a function
+rather than from dropping a feature — the output is unchanged in both samples.
+
+| Was | Is | Because |
+|---|---|---|
+| 20-rule `decisionTable` for the bonus-malus step | one `put` | `=clamp(=sum(years,2),1,20)`. The twenty rows were one sum, written out. |
+| `ifElse` inside `elseScript` of an `ifElse`, four `put`s deep, for the casco premium | one `put` | `=if` picks between *values*, and evaluates only the branch it picks. |
+| A second `put` inside the young-driver block to overwrite `totalExcess` | folded into the object | one `=if` at the point the field is first written. |
+| Ten scalar `put`s for the policy header (native) | one object-valued `put` | `=fetch(...)` inside an object value is evaluated as the object is written. |
+
+Native went from 58 commands to 41, SIVI from 46 to 40, and the deepest nesting in either file
+is now one `put` inside one `ifElse`.
 
 ## Notes and constraints worth knowing
 
