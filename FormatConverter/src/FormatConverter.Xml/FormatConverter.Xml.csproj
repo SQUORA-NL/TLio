@@ -2,6 +2,11 @@
   <PropertyGroup>
     <RootNamespace>FormatConverter.Xml</RootNamespace>
     <AssemblyName>FormatConverter.Xml</AssemblyName>
+
+    <PackageId>TLio.FormatConverter.Xml</PackageId>
+    <Description>XML adapter for TLio format conversion (System.Xml): attributes, namespaces, CDATA, null representation and array shape, written in the canonical document shape TLio's own XML adapter addresses.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio conversion xml</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

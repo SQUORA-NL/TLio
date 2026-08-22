@@ -2,6 +2,13 @@
   <PropertyGroup>
     <RootNamespace>FormatConverter.TLio</RootNamespace>
     <AssemblyName>FormatConverter.TLio</AssemblyName>
+
+    <!-- The package a consumer actually references: it pulls the three adapters and the core in
+         behind it. Named without a suffix for that reason. -->
+    <PackageId>TLio.FormatConverter</PackageId>
+    <Description>The convert and convertValue commands for TLio, with MultiFormatScriptRunner — runs a script that changes the document's format partway through, re-hosting each section on the engine for its format. References the JSON, XML and YAML adapters.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting conversion json xml yaml</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

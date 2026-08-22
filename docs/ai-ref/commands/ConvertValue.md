@@ -115,6 +115,13 @@ ordinary JSON.
 
 ## C# setup
 
+Both commands live in the `TLio.FormatConverter` package, which brings the three format
+adapters with it:
+
+```sh
+dotnet add package TLio.FormatConverter
+```
+
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
 options.CommandsProvider.RegisterFormatConversion<JToken>(converter, "json");

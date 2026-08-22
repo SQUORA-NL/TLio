@@ -2,6 +2,11 @@
   <PropertyGroup>
     <RootNamespace>FormatConverter.Json</RootNamespace>
     <AssemblyName>FormatConverter.Json</AssemblyName>
+
+    <PackageId>TLio.FormatConverter.Json</PackageId>
+    <Description>JSON adapter for TLio format conversion (System.Text.Json): reads and writes the intermediate model that XML and YAML are converted through.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio conversion json</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
