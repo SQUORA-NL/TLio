@@ -9,24 +9,23 @@
     <PackageReference Include="NUnit" Version="4.6.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
-    <PackageReference Include="NUnit.Analyzers" Version="4.14.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Fixtures\**\*">
+    <Content Include="Fixtures/**/*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
+    <Content Include="Fixtures/**/*.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fixtures/**/*.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\TLio.FormatConverter\TLio.FormatConverter.csproj" />
-  </ItemGroup>
-
-  <!-- TLio's own adapters, so a test can assert that converted output is the shape they read. -->
-  <ItemGroup>
+    <!-- TLio's own adapters, so a test can assert that converted output is the shape they read. -->
     <ProjectReference Include="..\TLio.Json\TLio.Json.csproj" />
     <ProjectReference Include="..\TLio.Xml\TLio.Xml.csproj" />
     <ProjectReference Include="..\TLio.Yaml\TLio.Yaml.csproj" />
