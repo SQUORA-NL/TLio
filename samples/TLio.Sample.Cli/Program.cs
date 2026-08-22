@@ -313,7 +313,12 @@ static ScriptEngineSectionExecutor<TNode> SectionExecutor<TNode>(
     options.CommandsProvider.RegisterETL<TNode>();
     options.CommandsProvider.RegisterFormatConversion<TNode>(converter, formatId);
 
-    var engine = new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider);
+    // A section is a slice of the original script, still in the notation it was written in — so
+    // an XML script's sections arrive as XML. Without these the engine reads such a section as
+    // an empty script and the section executor reports the notation it could not parse.
+    var engine = new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider)
+        .UseXmlScripts()
+        .UseYamlScripts();
     return new ScriptEngineSectionExecutor<TNode>(formatId, engine, () => contextFactory());
 }
 

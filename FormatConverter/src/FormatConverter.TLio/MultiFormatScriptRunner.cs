@@ -1,6 +1,6 @@
-using System.Text.Json;
 using FormatConverter.Core;
 using FormatConverter.Core.Exceptions;
+using TLio.Core.Models;
 using TLio.Core.Models.Logging;
 
 namespace FormatConverter.TLio;
@@ -10,8 +10,8 @@ namespace FormatConverter.TLio;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The runner pre-processes a flat JSON command array, splits it at <c>convert</c> command boundaries
-/// into <see cref="ScriptSection"/> objects, and executes each section using the registered
+/// The runner splits a script at its <c>convert</c> command boundaries into
+/// <see cref="ScriptSection"/> objects and executes each section using the registered
 /// <see cref="IFormatSectionExecutor"/> for that format.  Format conversion at each boundary is
 /// performed by the injected <see cref="FormatConverter.Core.FormatConverter"/>.
 /// </para>
@@ -42,32 +42,14 @@ public sealed class MultiFormatScriptRunner
     /// </summary>
     /// <remarks>
     /// Callers that accept scripts from elsewhere — an API endpoint, the MCP server — use this to
-    /// decide which of the two paths to take. Text that is not a JSON array of commands is not a
-    /// multi-format script, and says so by returning false rather than throwing; whatever reads
-    /// it next will report the real problem.
+    /// decide which of the two paths to take. The script is read in whichever of the three
+    /// notations it is written in, so <c>convert</c> is found in an XML or YAML script as
+    /// readily as in a JSON one. Text that is not a script at all is not a multi-format script,
+    /// and says so by returning false rather than throwing; whatever reads it next will report
+    /// the real problem.
     /// </remarks>
-    public static bool CrossesAFormatBoundary(string scriptJson)
-    {
-        if (string.IsNullOrWhiteSpace(scriptJson)) return false;
-
-        try
-        {
-            using var doc = JsonDocument.Parse(scriptJson);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array) return false;
-
-            foreach (var element in doc.RootElement.EnumerateArray())
-            {
-                if (IsConvertCommand(element, out _, out _))
-                    return true;
-            }
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-
-        return false;
-    }
+    public static bool CrossesAFormatBoundary(string script, ScriptFormat? notation = null) =>
+        ScriptSectionSplitter.ContainsConvert(script, notation);
 
     /// <summary>Register a format-specific section executor.</summary>
     public void RegisterExecutor(IFormatSectionExecutor executor)
@@ -81,12 +63,12 @@ public sealed class MultiFormatScriptRunner
     /// </summary>
     /// <param name="initialFormatId">Format of <paramref name="inputDocument"/>.</param>
     /// <param name="inputDocument">The starting document in <paramref name="initialFormatId"/> format.</param>
-    /// <param name="scriptJson">JSON array of TLio commands, possibly containing <c>convert</c> commands.</param>
+    /// <param name="script">TLio script in any notation, possibly containing <c>convert</c> commands.</param>
     /// <returns>The document after all sections have been executed, in the last section's format.</returns>
     /// <exception cref="FormatNotRegisteredException">When a <c>convert</c> command targets an unregistered format.</exception>
     /// <exception cref="SectionExecutorNotRegisteredException">When a section has commands and no executor to run them.</exception>
-    public string Execute(string initialFormatId, string inputDocument, string scriptJson) =>
-        Run(initialFormatId, inputDocument, scriptJson).Document;
+    public string Execute(string initialFormatId, string inputDocument, string script) =>
+        Run(initialFormatId, inputDocument, script).Document;
 
     /// <summary>
     /// Execute a multi-format script and return the output together with what every section
@@ -97,9 +79,10 @@ public sealed class MultiFormatScriptRunner
     /// ask afterwards. The logs are collected as the pipeline goes.
     /// </remarks>
     /// <inheritdoc cref="Execute(string,string,string)" path="/exception"/>
-    public MultiFormatScriptResult Run(string initialFormatId, string inputDocument, string scriptJson)
+    public MultiFormatScriptResult Run(
+        string initialFormatId, string inputDocument, string script, ScriptFormat? notation = null)
     {
-        var sections = SplitIntoSections(initialFormatId, scriptJson);
+        var sections = ScriptSectionSplitter.Split(initialFormatId, script, notation);
         var currentDocument = inputDocument;
         var currentFormat = initialFormatId;
         var logs = new LogEntries();
@@ -120,7 +103,7 @@ public sealed class MultiFormatScriptRunner
                 currentFormat = section.FormatId;
             }
 
-            if (section.Commands.Count == 0)
+            if (section.CommandCount == 0)
                 continue;
 
             if (!_executors.TryGetValue(section.FormatId, out var executor))
@@ -130,7 +113,7 @@ public sealed class MultiFormatScriptRunner
                 throw new SectionExecutorNotRegisteredException(section.FormatId, _executors.Keys.ToList());
             }
 
-            var result = executor.Execute(section.ToScriptJson(), currentDocument);
+            var result = executor.Execute(section.ScriptText, currentDocument);
             currentDocument = result.Document;
             logs.AddRange(result.Logs);
             success &= result.Success;
@@ -139,57 +122,4 @@ public sealed class MultiFormatScriptRunner
         return new MultiFormatScriptResult(currentDocument, currentFormat, success, logs);
     }
 
-    private static List<ScriptSection> SplitIntoSections(string initialFormatId, string scriptJson)
-    {
-        var sections = new List<ScriptSection>();
-        var commands = new List<JsonElement>();
-        var currentFormat = initialFormatId;
-        ConversionSettings? pendingSettings = null;
-
-        using var doc = JsonDocument.Parse(scriptJson);
-        if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            throw new ArgumentException("Script must be a JSON array.", nameof(scriptJson));
-
-        foreach (var element in doc.RootElement.EnumerateArray())
-        {
-            if (IsConvertCommand(element, out var to, out var settings))
-            {
-                // Flush current section
-                sections.Add(new ScriptSection(currentFormat, commands.Select(CloneElement).ToList(), pendingSettings));
-                commands = new List<JsonElement>();
-                currentFormat = to;
-                pendingSettings = settings;
-            }
-            else
-            {
-                commands.Add(CloneElement(element));
-            }
-        }
-
-        // Flush last section
-        sections.Add(new ScriptSection(currentFormat, commands.Select(CloneElement).ToList(), pendingSettings));
-
-        return sections;
-    }
-
-    private static bool IsConvertCommand(JsonElement element, out string to, out ConversionSettings settings)
-    {
-        to = string.Empty;
-        settings = ConversionSettings.Empty;
-
-        if (element.ValueKind != JsonValueKind.Object) return false;
-        if (!element.TryGetProperty("command", out var cmdProp)) return false;
-        if (!string.Equals(cmdProp.GetString(), "convert", StringComparison.OrdinalIgnoreCase)) return false;
-
-        to = element.TryGetProperty("to", out var toProp) ? toProp.GetString() ?? string.Empty : string.Empty;
-        settings = ConvertSettingsReader.Read(element);
-        return true;
-    }
-
-    private static JsonElement CloneElement(JsonElement element)
-    {
-        // Clone via round-trip through JsonDocument to own the memory
-        var bytes = System.Text.Encoding.UTF8.GetBytes(element.GetRawText());
-        return JsonDocument.Parse(bytes).RootElement;
-    }
 }

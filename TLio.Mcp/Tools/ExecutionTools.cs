@@ -88,18 +88,11 @@ public sealed class ExecutionTools
         if (documentFormat is not ("json" or "xml" or "yaml"))
             return new { success = false, error = $"Unsupported format '{format}'. Use json, xml, or yaml." };
 
-        if (MultiFormatScriptRunner.CrossesAFormatBoundary(script))
-        {
-            if (notation != ScriptFormat.Json)
-                return new
-                {
-                    success = false,
-                    error = "A script containing 'convert' must be written in the JSON notation — " +
-                            "the boundary split reads the command array directly."
-                };
-
-            return RunMultiFormat(document, documentFormat, script);
-        }
+        // convert is a command like any other in all three notations, so the notation the
+        // caller declared (or the one detected) is handed to the runner and it splits the script
+        // in that notation.
+        if (MultiFormatScriptRunner.CrossesAFormatBoundary(script, notation))
+            return RunMultiFormat(document, documentFormat, script, notation);
 
         return documentFormat switch
         {
@@ -114,11 +107,12 @@ public sealed class ExecutionTools
     /// boundary, so no single engine can carry it — the runner splits the script and hands each
     /// section to the engine for its format.
     /// </summary>
-    private ExecuteResult RunMultiFormat(string document, string format, string script)
+    private ExecuteResult RunMultiFormat(
+        string document, string format, string script, ScriptFormat notation)
     {
         try
         {
-            var result = _runner.Run(format, document, script);
+            var result = _runner.Run(format, document, script, notation);
 
             return new ExecuteResult
             {

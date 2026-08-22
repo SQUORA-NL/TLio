@@ -1,4 +1,3 @@
-using System.Text.Json;
 using FormatConverter.Core;
 
 namespace FormatConverter.TLio;
@@ -6,13 +5,29 @@ namespace FormatConverter.TLio;
 /// <summary>
 /// One segment of a multi-format script between conversion boundaries.
 /// </summary>
+/// <remarks>
+/// The section carries its commands as <b>script text in the notation they were written in</b>,
+/// not as a parsed command list. A section is a script in its own right, and the executor runs it
+/// through an engine that detects the notation from the text — so an XML script yields XML
+/// sections and nothing has to be translated across notations to be split.
+/// </remarks>
 internal sealed class ScriptSection
 {
     /// <summary>Format identifier governing this section's document type.</summary>
     public string FormatId { get; }
 
-    /// <summary>Ordered JSON command objects for this section (no <c>convert</c> commands).</summary>
-    public IList<JsonElement> Commands { get; }
+    /// <summary>
+    /// This section's commands as a runnable script, in the original notation and with the
+    /// <c>convert</c> commands removed.
+    /// </summary>
+    public string ScriptText { get; }
+
+    /// <summary>
+    /// How many commands the section holds. A section with none is a boundary that converts and
+    /// passes the document straight through — it needs no executor, and asking for one that is
+    /// not registered would fail a run that has nothing to run.
+    /// </summary>
+    public int CommandCount { get; }
 
     /// <summary>
     /// Settings from the preceding <c>convert</c> command.
@@ -20,23 +35,11 @@ internal sealed class ScriptSection
     /// </summary>
     public ConversionSettings? IncomingSettings { get; }
 
-    internal ScriptSection(string formatId, IList<JsonElement> commands, ConversionSettings? incomingSettings)
+    internal ScriptSection(string formatId, string scriptText, int commandCount, ConversionSettings? incomingSettings)
     {
         FormatId = formatId;
-        Commands = commands;
+        ScriptText = scriptText;
+        CommandCount = commandCount;
         IncomingSettings = incomingSettings;
-    }
-
-    /// <summary>Serialise the section's commands back to a JSON array string.</summary>
-    public string ToScriptJson()
-    {
-        using var stream = new System.IO.MemoryStream();
-        using var writer = new Utf8JsonWriter(stream);
-        writer.WriteStartArray();
-        foreach (var cmd in Commands)
-            cmd.WriteTo(writer);
-        writer.WriteEndArray();
-        writer.Flush();
-        return System.Text.Encoding.UTF8.GetString(stream.ToArray());
     }
 }
