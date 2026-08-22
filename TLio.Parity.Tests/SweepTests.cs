@@ -99,6 +99,29 @@ public class SweepTests
             + $"Sweep/expected.{format.ToLowerInvariant()}.json.");
     }
 
+    [TestCase("JSON")]
+    [TestCase("XML")]
+    [TestCase("YAML")]
+    public void TheSweepSurvivesBeingSerialized(string format)
+    {
+        // Parsed, written back out as JSON, read again and run — and it has to land on the same
+        // document. A command whose configuration is an object rather than a string used to
+        // arrive without it: the settings were dropped by the writer without a word, and what
+        // came back was a command with a name and a path and nothing to do.
+        var run = SweepRunner.RunSerialized(format, Script(format));
+        var expected = File.ReadAllText(ExpectedPath(format)).Trim();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(run.Success, Is.True,
+                $"{format}: the serialized sweep did not run.\n  {string.Join("\n  ", run.Warnings)}");
+            Assert.That(run.NotApplied, Is.Empty,
+                $"{format}: a command lost something on the way through TLioConvert.Serialize.\n{run.Report()}");
+            Assert.That(run.Document, Is.EqualTo(expected),
+                $"{format}: serializing and re-reading the sweep changed what it produces.");
+        });
+    }
+
     [Test]
     public void TheFormatsDifferOnlyWhereTheyMust()
     {

@@ -33,6 +33,20 @@ public class FixedValue<TNode> : IFunctionSupportedValue<TNode>
     public FunctionResult<TNode> GetValue(TNode currentNode, TNode dataContext, IExecutionContext<TNode> context) =>
         FunctionResult<TNode>.Successful(_value);
 
+    /// <summary>
+    /// The node this value returns, for a writer that has to render the value rather than
+    /// execute it — <see cref="ToScript"/> renders a script expression, which is not the same
+    /// thing as the value itself once the value is an object or an array.
+    /// </summary>
+    public TNode Node => _value;
+
+    /// <summary>
+    /// The expression this value was parsed from, or null when it was built in code. It is the
+    /// only record of how the value was spelled — <c>'$.name'</c> quoted is a literal, the same
+    /// text unquoted is a path — which a writer needs and the node cannot answer.
+    /// </summary>
+    public string? ScriptText => _scriptText;
+
     public string ToScript() => _scriptText ?? FormatValue();
 
     /// <summary>
