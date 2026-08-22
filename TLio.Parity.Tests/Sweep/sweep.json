@@ -658,7 +658,7 @@
     "path": "$.etl.resolveRef",
     "resolveSettings": [
       {
-        "referencesCollectionPath": "$.etl.lookup",
+        "referencesCollectionPath": "$.etl.lookup[*]",
         "resolveKeys": [
           {
             "keyPath": "@.code",
@@ -667,7 +667,7 @@
         ],
         "values": [
           {
-            "sourcePath": "@.label",
+            "value": "@.label",
             "targetPath": "@.label"
           }
         ]

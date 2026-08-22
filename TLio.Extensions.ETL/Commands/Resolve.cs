@@ -220,9 +220,44 @@ public class Resolve<TNode> : CommandBase<TNode>
         IFunctionSupportedValue<TNode> valueTemplate,
         IExecutionContext<TNode> context)
     {
+        if (TryReadFromMatch(matchRef, valueTemplate, context, out var fromMatch))
+            return fromMatch;
+
         var result = valueTemplate.GetValue(matchRef, dataContext, context);
         if (!result.Success || result.Data.Count == 0) return context.NodeAdapter.CreateNull();
         return result.Data.First;
+    }
+
+    /// <summary>
+    /// Read <c>"value": "@.field"</c> off the matched reference entry with the adapter, the same
+    /// way <see cref="KeysMatch"/> reads <c>keyPath</c> and <see cref="SetValueAtPath"/> writes
+    /// <c>targetPath</c>.
+    ///
+    /// It cannot go through the path language, because the matched entry is not something a path
+    /// can name. <c>referencesCollectionPath</c> matched several nodes and this is one of them;
+    /// in XML every one of them has the same absolute path, so resolving the relative path to an
+    /// absolute one and selecting it again returns the *first* sibling rather than the match. The
+    /// nesting separator is the notation's <c>.</c> for the same reason — <c>@.detail.tier</c>
+    /// is a walk over properties, not a path in the document's language.
+    ///
+    /// So <c>@.</c> means one thing in a resolve setting, in every format. A value that is not
+    /// written that way — a literal, a function expression, an absolute path — is left to the
+    /// ordinary value machinery.
+    /// </summary>
+    private static bool TryReadFromMatch(
+        TNode matchRef, IFunctionSupportedValue<TNode> valueTemplate,
+        IExecutionContext<TNode> context, out TNode? value)
+    {
+        value = default;
+
+        if (valueTemplate is not PathValue<TNode>) return false;
+
+        var path = valueTemplate.ToScript();
+        if (!path.StartsWith("@.", StringComparison.Ordinal)) return false;
+
+        value = GetNestedProperty(matchRef, path[2..], context.NodeAdapter)
+                ?? context.NodeAdapter.CreateNull();
+        return true;
     }
 
     private static void SetValueAtPath(

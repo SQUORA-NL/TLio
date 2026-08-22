@@ -44,8 +44,27 @@
 - `keyPath`: path relative to the current node (`@.property`) — the dot after `@` is always required
 - `referenceKeyPath`: path in the reference entry (absolute or `$.property`)
 - `targetPath`: where to write the result — `@.property` writes relative to current node
+- `value`: `@.property` reads it off the **matched reference entry**; anything else — a literal,
+  a function expression, an absolute path — is evaluated the ordinary way
 
-> See [Notation Reference](../notation-reference.md) for relative-path rules. Use `@.property` (with dot) in all JSON/YAML contexts.
+> See [Notation Reference](../notation-reference.md) for relative-path rules.
+
+### `@.` is the same in every format
+
+`@.property` inside a resolve setting belongs to the *script*, not to the document, so it is
+written the same way whatever format the data is in — `@.label`, never `./label`, even in XML.
+All four places that take it (`keyPath`, `referenceKeyPath`, `targetPath`, `value`) read it off
+the node with the adapter, and `.` separates the steps of a walk: `@.detail.tier` is
+`detail` then `tier`, in XML as much as in JSON.
+
+It cannot be a path in the document's own language, because the matched entry is not something a
+path can name — `referencesCollectionPath` matched several nodes and this is one of them. In XML
+they all share an absolute path, so a path-based read would return the first sibling rather than
+the match.
+
+> **`sourcePath` is not a key `resolve` reads.** A `values` entry written
+> `{"sourcePath": "@.label", "targetPath": "@.label"}` binds no value and writes nothing, with no
+> warning. The key is `value`.
 
 **Functions in the value**: — no value field  
 **Functions in the path**: — not resolved here; resolve it in a preceding step

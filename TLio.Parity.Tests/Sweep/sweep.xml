@@ -385,17 +385,17 @@
   <resolve path="/root/etl/resolveRef">
     <resolveSettings>
       <item>
-        <referencesCollectionPath>/root/etl/lookup</referencesCollectionPath>
+        <referencesCollectionPath>/root/etl/lookup/item</referencesCollectionPath>
         <resolveKeys>
           <item>
-            <keyPath>./code</keyPath>
-            <referenceKeyPath>./code</referenceKeyPath>
+            <keyPath>@.code</keyPath>
+            <referenceKeyPath>@.code</referenceKeyPath>
           </item>
         </resolveKeys>
         <values>
           <item>
-            <sourcePath>./label</sourcePath>
-            <targetPath>./label</targetPath>
+            <value>@.label</value>
+            <targetPath>@.label</targetPath>
           </item>
         </values>
       </item>
