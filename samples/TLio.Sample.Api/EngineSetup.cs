@@ -1,8 +1,8 @@
 using System.Xml.Linq;
-using FormatConverter.Json;
-using FormatConverter.TLio;
-using FormatConverter.Xml;
-using FormatConverter.Yaml;
+using TLio.FormatConverter.Json;
+using TLio.FormatConverter;
+using TLio.FormatConverter.Xml;
+using TLio.FormatConverter.Yaml;
 using Newtonsoft.Json.Linq;
 using TLio.Client;
 using TLio.Extensions.ETL;
@@ -31,11 +31,11 @@ internal static class EngineSetup
     /// is explicit rather than automatic — some format libraries carry licence terms a host has
     /// to opt into.
     /// </summary>
-    public static FormatConverter.Core.FormatConverter Converter { get; } = CreateConverter();
+    public static TLio.FormatConverter.Core.FormatConverter Converter { get; } = CreateConverter();
 
-    private static FormatConverter.Core.FormatConverter CreateConverter()
+    private static TLio.FormatConverter.Core.FormatConverter CreateConverter()
     {
-        var converter = new FormatConverter.Core.FormatConverter();
+        var converter = new TLio.FormatConverter.Core.FormatConverter();
         converter.Register(new JsonFormatAdapter());
         converter.Register(new XmlFormatAdapter());
         converter.Register(new YamlFormatAdapter());

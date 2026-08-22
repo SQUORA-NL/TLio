@@ -1,8 +1,8 @@
 using System.Text.Json;
-using FormatConverter.Json;
-using FormatConverter.TLio;
-using FormatConverter.Xml;
-using FormatConverter.Yaml;
+using TLio.FormatConverter.Json;
+using TLio.FormatConverter;
+using TLio.FormatConverter.Xml;
+using TLio.FormatConverter.Yaml;
 using TLio.Client;
 using TLio.Core.Models;
 using TLio.Extensions.ETL;
@@ -265,9 +265,9 @@ static string RunTransform(string format, string inputText, string scriptText, S
     };
 }
 
-static FormatConverter.Core.FormatConverter CreateConverter()
+static TLio.FormatConverter.Core.FormatConverter CreateConverter()
 {
-    var converter = new FormatConverter.Core.FormatConverter();
+    var converter = new TLio.FormatConverter.Core.FormatConverter();
     converter.Register(new JsonFormatAdapter());
     converter.Register(new XmlFormatAdapter());
     converter.Register(new YamlFormatAdapter());
@@ -303,7 +303,7 @@ static string RunMultiFormat(string format, string inputText, string scriptText)
 
 static ScriptEngineSectionExecutor<TNode> SectionExecutor<TNode>(
     string formatId,
-    FormatConverter.Core.FormatConverter converter,
+    TLio.FormatConverter.Core.FormatConverter converter,
     Func<ExecutionContext<TNode>> contextFactory)
 {
     var options = ParseOptions<TNode>.CreateDefault();

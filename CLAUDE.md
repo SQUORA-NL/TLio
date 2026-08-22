@@ -16,7 +16,7 @@ Auto-generated from all feature plans. Last updated: 2026-05-01 (updated by 008)
 - [if applicable, e.g., PostgreSQL, CoreData, files or N/A] (017-im-format-converter)
 - C# / .NET 10 + `System.Text.Json` (built-in, JSON adapter), `System.Xml` (built-in, XML adapter), `YamlDotNet` (YAML adapter only — MIT licensed), `NUnit 4.x` (tests) (017-im-format-converter)
 - N/A — pure in-memory library (017-im-format-converter)
-- C# / .NET 10 + `System.Text.Json` (built-in), `System.Xml` (built-in), `YamlDotNet` (MIT, YAML adapter only), `NUnit 4.x` (tests), `TLio.Core` (FormatConverter.TLio only) (017-im-format-converter)
+- C# / .NET 10 + `System.Text.Json` (built-in), `System.Xml` (built-in), `YamlDotNet` (MIT, YAML adapter only), `NUnit 4.x` (tests), `TLio.Core` (TLio.FormatConverter only) (017-im-format-converter)
 - C# / .NET 10 + ASP.NET Core Minimal API; `TLio.Client` (`ScriptEngine<TNode>`, `CompiledScript<TNode>`); `TLio.Json` (`JsonExecutionContext`, `JsonNodeAdapter`); `TLio.Xml` (`XmlExecutionContext`); `TLio.Yaml` (`YamlExecutionContext`); NuPlane + CShells (DockerPlugin host only) (018-api-script-slug-cache)
 - In-memory `ConcurrentDictionary<string, ScriptRegistryEntry>` — ephemeral, process-scoped (018-api-script-slug-cache)
 - C# / .NET 10 + `ModelContextProtocol` (Anthropic MCP SDK, stdio server), `System.Threading.RateLimiting` (in-box .NET), `TLio.Json`, `TLio.Json.SystemText`, `TLio.Xml`, `TLio.Yaml`, `TLio.Client`, `TLio.Commands`, `TLio.Functions`, `TLio.Extensions.*` (019-mcp-tlio-server)
@@ -49,12 +49,12 @@ TLio.Mcp/                   ← MCP stdio server (tlio_list_commands, tlio_descr
 TLio.Mcp.Tests/             ← MCP server tests (DiscoveryTools, ExecutionTools, AnalysisTools, E2E workflow)
 TLio.Parity.Tests/          ← Cross-format regression net (020): one fixture corpus run against
                               JSON, XML and YAML through each format's own script notation
-FormatConverter/            ← Format conversion (017, 022). Part of TLio.sln.
-  src/FormatConverter.Core/   IM model, ConversionSettings, MetadataConvention
-  src/FormatConverter.{Json,Xml,Yaml}/  the three adapters
-  src/FormatConverter.TLio/   convert, convertValue, MultiFormatScriptRunner,
+TLio.FormatConverter/       ← Format conversion (017, 022, 024). One assembly, one package.
+  Core/                       IM model, ConversionSettings, MetadataConvention
+  {Json,Xml,Yaml}/            the three adapters
+  Commands/                   convert, convertValue, MultiFormatScriptRunner,
                               ScriptEngineSectionExecutor
-  tests/FormatConverter.Tests/
+TLio.FormatConverter.Tests/
 samples/
   TLio.Sample.Api/          ← Minimal API sample (JSON/XML/YAML endpoints, 005)
   TLio.Sample.Cli/          ← CLI sample (file-in / transformed-out, 005)
@@ -212,7 +212,7 @@ as the array.
 
 Settings exist where XML leaves the answer open — `attributePrefix`, `textProperty`,
 `namespacePrefix`, `arrayItemName`, `arrayHandling`, `nullRepresentation`, `nameSanitization`,
-`inferTypes`, `cdataAsText`, `flattenAnchors`. `MetadataConvention` in `FormatConverter.Core` holds
+`inferTypes`, `cdataAsText`, `flattenAnchors`. `MetadataConvention` in `TLio.FormatConverter.Core` holds
 the rules JSON and YAML must spell identically; when they were separate, an attribute that survived
 `xml → json` vanished on `xml → yaml`.
 
@@ -220,6 +220,10 @@ One asymmetry to know: TLio's XML adapter ignores attributes by design, but afte
 JSON or YAML they are ordinary `@name` properties. Converting is how a script edits an attribute.
 
 ## Recent Changes
+- 024-package-format-converter: format conversion ships on NuGet as `TLio.FormatConverter` —
+  the five projects merged into one assembly at the repo root, named like every other project
+  (package = assembly = namespace root = folder). Namespaces moved from `FormatConverter.*`
+  to `TLio.FormatConverter.*`; `FormatConverter.TLio` is now `TLio.FormatConverter`.
 - 023-function-gaps: 21 functions added so one idea stops costing four levels of nesting —
   Math `multiply` / `divide` / `clamp` / `sign`; TimeDate `dateDiff` / `dateAdd` / `datePart` /
   `formatDate` / `parseDate` / `startOfMonth` / `endOfMonth`; Text `regexReplace` /
