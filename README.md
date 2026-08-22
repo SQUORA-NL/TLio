@@ -92,13 +92,7 @@ paid-licence and Newtonsoft-bound.
 
 | Project | Package | Purpose |
 |---|---|---|
-| `FormatConverter/src/FormatConverter.TLio` | `TLio.FormatConverter` | The `convert` and `convertValue` commands and `MultiFormatScriptRunner` — the one to reference; it pulls the other four in |
-| `FormatConverter/src/FormatConverter.Core` | `TLio.FormatConverter.Core` | Intermediate model, `ConversionSettings`, `IFormatAdapter`, `MetadataConvention` |
-| `FormatConverter/src/FormatConverter.Json` | `TLio.FormatConverter.Json` | JSON adapter (System.Text.Json) |
-| `FormatConverter/src/FormatConverter.Xml` | `TLio.FormatConverter.Xml` | XML adapter (System.Xml) — attributes, namespaces, CDATA, array shape |
-| `FormatConverter/src/FormatConverter.Yaml` | `TLio.FormatConverter.Yaml` | YAML adapter (YamlDotNet) — anchor flattening |
-
-The assembly names stay `FormatConverter.*`; only the package ids are scoped to TLio.
+| `TLio.FormatConverter` | `TLio.FormatConverter` | The `convert` and `convertValue` commands, `MultiFormatScriptRunner`, and the JSON / XML / YAML converters they work through. One assembly: `Core/` holds the intermediate model and `ConversionSettings`, `Json/` `Xml/` `Yaml/` the adapters, `Commands/` the TLio side |
 
 ### Tooling
 
@@ -116,6 +110,7 @@ The assembly names stay `FormatConverter.*`; only the package ids are scoped to 
 | `TLio.Functions.Tests` | Built-in + extension-pack function tests |
 | `TLio.Xml.Tests` | XML adapter tests (slash-path + XPath fixtures) |
 | `TLio.Yaml.Tests` | YAML adapter tests |
+| `TLio.FormatConverter.Tests` | Format conversion tests — adapters, round trips, mid-script `convert` |
 | `TLio.Mcp.Tests` | MCP server tests, including two-iteration agent workflows |
 | `samples/TLio.Sample.Api` | Minimal API sample (JSON/XML/YAML endpoints, slug script cache) |
 | `samples/TLio.Sample.Api.IntegrationTests` | End-to-end API tests |

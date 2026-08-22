@@ -18,10 +18,10 @@ using TLio.Mcp.Models;
 using TLio.Mcp.Services;
 using TLio.Xml;
 using TLio.Yaml;
-using FormatConverter.Json;
-using FormatConverter.TLio;
-using FormatConverter.Xml;
-using FormatConverter.Yaml;
+using TLio.FormatConverter.Json;
+using TLio.FormatConverter;
+using TLio.FormatConverter.Xml;
+using TLio.FormatConverter.Yaml;
 
 namespace TLio.Mcp.Tools;
 
@@ -274,9 +274,9 @@ public sealed class ExecutionTools
         return suggestions;
     }
 
-    private static FormatConverter.Core.FormatConverter CreateConverter()
+    private static TLio.FormatConverter.Core.FormatConverter CreateConverter()
     {
-        var converter = new FormatConverter.Core.FormatConverter();
+        var converter = new TLio.FormatConverter.Core.FormatConverter();
         converter.Register(new JsonFormatAdapter());
         converter.Register(new XmlFormatAdapter());
         converter.Register(new YamlFormatAdapter());
@@ -284,7 +284,7 @@ public sealed class ExecutionTools
     }
 
     private static ScriptEngine<TNode> CreateEngine<TNode>(
-        FormatConverter.Core.FormatConverter converter, string documentFormatId)
+        TLio.FormatConverter.Core.FormatConverter converter, string documentFormatId)
     {
         var options = ParseOptions<TNode>.CreateDefault();
         options.FunctionsProvider.RegisterMath<TNode>();

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Format conversion for TLio: the convert and convertValue commands, MultiFormatScriptRunner, and the JSON, XML and YAML adapters they convert through.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting conversion json xml yaml</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
+    <ProjectReference Include="..\TLio.Client\TLio.Client.csproj" />
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+  </ItemGroup>
+
+</Project>
