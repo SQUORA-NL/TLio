@@ -124,6 +124,87 @@ public static class SweepRunner
             FormatRunners.RenderYamlForComparison(result.Data), trace.Entries, Warnings(context));
     }
 
+    /// <summary>
+    /// The sweep parsed, written back out as a JSON script, and run from that — the trip a
+    /// script makes through an editor that holds it as JSON.
+    /// </summary>
+    /// <remarks>
+    /// The sweep already proves every registered command runs. This proves the other half:
+    /// that every registered command can be written out and read back. A command whose
+    /// configuration is an object — a decision table, a resolve, a compare — used to lose it
+    /// silently here, and only the command name, path and title arrived on the other side.
+    /// </remarks>
+    public static SweepRun RunSerialized(string format, string script) => format switch
+    {
+        // What comes back from the serializer is a JSON script whatever notation went in, so it
+        // is read by the engine — which detects the notation — rather than by the notation's own
+        // parser. The document stays in its own format; the notation never was tied to it.
+        "XML"  => Guard("XML",  () => RunXmlJsonScript(SerializeXml(script))),
+        "YAML" => Guard("YAML", () => RunYamlJsonScript(SerializeYaml(script))),
+        _      => Guard("JSON", () => RunJson(SerializeJson(script))),
+    };
+
+    private static SweepRun RunXmlJsonScript(string scriptJson)
+    {
+        var options = FormatRunners.Options<XElement>();
+        var adapter = new XmlNodeAdapter();
+        var engine  = new ScriptEngine<XElement>(options.CommandsProvider, options.FunctionsProvider);
+        var context = XmlExecutionContext.CreateWithSlashPaths();
+        var trace   = new RecordingTraceCollector();
+        context.TraceCollector = trace;
+
+        var data   = adapter.Parse($"<{CanonicalShape.RootName}/>");
+        var result = engine.Parse(scriptJson, adapter).Execute(data, context);
+
+        return new SweepRun("XML", result.Success,
+            FormatRunners.RenderXmlForComparison(result.Data), trace.Entries, Warnings(context));
+    }
+
+    private static SweepRun RunYamlJsonScript(string scriptJson)
+    {
+        var options = FormatRunners.Options<YamlNode>();
+        var context = YamlExecutionContext.CreateDefault();
+        var adapter = context.NodeAdapter;
+        var engine  = new ScriptEngine<YamlNode>(options.CommandsProvider, options.FunctionsProvider);
+        var trace   = new RecordingTraceCollector();
+        context.TraceCollector = trace;
+
+        var data   = adapter.Parse("{}");
+        var result = engine.Parse(scriptJson, adapter).Execute(data, context);
+
+        return new SweepRun("YAML", result.Success,
+            FormatRunners.RenderYamlForComparison(result.Data), trace.Entries, Warnings(context));
+    }
+
+    private static string SerializeJson(string script)
+    {
+        var options = FormatRunners.Options<JToken>();
+        var adapter = JsonExecutionContext.CreateDefault().NodeAdapter;
+        var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+
+        return TLioConvert.Serialize(engine.Parse(script, adapter), adapter);
+    }
+
+    private static string SerializeXml(string script)
+    {
+        var options = FormatRunners.Options<XElement>();
+        var adapter = new XmlNodeAdapter();
+        var parser  = new XmlScriptParser<XElement>(
+            options.CommandsProvider, options.FunctionsProvider, adapter);
+
+        return TLioConvert.Serialize(parser.ParseScript(script), adapter);
+    }
+
+    private static string SerializeYaml(string script)
+    {
+        var options = FormatRunners.Options<YamlNode>();
+        var adapter = YamlExecutionContext.CreateDefault().NodeAdapter;
+        var parser  = new YamlScriptParser<YamlNode>(
+            options.CommandsProvider, options.FunctionsProvider, adapter);
+
+        return TLioConvert.Serialize(parser.ParseScript(script), adapter);
+    }
+
     private static List<string> Warnings<TNode>(IExecutionContext<TNode> context) =>
         context.GetLogEntries()
             .Where(e => e.Level >= Microsoft.Extensions.Logging.LogLevel.Warning)

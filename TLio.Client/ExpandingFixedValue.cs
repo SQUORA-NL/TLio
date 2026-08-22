@@ -37,6 +37,12 @@ internal class ExpandingFixedValue<TNode> : IFunctionSupportedValue<TNode>
 
     public string ToScript() => "[expanding]";
 
+    /// <summary>
+    /// The value as written, functions inside it still spelled "=func()" — which is exactly
+    /// what a serializer needs to write it back out.
+    /// </summary>
+    internal TNode Template => _template;
+
     // ── Recursive expansion ───────────────────────────────────────────────────
 
     private void Expand(TNode node, TNode currentNode, TNode dataContext, IExecutionContext<TNode> context)
