@@ -2,6 +2,11 @@
   <PropertyGroup>
     <RootNamespace>FormatConverter.Yaml</RootNamespace>
     <AssemblyName>FormatConverter.Yaml</AssemblyName>
+
+    <PackageId>TLio.FormatConverter.Yaml</PackageId>
+    <Description>YAML adapter for TLio format conversion (YamlDotNet), including anchor and alias flattening.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio conversion yaml</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

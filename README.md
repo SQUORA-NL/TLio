@@ -88,12 +88,23 @@ Per-command detail is in [`docs/ai-ref/commands/`](docs/ai-ref/commands/); notat
 (`specs/002-migration-from-jlio/spec.md`), since the JSON Schema library JLio uses is AGPL /
 paid-licence and Newtonsoft-bound.
 
+### Format conversion
+
+| Project | Package | Purpose |
+|---|---|---|
+| `FormatConverter/src/FormatConverter.TLio` | `TLio.FormatConverter` | The `convert` and `convertValue` commands and `MultiFormatScriptRunner` — the one to reference; it pulls the other four in |
+| `FormatConverter/src/FormatConverter.Core` | `TLio.FormatConverter.Core` | Intermediate model, `ConversionSettings`, `IFormatAdapter`, `MetadataConvention` |
+| `FormatConverter/src/FormatConverter.Json` | `TLio.FormatConverter.Json` | JSON adapter (System.Text.Json) |
+| `FormatConverter/src/FormatConverter.Xml` | `TLio.FormatConverter.Xml` | XML adapter (System.Xml) — attributes, namespaces, CDATA, array shape |
+| `FormatConverter/src/FormatConverter.Yaml` | `TLio.FormatConverter.Yaml` | YAML adapter (YamlDotNet) — anchor flattening |
+
+The assembly names stay `FormatConverter.*`; only the package ids are scoped to TLio.
+
 ### Tooling
 
 | Project | Purpose |
 |---|---|
 | `TLio.Mcp` | MCP stdio server: `tlio_execute`, `tlio_analyze`, `tlio_list_commands`, `tlio_list_functions`, `tlio_describe`, `tlio_guide` |
-| `FormatConverter` | Standalone JSON / XML / YAML conversion library |
 
 ### Tests & samples
 

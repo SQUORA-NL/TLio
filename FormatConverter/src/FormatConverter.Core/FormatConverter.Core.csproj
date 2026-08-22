@@ -2,5 +2,12 @@
   <PropertyGroup>
     <RootNamespace>FormatConverter.Core</RootNamespace>
     <AssemblyName>FormatConverter.Core</AssemblyName>
+
+    <!-- PackageId is scoped to the TLio family; the assembly name is not, so nothing that
+         compiles against this assembly has to change. -->
+    <PackageId>TLio.FormatConverter.Core</PackageId>
+    <Description>Format conversion core for TLio: the intermediate model, ConversionSettings and the IFormatAdapter contract the JSON, XML and YAML adapters implement.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio conversion json xml yaml</PackageTags>
   </PropertyGroup>
 </Project>

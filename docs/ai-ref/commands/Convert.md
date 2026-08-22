@@ -85,6 +85,13 @@ XPath. That is inherent — the paths address the document, and the document has
 
 ## C# setup
 
+Both commands live in the `TLio.FormatConverter` package, which brings the three format
+adapters with it:
+
+```sh
+dotnet add package TLio.FormatConverter
+```
+
 ```csharp
 var converter = new FormatConverter.Core.FormatConverter();
 converter.Register(new JsonFormatAdapter());

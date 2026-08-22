@@ -23,7 +23,7 @@ Successfully created package 'out/TLio.Core.0.9.0-preview.3.nupkg'
 | Push a tag `vX.Y.Z-rc.1` | exactly `X.Y.Z-rc.1` | `v1.0.0-rc.1` → `1.0.0-rc.1` |
 
 Every preview sorts **above** the release it follows and **below** the release it is heading
-towards: `0.8.0` < `0.9.0-preview.3` < `0.9.0-preview.11` < `0.9.0`. All twelve packages always
+towards: `0.8.0` < `0.9.0-preview.3` < `0.9.0-preview.11` < `0.9.0`. All seventeen packages always
 carry the same number; the pipeline fails if they ever don't.
 
 ## Steering the next release
