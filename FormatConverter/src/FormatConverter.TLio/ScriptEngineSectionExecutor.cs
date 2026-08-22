@@ -1,5 +1,9 @@
+using Microsoft.Extensions.Logging;
 using TLio.Client;
+using TLio.Core;
 using TLio.Core.Contracts;
+using TLio.Core.Models;
+using TLio.Core.Models.Logging;
 
 namespace FormatConverter.TLio;
 
@@ -56,12 +60,32 @@ public sealed class ScriptEngineSectionExecutor<TNode> : IFormatSectionExecutor
     public string FormatId { get; }
 
     /// <inheritdoc/>
-    public SectionExecutionResult Execute(string sectionScriptJson, string document)
+    public SectionExecutionResult Execute(string sectionScript, string document)
     {
         var context = _contextFactory();
         var data = context.NodeAdapter.Parse(document);
 
-        var result = _engine.Execute(sectionScriptJson, data, context);
+        // A section is a script in the notation the whole script was written in, so an engine
+        // that was never given that notation's parser reads it as nothing. The runner only sends
+        // sections that hold commands, so nothing parsed means the notation is unreadable here —
+        // and passing the document through as a success would apply none of the script while
+        // reporting that it worked.
+        var script = _engine.Parse(sectionScript, context.NodeAdapter);
+        if (script.Count == 0)
+        {
+            var logs = new LogEntries();
+            logs.Add(new LogEntry(LogLevel.Error, CoreConstants.CommandExecution,
+                $"section for format '{FormatId}' parsed to no commands — its notation " +
+                $"({ScriptFormatDetector.Detect(sectionScript)}) has no parser registered on this " +
+                $"engine. Register it with UseXmlScripts() / UseYamlScripts() when building the " +
+                $"engine you hand to the section executor.", DateTimeOffset.UtcNow));
+            foreach (var warning in script.ParseWarnings)
+                logs.Add(new LogEntry(LogLevel.Warning, CoreConstants.CommandExecution, warning, DateTimeOffset.UtcNow));
+
+            return new SectionExecutionResult(document, false, logs);
+        }
+
+        var result = _engine.Execute(script, data, context);
 
         return new SectionExecutionResult(
             context.NodeAdapter.Serialize(result.Data),

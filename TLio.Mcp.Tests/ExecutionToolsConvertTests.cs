@@ -88,24 +88,77 @@ public sealed class ExecutionToolsConvertTests
     }
 
     [Test]
-    public void Convert_InANonJsonNotation_FailsRatherThanQuietlyDoingNothing()
+    public void Convert_WrittenInTheYamlNotation_CrossesTheBoundary()
     {
-        // The boundary split reads the command array directly, so it only recognises the JSON
-        // notation. Written any other way, convert reaches the engine, where it cannot change the
-        // node type — so it fails and says what to do instead.
+        // convert is a command like any other in all three notations. The boundary split reads
+        // the script in whichever one it is written in, so this works exactly as the JSON
+        // spelling does — it used to be refused, because the split only ever parsed JSON.
         const string yamlScript = """
+            - command: add
+              path: $.order.status
+              value: new
             - command: convert
               to: xml
+            - command: rename
+              path: /order
+              name: opdracht
             """;
 
-        var result = Run("""{"a":"1"}""", "json", yamlScript);
+        var result = Run("""{"order":{"id":"7"}}""", "json", yamlScript);
 
+        Assert.That(result.Success, Is.True, string.Join("; ", result.Errors));
+
+        var xml = XElement.Parse(result.Output);
         Assert.Multiple(() =>
         {
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.Format, Is.EqualTo("json"), "nothing was converted");
-            Assert.That(string.Join(" ", result.Errors), Does.Contain("MultiFormatScriptRunner"));
+            Assert.That(result.Format, Is.EqualTo("xml"), "the result reports the format the run ended in");
+            Assert.That(xml.Name.LocalName, Is.EqualTo("opdracht"), "a command after the boundary ran");
+            Assert.That(xml.Element("status")?.Value, Is.EqualTo("new"), "a command before it ran too");
         });
+    }
+
+    [Test]
+    public void Convert_WrittenInTheXmlNotation_CrossesTheBoundary()
+    {
+        // The same script in the XML notation, driving a JSON document: the notation a script is
+        // written in is independent of the format of the data, boundaries included. Note the
+        // paths — JSONPath before the boundary, XPath after — because those follow the document.
+        const string xmlScript = """
+            <script>
+              <add path="$.order.status">new</add>
+              <convert to="xml"/>
+              <rename path="/order" name="opdracht"/>
+            </script>
+            """;
+
+        var result = Run("""{"order":{"id":"7"}}""", "json", xmlScript);
+
+        Assert.That(result.Success, Is.True, string.Join("; ", result.Errors));
+
+        var xml = XElement.Parse(result.Output);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Format, Is.EqualTo("xml"));
+            Assert.That(xml.Name.LocalName, Is.EqualTo("opdracht"));
+            Assert.That(xml.Element("status")?.Value, Is.EqualTo("new"));
+        });
+    }
+
+    [Test]
+    public void Convert_SettingsAreReadFromEveryNotation()
+    {
+        // inferTypes is a bool in JSON, an element in XML and a scalar in YAML. One reader takes
+        // all three, so a setting cannot work in one notation and be silently ignored in another.
+        const string xmlScript = """
+            <script>
+              <convert to="json"><settings><inferTypes>true</inferTypes></settings></convert>
+            </script>
+            """;
+
+        var result = Run("<order><id>7</id></order>", "xml", xmlScript);
+
+        Assert.That(result.Success, Is.True, string.Join("; ", result.Errors));
+        Assert.That(result.Output, Does.Contain("\"id\":7"), "inferTypes made it a number, not \"7\"");
     }
 
     // ── convertValue: one value in place ─────────────────────────────────────

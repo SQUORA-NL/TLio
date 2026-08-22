@@ -15,6 +15,12 @@
 
 > See [Notation Reference](../notation-reference.md) for quoting rules and escape sequences.
 
+`convert` is a command like any other in all three notations — the XML spelling is
+`<convert to="json"><settings><inferTypes>true</inferTypes></settings></convert>`, the YAML
+spelling a `- command: convert` mapping. The notation a script is written in stays independent of
+the format of the data, boundaries included; only the *paths* change at a boundary, because those
+follow the document.
+
 ## Options
 
 | Option | Type | Required | Default | Description |
@@ -119,9 +125,11 @@ A conversion-only script needs no executors at all.
   It fails and the log says so.
 - **Keeping the old path language after the boundary.** `$.order.id` does not select anything
   in XML; it is `/order/id`.
-- **Writing the script in the XML or YAML notation.** The boundary split reads the command array
-  directly, so a script containing `convert` must be in the JSON notation. The *document* can be
-  any format.
+- **Forgetting the notation on the section engines.** The boundary split reads the script in
+  whichever of the three notations it is written in and hands each section back in that same
+  notation — so an XML script yields XML sections. An engine behind a section executor that was
+  never given `UseXmlScripts()` / `UseYamlScripts()` reads such a section as an empty script; the
+  executor reports that rather than passing the document through as a success.
 - **Expecting settings to persist.** They apply to one boundary.
 - **Expecting an empty container to survive.** `<k/>` is equally `null`, `""`, `{}` and `[]`;
   it reads back as null. Nothing else about the document is lossy this way.

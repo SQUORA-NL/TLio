@@ -166,6 +166,38 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             return;
         }
 
+        // A leaf carrying a selector — coverage[coverageCode='OPSTAL'], lines[?(@.sku=='X')],
+        // items[*] — names the nodes it matches, not a property of the parent. Split off as a
+        // leaf name it became a name no property has, and the parent it left behind was the
+        // collection itself: put then took the array branch of UpsertProperty and replaced every
+        // sibling with the one value, so writing one entity emptied the other three out of the
+        // document. Address the matches, the same way a subscript and a recursive descent do.
+        if (context.ItemsFetcher.IsLeafNodeSelector(Path!))
+        {
+            var selected = context.ItemsFetcher.SelectNodes(Path!, dataContext);
+            if (selected.Count == 0)
+            {
+                // A selector describes no single structure, so there is nothing to scaffold —
+                // this is a no-op for add and put as much as for set.
+                context.LogWarning(CoreConstants.CommandExecution,
+                    $"{CommandName}: no nodes matched path '{Path}' — a selector cannot be created");
+                return;
+            }
+
+            foreach (var target in selected)
+            {
+                var selectedValue = Value!.GetValue(target, dataContext, context);
+                if (!selectedValue.Success)
+                {
+                    MarkFailed();
+                    continue;
+                }
+                ApplyValueToNode(target,
+                    selectedValue.Data.First ?? context.NodeAdapter.CreateNull(), context);
+            }
+            return;
+        }
+
         // Resolve any =indirect() in parentPath. An unresolved expression must not be passed on:
         // the raw '=' is not legal in any path language and would throw out of the whole script.
         var resolvedParentPath = IndirectPath.TryResolve(parentPath, dataContext, context, CommandName);
