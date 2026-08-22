@@ -108,6 +108,38 @@ public interface IItemsFetcher<TNode>
         PathSubscript.TrySplit(path, ArrayOpenChar, ArrayCloseChar, out _, out _);
 
     /// <summary>
+    /// True when the path's last segment carries a <b>selector</b> rather than a name or a
+    /// position — a predicate (<c>coverage[coverageCode='OPSTAL']</c>, <c>item[@id='1']</c>,
+    /// <c>lines[?(@.sku=='X')]</c>) or a wildcard (<c>items[*]</c>). Such a path addresses the
+    /// nodes it matches, so a command that writes a value writes to each match.
+    ///
+    /// Without this the leaf was split off as a property name no property has, and the parent
+    /// it left behind was the collection itself — so <c>put</c> took the array branch of its
+    /// upsert and replaced every sibling with the one value. A four-line
+    /// <c>&lt;coverages&gt;</c> came back holding a single renamed element.
+    ///
+    /// An integer subscript is excluded because it names a position, which
+    /// <see cref="IsLeafArrayIndex"/> already routes; a bracket-quoted key
+    /// (<c>$['a.b']</c>) is excluded because it names a property.
+    /// </summary>
+    bool IsLeafNodeSelector(string path)
+    {
+        if (string.IsNullOrEmpty(path) || IsLeafArrayIndex(path)) return false;
+
+        var (_, leaf) = SplitParentAndLeaf(path);
+        if (!leaf.EndsWith(ArrayCloseChar, StringComparison.Ordinal)) return false;
+
+        var open = leaf.IndexOf(ArrayOpenChar, StringComparison.Ordinal);
+        if (open < 0) return false;
+
+        var start = open + ArrayOpenChar.Length;
+        var inner = leaf.AsSpan(start, leaf.Length - start - ArrayCloseChar.Length);
+
+        // "[]" selects nothing, and "['a.b']" is a property name wearing brackets.
+        return inner.Length > 0 && inner[0] != '\'' && inner[0] != '"';
+    }
+
+    /// <summary>
     /// Splits a path whose last segment is an array subscript into the path of the array itself
     /// and the <b>zero-based</b> position it names.
     ///
