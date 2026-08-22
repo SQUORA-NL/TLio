@@ -1,5 +1,10 @@
 # Car insurance rating — Dutch market (two samples)
 
+> Two of eight samples — see the [samples index](../README.md) for the rest, including the
+> [AFD 1.0 migration](../sivi-afd1-to-afd2/) whose output *is* this sample's `sivi-afd/input.json`,
+> and the two XML products ([woonhuis](../home-insurance-nl/), [leven](../life-insurance-nl/))
+> that do this same job without a `resolve`, because an XPath predicate can express the join.
+
 Two end-to-end samples that turn a **quote request** into a **complete policy setup**:
 postcode, vehicle-model and bonus-malus lookups, an age calculation, seven rating factors,
 acceptance rules, premium build-up including assurantiebelasting, and the resulting policy
