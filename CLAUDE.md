@@ -54,7 +54,7 @@ TLio.FormatConverter/       ← Format conversion (017, 022, 024). One assembly,
   {Json,Xml,Yaml}/            the three adapters
   Commands/                   convert, convertValue, MultiFormatScriptRunner,
                               ScriptEngineSectionExecutor
-TLio.FormatConverter.Tests/
+TLio.FormatConverter.Tests/  ← adapters, round trips, mid-script convert, canonical shape
 samples/
   TLio.Sample.Api/          ← Minimal API sample (JSON/XML/YAML endpoints, 005)
   TLio.Sample.Cli/          ← CLI sample (file-in / transformed-out, 005)
