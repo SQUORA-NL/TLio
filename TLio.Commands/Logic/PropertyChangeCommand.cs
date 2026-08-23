@@ -42,7 +42,13 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
 
-        var logsBefore = context.GetLogEntries().Count;
+        // How the trace describes this command is decided by reading back the log entries the
+        // command itself just wrote — which costs a list and three substring scans per command,
+        // and buys nothing when nobody is collecting a trace. Tracing is off in every ordinary
+        // host; it is the MCP server that turns it on. So the whole read-back sits behind the
+        // collector, including the mark it is measured from.
+        var collector = context.TraceCollector;
+        var logsBefore = collector is null ? 0 : context.GetLogEntries().Count;
 
         if (Property != null)
             ExecuteNewSyntax(dataContext, context);
@@ -52,27 +58,30 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
         if (IsSuccessful)
             context.LogInfo(CoreConstants.CommandExecution, $"{CommandName}: completed successfully on path '{Path}'");
 
-        var newLogs = context.GetLogEntries().Skip(logsBefore).ToList();
-        var hasNoMatchWarning = newLogs.Any(e => e.Level == LogLevel.Warning &&
-                      (e.Message.Contains("no nodes matched") ||
-                       (e.Message.Contains("property '") && e.Message.Contains("' not found")) ||
-                       e.Message.Contains("already exists, skipping")));
-        var traceOutcome = !IsSuccessful ? TraceOutcome.Failure
-                         : hasNoMatchWarning ? TraceOutcome.NoOp
-                         : TraceOutcome.Success;
-        var failureDetail = traceOutcome == TraceOutcome.Failure
-            ? string.Join("; ", newLogs.Where(e => e.Level == LogLevel.Warning || e.Level == LogLevel.Error).Select(e => e.Message))
-            : "";
-        context.TraceCollector?.Record(new TraceEntry(
-            CommandName, Path ?? "", traceOutcome,
-            traceOutcome == TraceOutcome.Success ? 1 : 0,
-            traceOutcome == TraceOutcome.NoOp
-                ? $"{CommandName}: path '{Path}' matched 0 nodes — field does not exist at this location. " +
-                  $"Use 'set' to update an existing field or 'add' to create a new one. " +
-                  $"Call tlio_analyze to see the exact paths that require changes."
-                : traceOutcome == TraceOutcome.Failure
-                ? $"{CommandName}: failed at '{Path}'" + (string.IsNullOrEmpty(failureDetail) ? "." : $" — {failureDetail}.")
-                : $"{CommandName}: successfully applied to '{Path}'."));
+        if (collector is not null)
+        {
+            var newLogs = context.GetLogEntries().Skip(logsBefore).ToList();
+            var hasNoMatchWarning = newLogs.Any(e => e.Level == LogLevel.Warning &&
+                          (e.Message.Contains("no nodes matched") ||
+                           (e.Message.Contains("property '") && e.Message.Contains("' not found")) ||
+                           e.Message.Contains("already exists, skipping")));
+            var traceOutcome = !IsSuccessful ? TraceOutcome.Failure
+                             : hasNoMatchWarning ? TraceOutcome.NoOp
+                             : TraceOutcome.Success;
+            var failureDetail = traceOutcome == TraceOutcome.Failure
+                ? string.Join("; ", newLogs.Where(e => e.Level == LogLevel.Warning || e.Level == LogLevel.Error).Select(e => e.Message))
+                : "";
+            collector.Record(new TraceEntry(
+                CommandName, Path ?? "", traceOutcome,
+                traceOutcome == TraceOutcome.Success ? 1 : 0,
+                traceOutcome == TraceOutcome.NoOp
+                    ? $"{CommandName}: path '{Path}' matched 0 nodes — field does not exist at this location. " +
+                      $"Use 'set' to update an existing field or 'add' to create a new one. " +
+                      $"Call tlio_analyze to see the exact paths that require changes."
+                    : traceOutcome == TraceOutcome.Failure
+                    ? $"{CommandName}: failed at '{Path}'" + (string.IsNullOrEmpty(failureDetail) ? "." : $" — {failureDetail}.")
+                    : $"{CommandName}: successfully applied to '{Path}'."));
+        }
 
         return new TLioExecutionResult<TNode>(IsSuccessful, dataContext);
     }
