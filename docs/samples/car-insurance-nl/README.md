@@ -227,11 +227,22 @@ is now one `put` inside one `ifElse`.
 - **Function arguments resolve against the document root.** `@.field` inside a function call
   does not mean "this array element", so per-element arithmetic is not available. Both samples
   are shaped around that: per-line amounts come from a lookup (`resolve`), and everything
-  computed is computed once on scalar fields and written to a known index.
+  computed is computed once on scalar fields and written to a named entity.
 - **Optional coverages must be present.** `=sum()` over an empty match fails; a request without
   optional coverages needs an `ifElse` guard around that step.
-- The SIVI script assumes `coverages[0]` is WA and `coverages[1]` the casco entity — the order of
-  the requested coverages is part of the message contract there.
+- **Inside one object value, a later expression cannot read an earlier one.** The value is built
+  in a copy that is not attached to the document until the command finishes, so
+  `{"first": "=sum($.a,$.b)", "second": "=multiply($.out.first,10)"}` leaves `second` as text —
+  `$.out.first` does not exist yet. Chain through *separate commands*, which is why `$.calc` is
+  built up step by step here, or nest the calls in one expression:
+  `=multiply(=sum($.a,$.b),10)`. Within one expression the inner result does feed the outer.
+- **The SIVI script addresses entities by their code, not by their position.** The regular
+  driver is `parties[?(@.partyRoleCode=='REGELMATIGE-BESTUURDER')]`, the vehicle
+  `objects[?(@.objectTypeCode=='MOTORRIJTUIG')]`, the two rated coverages
+  `coverages[?(@.coverageCode=='WA')]` and `[?(@.coverageCode=='CASCO')]`. AFD does not fix the
+  order of the entities inside a collection, so `parties[1]` is an assumption the message never
+  made; the filter says what is actually meant and reads that way too. It costs nothing — the
+  predicate is JSONPath, evaluated by the same fetcher as any other path.
 
 ## About the SIVI AFD 2.0 sample
 
