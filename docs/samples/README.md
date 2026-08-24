@@ -1,6 +1,6 @@
 # Samples
 
-Eight end-to-end samples. Each is a directory holding an **input**, a **script** and the
+Nine end-to-end samples. Each is a directory holding an **input**, a **script** and the
 **output** the script produces — committed, byte for byte, so a change that moves a number is
 visible in a diff.
 
@@ -26,11 +26,12 @@ The CLI registers the Math, Text and TimeDate function packs and the ETL command
 | [`home-insurance-nl/sivi-afd-xml`](home-insurance-nl/) | **XML** | **XML** | Woonhuis + inboedel package, rated in XPath |
 | [`life-insurance-nl/sivi-afd-xml`](life-insurance-nl/) | **XML** | **XML** | Overlijdensrisicoverzekering, two-key mortality join |
 | [`sivi-afd1-to-afd2`](sivi-afd1-to-afd2/) | XML → **JSON** | JSON | AFD 1.0 flat records migrated to the AFD 2.0 entity model |
+| [`bromfiets-nl/gim`](bromfiets-nl/) | JSON | JSON | Moped insurance rated and accepted from a GIM rekenkern's own calculation and validation sheets |
 | [`ecommerce-order-fulfilment`](ecommerce-order-fulfilment/) | JSON | JSON | Webshop order to warehouse pick list |
 | [`healthcare-lab-result`](healthcare-lab-result/) | XML → **JSON** | JSON | HL7 v2 lab results to a FHIR-shaped bundle |
 | [`logistics-shipment`](logistics-shipment/) | **YAML** | **YAML** | Shipment booking to carrier manifest and customs regime |
 
-The four insurance samples are deliberately one product family seen four ways. The last three
+The five insurance samples are deliberately one product family seen five ways. The last three
 are there to show that none of this is insurance machinery — the same eight commands map an
 order, a lab result and a freight booking.
 
