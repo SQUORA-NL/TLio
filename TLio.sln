@@ -59,6 +59,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TLio.FormatConverter", "TLi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TLio.FormatConverter.Tests", "TLio.FormatConverter.Tests\TLio.FormatConverter.Tests.csproj", "{53001D6F-C410-4509-8885-1FFF9425A569}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TLio.Sample.AzureDemo", "samples\TLio.Sample.AzureDemo\TLio.Sample.AzureDemo.csproj", "{0870D820-3959-48CD-9387-D25403E0024B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -393,11 +395,24 @@ Global
 		{53001D6F-C410-4509-8885-1FFF9425A569}.Release|x64.Build.0 = Release|Any CPU
 		{53001D6F-C410-4509-8885-1FFF9425A569}.Release|x86.ActiveCfg = Release|Any CPU
 		{53001D6F-C410-4509-8885-1FFF9425A569}.Release|x86.Build.0 = Release|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Debug|x64.Build.0 = Debug|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Debug|x86.Build.0 = Debug|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Release|x64.ActiveCfg = Release|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Release|x64.Build.0 = Release|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Release|x86.ActiveCfg = Release|Any CPU
+		{0870D820-3959-48CD-9387-D25403E0024B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{79E6BBA4-FDD5-472F-BEB6-095BB1298B29} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
+		{0870D820-3959-48CD-9387-D25403E0024B} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 	EndGlobalSection
 EndGlobal
