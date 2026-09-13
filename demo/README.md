@@ -129,3 +129,11 @@ development, on both a laptop and the deployed Consumption-plan Function App. Re
 script text turns out to be a real but minority share of the per-call cost; execution (path
 lookups, function calls) is the rest. That's the honest number, not a cherry-picked one — the
 story is "compiling avoids a real, measurable cost," not "compiling is dramatically faster."
+
+`iterations: 8000` does **not** mean 8,000 HTTP requests. The browser sends exactly one
+`POST /Transform`; `TlioTransformer.Benchmark` runs the loop server-side, inside that single
+Function invocation — 8,000 calls to `ScriptEngine.Execute` (re-parses every time), then another
+8,000 calls to the pre-compiled script's `Execute` — and returns only the aggregate `Stopwatch`
+timings. 16,000 script executions, one round trip. That's also why the numbers are trustworthy:
+network latency and the browser round trip never enter the measurement, only the parse-vs-execute
+cost does.
