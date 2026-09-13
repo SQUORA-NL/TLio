@@ -8,6 +8,9 @@ that drives it and the canned scripts that tell the story:
 2. **Call a function** — `=datetime()` / `=newGuid()` run live, server-side, every request. This
    is the "JSON becomes a programming language" beat.
 3. **Reshape the document** — `add` + `move` turn a flat legacy shape into a nested one.
+4. **Compile once, run many** — the same script runs thousands of times two ways: parsed fresh
+   every call (`ScriptEngine.Execute`) versus parsed once and reused (`ScriptEngine.Compile` +
+   `CompiledScript.Execute`). The page renders both timings as bars with a speedup figure.
 
 No auth, no queues, no database. `AuthorizationLevel.Anonymous`, one function, one page.
 
@@ -88,8 +91,12 @@ azd up           # provisions + deploys; prompts for environment name and region
 `azd up` prints the function's default hostname when it finishes; the Transform endpoint is
 `<that-url>/Transform`. Paste it into the page's "Function URL" field.
 
-The Bicep was written and compiled against the Bicep CLI during development but **not run against
-a live subscription** — if `azd up` hiccups on the day, fall back to Option A.
+This has been run end-to-end against a live subscription. One thing to know: `azd up` combines
+provisioning and deploy in one pass, and the deploy step can fail immediately after a fresh
+provision with `unable to find a resource tagged with 'azd-service-name: transform'` — an Azure
+Resource Graph propagation delay right after the Function App is created, not a Bicep problem.
+If that happens, just run `azd deploy` a few seconds later; it picks up cleanly. If `azd up`
+still hiccups on the day, fall back to Option A.
 
 To tear everything down afterward:
 
@@ -97,16 +104,28 @@ To tear everything down afterward:
 azd down --purge
 ```
 
-## The three examples
+## The four examples
 
-`demo/examples/*.json` each carry `{ title, narrative, document, commands }` — the page loads all
-four fields, so the narration is built into the file, not hard-coded in the page.
+`demo/examples/*.json` each carry `{ title, narrative, document, commands, iterations? }` — the
+page loads all of it, so the narration (and, for the fourth one, the benchmark) is built into the
+file, not hard-coded in the page.
 
 | File | Commands used | Beat |
 |---|---|---|
 | `a-simple-set.json` | `set` | A script is data. |
 | `b-function-datetime.json` | `add` + `=datetime()` / `=newGuid()` | A script computes. |
 | `c-copy-move.json` | `add` + `move` | A script restructures. |
+| `d-precompiled-performance.json` | same script, `iterations: 8000` | A script has a cost — and compiling it away is measurable. |
 
 Edit or add JSON files here to extend the story — the page doesn't care how many buttons it has,
 it just needs `data-example` on a button in `index.html` pointing at a matching file.
+
+### The performance example, honestly
+
+`POST /Transform` accepts an optional `iterations` field. When it's greater than 1, the response
+gains a `benchmark` object instead of running the script once, and the page shows two bars instead
+of one. The speedup is real but modest — around 1.3–1.5× across every script shape tried during
+development, on both a laptop and the deployed Consumption-plan Function App. Re-parsing the
+script text turns out to be a real but minority share of the per-call cost; execution (path
+lookups, function calls) is the rest. That's the honest number, not a cherry-picked one — the
+story is "compiling avoids a real, measurable cost," not "compiling is dramatically faster."
