@@ -288,6 +288,9 @@
   <put path="/root/core/promote">
     <value>=promote(/root/nested/deep)</value>
   </put>
+  <put path="/root/core/toArray">
+    <value>=toArray(/root/tags/item[1])</value>
+  </put>
   <ifElse condition="=equals(/root/tags/item[1],'alpha')">
     <ifScript>
       <put path="/root/branch/taken">

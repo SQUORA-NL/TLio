@@ -1,6 +1,6 @@
 # Tlio.claude Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-05-01 (updated by 008)
+Auto-generated from all feature plans. Last updated: 2026-09-17 (updated by toArray function)
 
 ## Active Technologies
 - C# / .NET 10 + Newtonsoft.Json (TLio.Json), NUnit (tests) (010-unify-script-notation)
@@ -220,6 +220,11 @@ One asymmetry to know: TLio's XML adapter ignores attributes by design, but afte
 JSON or YAML they are ordinary `@name` properties. Converting is how a script edits an attribute.
 
 ## Recent Changes
+- toArray function: `=toArray()` / `=toArray(path)` — the array sibling of `promote`. Wraps a
+  node in a fresh array (current value, if any, as the sole element); `[]` when the source is
+  absent or `null`; an already-array source passes through as a deep clone, never double-wrapped.
+  With no argument it wraps the *current node*, the same "current context" `scriptpath()` falls
+  back to bare, so it wraps each match individually over a wildcard path.
 - 024-package-format-converter: format conversion ships on NuGet as `TLio.FormatConverter` —
   the five projects merged into one assembly at the repo root, named like every other project
   (package = assembly = namespace root = folder). Namespaces moved from `FormatConverter.*`

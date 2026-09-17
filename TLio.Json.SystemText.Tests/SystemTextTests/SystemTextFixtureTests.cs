@@ -83,6 +83,10 @@ public class SystemTextFixtureTests
     public void Promote(string inputJson, string script, string expectedJson)
         => RunFixture(inputJson, script, expectedJson);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadRaw), new object[] { "ToArray" })]
+    public void ToArray(string inputJson, string script, string expectedJson)
+        => RunFixture(inputJson, script, expectedJson);
+
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadRaw), new object[] { "ScriptPath" })]
     public void ScriptPath(string inputJson, string script, string expectedJson)
         => RunFixture(inputJson, script, expectedJson);

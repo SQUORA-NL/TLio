@@ -68,6 +68,7 @@ var options = ParseOptions<JToken>.CreateDefault();
 | Tool | Effect | Use when |
 |------|--------|----------|
 | `=promote(<path>)` | Wraps node in `{ "key": <node> }` | You need to add a containing object layer |
+| `=toArray(<path>)` | Wraps node in `[ <node> ]` | You need an array layer, not an object layer — see [ToArray.md](ToArray.md) |
 | `copy` + `remove` | Moves node to a new key at the same level | You need to rename a property (no extra layer) |
 | `merge` command | Merges properties into an existing object | You need to combine nodes into one existing object |
 

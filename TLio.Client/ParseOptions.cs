@@ -65,6 +65,7 @@ public class ParseOptions<TNode>
         options.FunctionsProvider.Register("fetch",      () => new Fetch<TNode>());
         options.FunctionsProvider.Register("indirect",   () => new Indirect<TNode>());
         options.FunctionsProvider.Register("promote",    () => new Promote<TNode>());
+        options.FunctionsProvider.Register("toArray",    () => new ToArray<TNode>());
         options.FunctionsProvider.Register("partial",    () => new Partial<TNode>());
         options.FunctionsProvider.Register("scriptpath", () => new ScriptPath<TNode>());
         options.FunctionsProvider.Register("datetime",   () => new Datetime<TNode>());

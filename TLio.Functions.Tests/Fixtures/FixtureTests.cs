@@ -37,6 +37,10 @@ public class FixtureTests
     public void Promote(JToken input, string script, JToken expected)
         => RunFixture(input, script, expected);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.Load), new object[] { "ToArray" })]
+    public void ToArray(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.Load), new object[] { "ScriptPath" })]
     public void ScriptPath(JToken input, string script, JToken expected)
         => RunFixture(input, script, expected);

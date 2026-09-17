@@ -194,6 +194,7 @@ needed `merge` with `uniqueItemsWithoutKeys` and a second document, and ordering
 | Select Nth result from wildcard path | `partial` |
 | Get absolute path of current node | `scriptpath` |
 | Wrap node in a parent object | `promote` |
+| Wrap node (or current node) in an array | `toArray` |
 | Generate a unique UUID | `newguid` |
 | JSON string → structured node | `parse` |
 | Any node → JSON string | `toString` |
