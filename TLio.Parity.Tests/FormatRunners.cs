@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Xml.Linq;
 using Newtonsoft.Json.Linq;
 using TLio.Client;
@@ -136,9 +137,18 @@ public static class FormatRunners
         JObject or JArray => JValue.CreateNull(),
         _ when token.Type == JTokenType.Null => JValue.CreateNull(),
         _ when token.Type == JTokenType.Boolean => new JValue((bool)token! ? "true" : "false"),
-        _ when token.ToString().Length == 0 => JValue.CreateNull(),
-        _ => new JValue(token.ToString())
+        _ when ScalarText(token).Length == 0 => JValue.CreateNull(),
+        _ => new JValue(ScalarText(token))
     };
+
+    /// <summary>
+    /// A scalar's text, culture-invariantly. <see cref="JValue.ToString()"/> with no arguments
+    /// formats a double via <see cref="CultureInfo.CurrentCulture"/>, so on a machine whose
+    /// region uses a comma decimal separator the sweep comparison rendered "2,5" — matching
+    /// nothing the fixtures ever recorded, which are all invariant.
+    /// </summary>
+    private static string ScalarText(JToken token) =>
+        ((JValue)token).ToString(null, CultureInfo.InvariantCulture);
 
     private static string RenderXml(XElement element) => Render(XmlToJson(element));
 
