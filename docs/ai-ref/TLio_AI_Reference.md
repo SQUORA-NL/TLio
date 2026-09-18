@@ -316,6 +316,7 @@ same document **fails** — `[*]` genuinely matches nothing, and path-not-found 
 | Select one from multi-match | `partial` | Zero-based index; default 0 |
 | Get path of current node | `scriptpath` / `path` | `path()` is the JLio-compatible alias |
 | Wrap node in parent object | `promote` | Optional explicit key name |
+| Wrap node in an array | `toArray` | No argument wraps the current node; already-array nodes pass through unchanged |
 | Unique ID | `newGuid` | `newguid` (lowercase) from Text pack |
 | JSON string → node | `parse` | Fails if argument is not valid JSON |
 | Node → JSON string | `toString` | Objects emit compact JSON; null emits `""` |
@@ -1639,6 +1640,46 @@ Input: `{ "name": "Alice" }` → `"abbr": "Ali"`
 
 ---
 
+### toArray
+
+> Wraps a node in a new array, with the current value, if any, as the first (and only)
+> element. The array sibling of `promote` — `promote` adds an object layer, `toArray` adds
+> an array layer.
+
+**When to use**: normalizing a value that is sometimes absent, sometimes a scalar, and
+sometimes already an array, so downstream code always sees an array.
+
+**When NOT to use**: adding an element to an existing array of unknown length — use `add`
+with a trailing wildcard index or `merge`.
+
+**Syntax**: `=toArray()` or `=toArray(path)`
+**Pack**: built-in
+
+| # | Type | Required | Description |
+|---|------|----------|-------------|
+| 1 | string (path) | no | Path to the node to wrap. Omitted, wraps the current node — the same fallback `scriptpath()` uses when called bare. |
+
+**Examples**:
+
+```json
+{ "command": "set", "path": "$.result", "value": "=toArray($.tag)" }
+```
+
+Given `{ "tag": "red" }` → `$.result` = `["red"]`
+
+```json
+{ "command": "set", "path": "$.tags[*]", "value": "=toArray()" }
+```
+
+Given `{ "tags": ["red","blue"] }` → `$.tags` = `[["red"],["blue"]]` — each match is its own
+current node, so the wildcard wraps every element individually.
+
+Notes: a path that matches nothing, or matches `null`, has no current value to place — the
+result is `[]`, not a failure. A node that is already an array is returned as a deep clone,
+unchanged — `toArray` never nests an array inside another array.
+
+---
+
 ### toLower
 
 > Converts a string to lowercase.
@@ -1825,6 +1866,7 @@ Input: `{ "name": "  Alice" }` → `"name": "Alice"`
 | sort | `=sort(array)` / `=sort(array,dir)` | Order scalars, stable | built-in |
 | sortBy | `=sortby(array,keyPath)` / `=sortby(array,keyPath,dir)` | Order objects by a field | built-in |
 | last | `=last(path)` | Last match of a path | built-in |
+| toArray | `=toArray()` / `=toArray(path)` | Wrap the current node, or a path, in an array | built-in |
 
 Full pages for every function, including the traps, live in `docs/ai-ref/functions/` and are
 what `tlio_describe` serves.

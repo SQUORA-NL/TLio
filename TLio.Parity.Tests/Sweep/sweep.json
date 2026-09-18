@@ -490,6 +490,11 @@
     "value": "=promote($.nested.deep)"
   },
   {
+    "command": "put",
+    "path": "$.core.toArray",
+    "value": "=toArray($.tags[0])"
+  },
+  {
     "command": "ifElse",
     "condition": "=equals($.tags[0],'alpha')",
     "ifScript": [

@@ -1,0 +1,5 @@
+{
+  "input": { "tag": "red", "result": null },
+  "script": [{ "command": "set", "path": "$.result", "value": "=toArray($.tag)" }],
+  "result": { "tag": "red", "result": ["red"] }
+}
