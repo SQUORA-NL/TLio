@@ -118,6 +118,55 @@ public class SetPropertiesTests
     }
 
     [Test]
+    public void RecursiveObjectKind_SingleCall_LosesTheNestedWrap()
+    {
+        // billing.contact is itself an object nested under billing, another match — wrapping
+        // billing clones its still-unwrapped contact, orphaning contact's own later replace.
+        var tree = JToken.Parse("""
+            {
+              "customer": {
+                "id": "C-1",
+                "billing": { "iban": "NL00BANK", "contact": { "email": "ada@example.com" } }
+              }
+            }
+            """);
+
+        var result = new SetProperties<JToken>("$.customer", ToArrayValue(), Find(new[] { "object" }, true))
+            .Execute(tree, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(JToken.DeepEquals(
+            tree.SelectToken("$.customer.billing"),
+            JArray.Parse("""[{"iban":"NL00BANK","contact":{"email":"ada@example.com"}}]""")), Is.True,
+            "billing wraps, but the clone freezes contact in its pre-wrap, unwrapped shape");
+    }
+
+    [Test]
+    public void RecursiveObjectKind_DeepestFirst_WrapsEveryComplexObjectInTheTree()
+    {
+        var tree = JToken.Parse("""
+            {
+              "customer": {
+                "id": "C-1",
+                "billing": { "iban": "NL00BANK", "contact": { "email": "ada@example.com" } }
+              }
+            }
+            """);
+
+        new SetProperties<JToken>("$.customer.billing", ToArrayValue(), Find(new[] { "object" }, true))
+            .Execute(tree, executeOptions);
+        var result = new SetProperties<JToken>("$.customer", ToArrayValue(), Find(new[] { "object" }, true))
+            .Execute(tree, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(JToken.DeepEquals(
+            tree.SelectToken("$.customer.billing"),
+            JArray.Parse("""[{"iban":"NL00BANK","contact":[{"email":"ada@example.com"}]}]""")), Is.True,
+            "wrapping the innermost object first, then the level above, reaches every depth");
+        Assert.That(tree.SelectToken("$.customer.id")?.Value<string>(), Is.EqualTo("C-1"), "primitive — untouched");
+    }
+
+    [Test]
     public void WildcardContainerPath_AppliesToEveryMatchedObject()
     {
         var result = new SetProperties<JToken>("$.items[*]", ToArrayValue(), Names("cat")).Execute(data, executeOptions);

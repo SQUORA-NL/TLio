@@ -69,6 +69,54 @@ Given
 - Step 3 (run standalone, not chained after 1–2) wraps every primitive anywhere under `customer`
   — including the nested `address.city` — without naming `address` at all.
 
+## Example: turning every complex object in a tree into an array
+
+Ask for `kinds: ['object']` instead of `'primitive'` and the same find-mode call selects every
+**complex object**, at every depth, leaving primitives alone. The one thing to get right is
+*order*: `=toArray()` deep-clones the node it wraps, so a single call that matches both an object
+and a still-unwrapped object nested inside it freezes that child in its pre-wrap shape — the
+child's own wrap runs against an orphaned reference and never reaches the document. Run
+deepest-first instead, one `setProperties` step per level:
+
+```json
+[
+  { "command": "setProperties", "path": "$.customer.billing",
+    "title": "Wrap the innermost complex objects first",
+    "description": "billing.contact must already be an array by the time billing itself is wrapped, or wrapping billing clones it away.",
+    "properties": "=scriptpath(*,['object'],true)", "value": "=toArray()" },
+  { "command": "setProperties", "path": "$.customer",
+    "title": "Now wrap what's left under customer",
+    "properties": "=scriptpath(*,['object'],true)", "value": "=toArray()" }
+]
+```
+
+Given
+```json
+{
+  "customer": {
+    "id": "C-1", "name": "Ada",
+    "address": { "city": "Amsterdam", "country": "NL" },
+    "billing": { "iban": "NL00BANK", "contact": { "email": "ada@example.com" } }
+  }
+}
+```
+
+produces
+```json
+{
+  "customer": {
+    "id": "C-1", "name": "Ada",
+    "address": [ { "city": "Amsterdam", "country": "NL" } ],
+    "billing": [ { "iban": "NL00BANK", "contact": [ { "email": "ada@example.com" } ] } ]
+  }
+}
+```
+
+Every complex object — `address`, `billing`, and the nested `billing.contact` — is now a
+one-element array; `id`, `name`, `iban` and `email` (primitives) are untouched. Running step 2
+alone, without step 1 first, would still wrap `address` and `billing`, but `contact` would come
+out unwrapped inside the cloned `billing` — see Common mistakes below.
+
 ## C# Usage
 
 ```csharp
@@ -116,3 +164,10 @@ var cmd = new SetProperties<JToken>("$.person", value, properties);
 - **Assuming `kinds: ['object']` stops the walk**: in find mode, whether an object is included in
   the results and whether the walk descends into it are independent — `recursive` alone controls
   depth.
+- **Wrapping a whole subtree of nested objects in one call**: `=toArray()` deep-clones the node
+  it wraps, so if a matched object contains another matched object that has not been wrapped yet,
+  the outer wrap clones the inner one in its pre-wrap shape and the inner node's own replacement
+  never reaches the document — no warning, no failure, it is just silently lost. Match sets that
+  are all siblings (no object nested inside another matched object) are unaffected. For a subtree
+  with objects nested inside objects, run one `setProperties` step per level, deepest first — see
+  the tree-of-objects example above.

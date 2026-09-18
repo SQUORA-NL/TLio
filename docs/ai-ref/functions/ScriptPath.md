@@ -71,6 +71,11 @@ Given `{"customer":{"id":"C-1","address":{"city":"Amsterdam"}}}`, every primitiv
 `customer` — including the nested `address.city` — becomes a one-element array, while
 `address` itself (an object, not in `kinds`) is left as an object.
 
+Asking for `kinds: ['object']` instead selects complex objects rather than primitives — every
+object anywhere in the subtree, at any depth. Wrapping all of them with `setProperties` in one
+call has a footgun worth knowing about first: see
+[SetProperties.md — turning every complex object in a tree into an array](../commands/SetProperties.md#example-turning-every-complex-object-in-a-tree-into-an-array).
+
 ## Notes
 
 - Also registered as `"path"` (camelCase alias, 008+) for JLio compatibility — see [Path.md](Path.md).
