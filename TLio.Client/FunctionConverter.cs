@@ -106,7 +106,29 @@ public class FunctionConverter<TNode>
             return new FixedValue<TNode>(adapter.CreateString(content), rawValue);
         }
 
-        // Bare JSON literals are argument-position only — see the class remarks.
+        // Bare JSON literals are argument-position only — see the class remarks. An array
+        // literal is the same idea extended to a list: =scriptpath(*, ['object','primitive'],
+        // true) has no other way to write a constant list of names inline. Elements are
+        // constants only — a nested path or function inside the brackets has no execution
+        // context yet at parse time, so it falls back to its raw text instead of being dropped
+        // silently.
+        if (asArgument && rawValue.StartsWith("[") && rawValue.EndsWith("]"))
+        {
+            var array = adapter.CreateArray();
+            foreach (var element in SplitArgs(rawValue.Substring(1, rawValue.Length - 2)))
+            {
+                var trimmedElement = element.Trim();
+                if (trimmedElement.Length == 0) continue;
+
+                var elementValue = ParseValue(trimmedElement, adapter, warnCallback, asArgument: true);
+                adapter.AppendToArray(array,
+                    elementValue is FixedValue<TNode> fixedElement
+                        ? fixedElement.Node
+                        : adapter.CreateString(trimmedElement));
+            }
+            return new FixedValue<TNode>(array, rawValue);
+        }
+
         if (asArgument)
         {
             if (bool.TryParse(rawValue, out var boolVal))
@@ -279,9 +301,11 @@ public class FunctionConverter<TNode>
     }
 
     /// <summary>
-    /// Split a comma-separated argument string, respecting nested parentheses and quotes.
-    /// A doubled quote char inside a quoted string ('' or "") is treated as an escape for a
-    /// literal quote, keeping the parser inside the current quoted token rather than ending it.
+    /// Split a comma-separated argument string, respecting nested parentheses, brackets and
+    /// quotes — a comma inside <c>(...)</c> (a nested call) or <c>[...]</c> (an array literal)
+    /// does not end the argument. A doubled quote char inside a quoted string ('' or "") is
+    /// treated as an escape for a literal quote, keeping the parser inside the current quoted
+    /// token rather than ending it.
     /// Ported from JLio's SplitText.GetChoppedElements.
     /// </summary>
     internal static List<string> SplitArgs(string argsStr)
@@ -318,12 +342,12 @@ public class FunctionConverter<TNode>
                     current.Append(c);
                 }
             }
-            else if (!inQuote && c == '(')
+            else if (!inQuote && (c == '(' || c == '['))
             {
                 depth++;
                 current.Append(c);
             }
-            else if (!inQuote && c == ')')
+            else if (!inQuote && (c == ')' || c == ']'))
             {
                 depth--;
                 current.Append(c);

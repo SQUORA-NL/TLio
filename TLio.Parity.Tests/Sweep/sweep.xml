@@ -291,6 +291,17 @@
   <put path="/root/core/toArray">
     <value>=toArray(/root/tags/item[1])</value>
   </put>
+  <add path="/root/setProps">
+    <value>
+      <a>1</a>
+      <b>2</b>
+      <c>3</c>
+    </value>
+  </add>
+  <setProperties path="/root/setProps">
+    <properties><item>a</item><item>b</item></properties>
+    <value>=toArray()</value>
+  </setProperties>
   <ifElse condition="=equals(/root/tags/item[1],'alpha')">
     <ifScript>
       <put path="/root/branch/taken">

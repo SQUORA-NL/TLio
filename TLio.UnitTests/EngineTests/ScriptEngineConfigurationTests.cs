@@ -64,7 +64,7 @@ public class ScriptEngineConfigurationTests
         Assert.That(names, Is.EquivalentTo(new[]
         {
             "set", "add", "put", "remove", "rename", "copy", "move",
-            "ifElse", "compare", "merge", "decisionTable"
+            "ifElse", "compare", "merge", "decisionTable", "setProperties"
         }));
     }
 

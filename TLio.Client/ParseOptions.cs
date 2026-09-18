@@ -60,6 +60,7 @@ public class ParseOptions<TNode>
         options.CommandsProvider.Register("compare", () => new Compare<TNode>());
         options.CommandsProvider.Register("merge",         () => new Merge<TNode>());
         options.CommandsProvider.Register("decisionTable", () => new DecisionTable<TNode>());
+        options.CommandsProvider.Register("setProperties", () => new SetProperties<TNode>());
 
         // Built-in functions
         options.FunctionsProvider.Register("fetch",      () => new Fetch<TNode>());

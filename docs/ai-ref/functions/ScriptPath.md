@@ -1,13 +1,15 @@
 # =scriptpath()
 
 > Returns the **absolute path** of the currently executing node as a string. Optionally
-> resolves a relative sub-path from that position.
+> resolves a relative sub-path from that position. A third, unrelated 3-argument shape finds
+> descendant *nodes* instead — see [Find mode](#find-mode-scriptpath-kinds-recursive) below.
 
 ## Syntax
 
 ```
 =scriptpath()
 =scriptpath(@.child)
+=scriptpath(*, kinds, recursive)
 ```
 
 Used as a value in any command: `"value": "=scriptpath()"`
@@ -40,10 +42,39 @@ Result: `$.result` = `"$"` (at document root)
 
 Result: `$.items[0].selfPath` = `"$.items[0]"`
 
+## Find mode: `=scriptpath(*, kinds, recursive)`
+
+A different shape under the same name: instead of returning the path of the current node, it
+**finds descendant nodes** of the current node and returns them as a set of *live nodes* — not a
+path string, and not a document array either (nothing is cloned or reparented), so a caller can
+write straight back into each one, e.g. with `setProperties` (see
+[SetProperties.md](../commands/SetProperties.md)).
+
+| # | Type | Required | Description |
+|---|------|----------|-------------|
+| 1 | string | yes | Reserved as `*` for now — every name at every level. Anything else is an error. |
+| 2 | array of strings | yes | Which kinds of node count as a match: `'object'`, `'primitive'` (string/number/boolean) and/or `'null'`, singular or plural, case-insensitive. `'array'` is accepted but never matches — see below. |
+| 3 | boolean | yes | `false`: only the current node's direct children are tested. `true`: the whole subtree is walked. |
+
+Arrays are always **transparent containers** — walked into when `recursive` is true, but never a
+match themselves, since they have no name of their own for `kinds` to test. An object that
+matches `kinds` is *still* walked into when `recursive` is true — matching and descending are
+independent, which is what lets a deep field like `address.city` be reached by asking for
+`'primitive'` alone, without naming `address`.
+
+```json
+{ "command": "setProperties", "path": "$.customer",
+  "properties": "=scriptpath(*,['primitive'],true)", "value": "=toArray()" }
+```
+
+Given `{"customer":{"id":"C-1","address":{"city":"Amsterdam"}}}`, every primitive under
+`customer` — including the nested `address.city` — becomes a one-element array, while
+`address` itself (an object, not in `kinds`) is left as an object.
+
 ## Notes
 
 - Also registered as `"path"` (camelCase alias, 008+) for JLio compatibility — see [Path.md](Path.md).
-- `=path()` and `=scriptpath()` are identical at runtime.
+- `=path()` and `=scriptpath()` are identical at runtime, including the find-mode shape.
 
 ## C# Usage
 
