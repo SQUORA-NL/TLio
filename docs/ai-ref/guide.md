@@ -111,8 +111,10 @@ object, removes a node, runs several commands.
 | Count of items (any type) | `count` | No |
 | Smallest value | `min` | Yes |
 | Largest value | `max` | Yes |
-| Filtered total | `sumif` | Yes — arrays must be parallel |
-| Filtered count | `countif` | Yes |
+| Filtered total | `sumif` (one condition) / `sumifs` (2+, AND) | Yes — arrays must be parallel |
+| Filtered count | `countif` (one condition) / `countifs` (2+, AND) | Yes |
+| Filtered mean | `averageif` (one condition) / `averageifs` (2+, AND) | No — returns `0` when nothing matches |
+| Filtered min / max | `minifs` / `maxifs` (1+ conditions, AND) | **Fails** (not `0`) when nothing matches |
 
 ### Arithmetic
 
