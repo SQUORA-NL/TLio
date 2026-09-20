@@ -2,7 +2,9 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Client;
+using TLio.Extensions.Math;
 using TLio.Extensions.Text;
+using TLio.Extensions.TimeDate;
 using TLio.Mcp.Configuration;
 using TLio.Mcp.Services;
 
@@ -68,6 +70,30 @@ public sealed class AiRefCoverageTests
 
         Assert.That(options.FunctionsProvider.GetFunction("toFixed"), Is.Not.Null);
         Assert.That(_reader.GetContent("toFixed", "function"), Is.Not.Null);
+    }
+
+    /// <summary>
+    /// The core-only check above (<see cref="EveryBuiltInFunction_HasAnAiRefDocument"/>) cannot
+    /// see the Text/Math/TimeDate packs — they are not part of <c>CreateDefault()</c> and need
+    /// their own registrar call. That gap is exactly how `subtract`, `calculate`, `sumifs`,
+    /// `countifs`, `averageif`, `averageifs`, `minifs` and `maxifs` went undocumented for years:
+    /// registered in the Math pack, invisible to the built-in-only coverage test.
+    /// </summary>
+    [Test]
+    public void ExtensionPackFunctions_HaveAnAiRefDocument()
+    {
+        var options = ParseOptions<JToken>.CreateDefault();
+        options.FunctionsProvider.RegisterText<JToken>();
+        options.FunctionsProvider.RegisterMath<JToken>();
+        options.FunctionsProvider.RegisterTimeDate<JToken>();
+
+        var undocumented = options.FunctionsProvider.GetRegisteredFunctionNames()
+            .Where(name => _reader.GetContent(name, "function") is null)
+            .OrderBy(n => n)
+            .ToList();
+
+        Assert.That(undocumented, Is.Empty,
+            $"registered but undocumented in docs/ai-ref/functions: {string.Join(", ", undocumented)}");
     }
 
     [Test]

@@ -224,8 +224,10 @@ Paths after a `convert` speak the new format's path language. See
 | Count of items | `count` | |
 | Smallest | `min` | |
 | Largest | `max` | |
-| Conditional total | `sumif` | |
-| Conditional count | `countif` | |
+| Conditional total | `sumif` / `sumifs` | One condition / 2+ conditions (AND) |
+| Conditional count | `countif` / `countifs` | One condition / 2+ conditions (AND) |
+| Conditional mean | `averageif` / `averageifs` | Returns `0`, not a failure, when nothing matches |
+| Conditional min / max | `minifs` / `maxifs` | **Fails** when nothing matches — unlike the other conditional aggregates |
 
 ### Arithmetic
 
