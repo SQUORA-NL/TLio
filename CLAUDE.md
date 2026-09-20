@@ -1,6 +1,6 @@
 # Tlio.claude Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-09-17 (updated by toArray function)
+Auto-generated from all feature plans. Last updated: 2026-09-18 (updated by setProperties command)
 
 ## Active Technologies
 - C# / .NET 10 + Newtonsoft.Json (TLio.Json), NUnit (tests) (010-unify-script-notation)
@@ -220,6 +220,16 @@ One asymmetry to know: TLio's XML adapter ignores attributes by design, but afte
 JSON or YAML they are ordinary `@name` properties. Converting is how a script edits an attribute.
 
 ## Recent Changes
+- setProperties command + scriptpath find mode: `setProperties` runs any value function against
+  a *selection* of nodes under one or more matched objects — the only way to write through an
+  object-key wildcard (`$.obj.*`) or a multi-key union (`$.obj['a','b']`), since `set`/`add`/`put`
+  only resolve a leaf as a multi-node selector when it is bracket-and-subscript shaped, and
+  neither of those forms is. `properties` takes either a literal array of names/`@.`-relative
+  paths, or a function — typically the new `=scriptpath(*, kinds, recursive)` shape, which finds
+  descendant nodes by kind (`object`/`primitive`/`null`) and returns them as live nodes (not a
+  document array) for direct write-back. Also fixed: function-call arguments can now contain
+  array literals (`=fn(['a','b'])`) — `FunctionConverter` previously read `[...]` as literal text
+  and split on any internal comma, which silently broke a multi-element array argument.
 - toArray function: `=toArray()` / `=toArray(path)` — the array sibling of `promote`. Wraps a
   node in a fresh array (current value, if any, as the sole element); `[]` when the source is
   absent or `null`; an already-array source passes through as a deep clone, never double-wrapped.

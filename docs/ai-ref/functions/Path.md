@@ -31,6 +31,9 @@ Output: `{ "items": [{ "id": 1, "loc": "$.items[0]" }, { "id": 2, "loc": "$.item
 
 - `=path()` and `=scriptpath()` are registered separately but share the same implementation (`ScriptPath<TNode>`).
 - Use `=path()` for JLio compatibility; use `=scriptpath()` for explicit TLio naming.
+- `=path()` also has a 3-argument "find" shape — `=path(*, kinds, recursive)` — that returns
+  descendant *nodes* instead of a path string. See
+  [ScriptPath.md#find-mode-scriptpath-kinds-recursive](ScriptPath.md#find-mode-scriptpath-kinds-recursive).
 
 ## C# Usage
 

@@ -14,8 +14,9 @@
 | Create field — skip if it already exists | `add` | noop "already exists" → field was already set |
 | Update field — warn if it does not exist | `set` | noop "property not found" → path is wrong or field missing |
 | Create-or-update, don't care which | `put` | always writes — safe default when uncertain |
+| Update several named properties, or every property, of one or more objects — including a nested sub-item or a type-filtered subtree search | `setProperties` | no path form reaches an object-key wildcard (`$.obj.*`); this is the only command that does |
 
-**Quick rule:** When in doubt, use `put`. Use `add` when idempotent create is required. Use `set` when you want explicit failure on a missing path.
+**Quick rule:** When in doubt, use `put`. Use `add` when idempotent create is required. Use `set` when you want explicit failure on a missing path. Use `setProperties` when `path` alone cannot name the set of targets.
 
 ### Moving or deleting nodes
 
@@ -193,6 +194,7 @@ needed `merge` with `uniqueItemsWithoutKeys` and a second document, and ordering
 | Dynamic path stored in document data | `indirect` |
 | Select Nth result from wildcard path | `partial` |
 | Get absolute path of current node | `scriptpath` |
+| Find descendant nodes by kind, optionally recursive | `scriptpath(*, kinds, recursive)` — same function, a different shape |
 | Wrap node in a parent object | `promote` |
 | Wrap node (or current node) in an array | `toArray` |
 | Generate a unique UUID | `newguid` |

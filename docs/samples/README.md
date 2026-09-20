@@ -1,6 +1,6 @@
 # Samples
 
-Nine end-to-end samples. Each is a directory holding an **input**, a **script** and the
+Ten end-to-end samples. Each is a directory holding an **input**, a **script** and the
 **output** the script produces — committed, byte for byte, so a change that moves a number is
 visible in a diff.
 
@@ -30,10 +30,12 @@ The CLI registers the Math, Text and TimeDate function packs and the ETL command
 | [`ecommerce-order-fulfilment`](ecommerce-order-fulfilment/) | JSON | JSON | Webshop order to warehouse pick list |
 | [`healthcare-lab-result`](healthcare-lab-result/) | XML → **JSON** | JSON | HL7 v2 lab results to a FHIR-shaped bundle |
 | [`logistics-shipment`](logistics-shipment/) | **YAML** | **YAML** | Shipment booking to carrier manifest and customs regime |
+| [`customer-record-normalization`](customer-record-normalization/) | JSON | JSON | CRM export normalized so every nested entity is array-shaped, `setProperties` + `=scriptpath` find mode |
 
-The five insurance samples are deliberately one product family seen five ways. The last three
+The five insurance samples are deliberately one product family seen five ways. The next three
 are there to show that none of this is insurance machinery — the same eight commands map an
-order, a lab result and a freight booking.
+order, a lab result and a freight booking. The last one is a single feature worked through on
+its own, small enough to read start to finish in one sitting.
 
 ## The samples chain
 

@@ -1819,6 +1819,7 @@ Input: `{ "name": "  Alice" }` → `"name": "Alice"`
 | resolve | Join / fan-out by key | ❌ | — | ETL |
 | restore | Flat key-value → nested (reverses flatten) | ❌ | — | ETL |
 | set | Update-only; noop if field absent | ✅ | `.Set(v).OnPath(p)` | built-in |
+| setProperties | Run a value against a named/found selection under one or more objects — the only way to write through an object-key wildcard | ✅ | — | built-in |
 | tocsv | Export array to CSV string | ❌ | — | ETL |
 
 ### Function Summary
