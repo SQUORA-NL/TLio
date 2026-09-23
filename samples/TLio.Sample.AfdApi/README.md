@@ -51,12 +51,21 @@ fix) that weren't part of any TLio commit yet. Living here, in this repo, as a n
 project under `samples/`, that problem doesn't exist — the reference is just `..\..\TLio.Client\
 TLio.Client.csproj`, like every other sample in this folder.
 
+## Speed
+
+Each of the three scripts is several MB; parsing one on every request used to be the dominant
+cost — around 220ms per conversion for `afdshort-to-afd2`, roughly 130ms of which was pure parse
+time. `ConversionRegistry` (`ConversionRegistry.cs`) compiles all three once at startup via
+`MultiFormatScriptRunner.Compile`, and `Program.cs` sends one real HTTP request through each
+direction before the server accepts traffic, so the .NET JIT has already tiered up the request
+pipeline before a real client's first request arrives. Steady-state latency for all three
+directions is now in the 15-70ms range; occasional spikes into the low hundreds of ms can still
+happen under Server GC when a collection lands on top of a request — inherent to any .NET service
+processing multi-MB payloads repeatedly, not something specific to this sample.
+
 ## What it does not do
 
-No auth, no request size limits beyond ASP.NET Core's defaults, no script caching (each request
-re-parses the script text from disk — fine for a demo against messages a few KB in size; the
-scripts here are several MB, so this is the dominant cost per request; a production deployment
-would compile each script once with `ScriptEngine.Compile` and reuse the `CompiledScript`, the
-way `TLio.Sample.Api`'s `ScriptRegistry` does). No try/catch around the conversion call either:
-a genuinely unparseable input (not empty, but not valid XML/JSON) currently surfaces as a bare
-HTTP 500 rather than the documented HTTP 422 — a known, small gap, not a design decision.
+No auth, no request size limits beyond ASP.NET Core's defaults. No try/catch around the
+conversion call: a genuinely unparseable input (not empty, but not valid XML/JSON) currently
+surfaces as a bare HTTP 500 rather than the documented HTTP 422 — a known, small gap, not a
+design decision.

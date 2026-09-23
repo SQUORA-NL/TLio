@@ -34,7 +34,7 @@ namespace TLio.FormatConverter;
 /// </para>
 /// </remarks>
 /// <typeparam name="TNode">Native node type of this section's format.</typeparam>
-public sealed class ScriptEngineSectionExecutor<TNode> : IFormatSectionExecutor
+public sealed class ScriptEngineSectionExecutor<TNode> : ICompilableFormatSectionExecutor
 {
     private readonly ScriptEngine<TNode> _engine;
     private readonly Func<IExecutionContext<TNode>> _contextFactory;
@@ -62,34 +62,56 @@ public sealed class ScriptEngineSectionExecutor<TNode> : IFormatSectionExecutor
     /// <inheritdoc/>
     public SectionExecutionResult Execute(string sectionScript, string document)
     {
-        var context = _contextFactory();
-        var data = context.NodeAdapter.Parse(document);
-
         // A section is a script in the notation the whole script was written in, so an engine
         // that was never given that notation's parser reads it as nothing. The runner only sends
         // sections that hold commands, so nothing parsed means the notation is unreadable here —
         // and passing the document through as a success would apply none of the script while
         // reporting that it worked.
-        var script = _engine.Parse(sectionScript, context.NodeAdapter);
-        if (script.Count == 0)
-        {
-            var logs = new LogEntries();
-            logs.Add(new LogEntry(LogLevel.Error, CoreConstants.CommandExecution,
-                $"section for format '{FormatId}' parsed to no commands — its notation " +
-                $"({ScriptFormatDetector.Detect(sectionScript)}) has no parser registered on this " +
-                $"engine. Register it with UseXmlScripts() / UseYamlScripts() when building the " +
-                $"engine you hand to the section executor.", DateTimeOffset.UtcNow));
-            foreach (var warning in script.ParseWarnings)
-                logs.Add(new LogEntry(LogLevel.Warning, CoreConstants.CommandExecution, warning, DateTimeOffset.UtcNow));
+        var adapter = _contextFactory().NodeAdapter;
+        var script = _engine.Parse(sectionScript, adapter);
+        return script.Count == 0
+            ? EmptyScriptResult(sectionScript, script.ParseWarnings, document)
+            : RunScript(script, document);
+    }
 
-            return new SectionExecutionResult(document, false, logs);
-        }
+    /// <inheritdoc/>
+    public object Compile(string sectionScriptJson) =>
+        _engine.Compile(sectionScriptJson, _contextFactory().NodeAdapter);
 
+    /// <inheritdoc/>
+    public SectionExecutionResult ExecuteCompiled(object compiledSection, string document)
+    {
+        var compiled = (CompiledScript<TNode>)compiledSection;
+        return compiled.CommandCount == 0
+            ? EmptyScriptResult(sectionScriptJson: null, compiled.ParseWarnings, document)
+            : RunScript(compiled.CreateExecutable(), document);
+    }
+
+    private SectionExecutionResult RunScript(TLioScript<TNode> script, string document)
+    {
+        var context = _contextFactory();
+        var data = context.NodeAdapter.Parse(document);
         var result = _engine.Execute(script, data, context);
 
         return new SectionExecutionResult(
             context.NodeAdapter.Serialize(result.Data),
             result.Success,
             context.GetLogEntries());
+    }
+
+    private SectionExecutionResult EmptyScriptResult(
+        string? sectionScriptJson, IReadOnlyList<string> parseWarnings, string document)
+    {
+        var logs = new LogEntries();
+        logs.Add(new LogEntry(LogLevel.Error, CoreConstants.CommandExecution,
+            $"section for format '{FormatId}' parsed to no commands — its notation " +
+            $"({(sectionScriptJson is null ? "unknown" : ScriptFormatDetector.Detect(sectionScriptJson).ToString())}) " +
+            $"has no parser registered on this engine. Register it with UseXmlScripts() / " +
+            $"UseYamlScripts() when building the engine you hand to the section executor.",
+            DateTimeOffset.UtcNow));
+        foreach (var warning in parseWarnings)
+            logs.Add(new LogEntry(LogLevel.Warning, CoreConstants.CommandExecution, warning, DateTimeOffset.UtcNow));
+
+        return new SectionExecutionResult(document, false, logs);
     }
 }
