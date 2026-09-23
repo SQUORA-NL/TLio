@@ -415,6 +415,35 @@
       </item>
     </resolveSettings>
   </resolve>
+  <put path="/root/etl/dynamicRef/code">
+    <value>A</value>
+  </put>
+  <add path="/root/etl/dynamicLookup/item[1]">
+    <value>
+      <code>A</code>
+      <to>renamedLabel</to>
+      <from>RenamedValue</from>
+    </value>
+  </add>
+  <resolve path="/root/etl/dynamicRef">
+    <resolveSettings>
+      <item>
+        <referencesCollectionPath>/root/etl/dynamicLookup/item</referencesCollectionPath>
+        <resolveKeys>
+          <item>
+            <keyPath>@.code</keyPath>
+            <referenceKeyPath>@.code</referenceKeyPath>
+          </item>
+        </resolveKeys>
+        <values>
+          <item>
+            <value>=fetch(./from)</value>
+            <targetPath>=fetch(./to)</targetPath>
+          </item>
+        </values>
+      </item>
+    </resolveSettings>
+  </resolve>
   <put path="/root/dt/status">
     <value>active</value>
   </put>

@@ -44,7 +44,7 @@ public class ToArray<TNode> : FunctionBase<TNode>
         if (pathStr == null)
             return FunctionResult<TNode>.Failed(currentNode);
 
-        var resolved = context.ItemsFetcher.SelectNodes(pathStr, dataContext);
+        var resolved = RelativePathResolution.SelectRelative(pathStr, currentNode, dataContext, context);
         if (resolved.Count == 0)
             return FunctionResult<TNode>.Successful(adapter.CreateArray());
 

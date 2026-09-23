@@ -33,8 +33,10 @@ public class Indirect<TNode> : FunctionBase<TNode>
         if (string.IsNullOrEmpty(refPath))
             return FunctionResult<TNode>.Failed(currentNode);
 
-        // Step 2: read the string stored at refPath — this is the "real" path
-        var refNodes = context.ItemsFetcher.SelectNodes(refPath, dataContext);
+        // Step 2: read the string stored at refPath — this is the "real" path. A relative
+        // refPath ("@.pathRef") is anchored on currentNode, the same rule every other path
+        // resolution in the engine applies.
+        var refNodes = RelativePathResolution.SelectRelative(refPath, currentNode, dataContext, context);
         if (refNodes.Count == 0)
             return FunctionResult<TNode>.Failed(currentNode);
 
@@ -45,8 +47,8 @@ public class Indirect<TNode> : FunctionBase<TNode>
             return FunctionResult<TNode>.Failed(currentNode);
         }
 
-        // Step 3: select nodes at the resolved path
-        var nodes = context.ItemsFetcher.SelectNodes(actualPath, dataContext);
+        // Step 3: select nodes at the resolved path — same rule again.
+        var nodes = RelativePathResolution.SelectRelative(actualPath, currentNode, dataContext, context);
         if (nodes.Count == 0)
             return FunctionResult<TNode>.Failed(currentNode);
 

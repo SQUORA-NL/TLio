@@ -30,7 +30,8 @@ public class Partial<TNode> : FunctionBase<TNode>
         if (pathStr == null)
             return FunctionResult<TNode>.Failed(currentNode);
 
-        var nodes = context.ItemsFetcher.SelectNodes(pathStr, dataContext);
+        // A relative path ("@.field") is anchored on currentNode, not the document root.
+        var nodes = RelativePathResolution.SelectRelative(pathStr, currentNode, dataContext, context);
         if (nodes.Count == 0)
             return FunctionResult<TNode>.Failed(currentNode);
 

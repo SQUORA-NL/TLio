@@ -273,6 +273,14 @@ public class DecisionTable<TNode> : CommandBase<TNode>
             if (!results.TryGetValue(output.Name, out var valueProvider))
                 continue;
 
+            // Evaluate before touching the document: a result that fails must leave the
+            // document untouched at this path, not an ensured-but-empty container. The value
+            // does not depend on `parent`, so one evaluation covers every parent a wildcard
+            // output path selects.
+            var valueResult = valueProvider.GetValue(targetNode, dataContext, context);
+            if (!valueResult.Success || valueResult.Data.First == null)
+                continue;
+
             var absolutePath = output.Path.StartsWith(context.ItemsFetcher.CurrentItemPathIndicator)
                 ? context.ItemsFetcher.ResolveRelativePath(output.Path, targetNode, dataContext)
                 : output.Path;
@@ -283,21 +291,17 @@ public class DecisionTable<TNode> : CommandBase<TNode>
 
             foreach (var parent in parents)
             {
-                var valueResult = valueProvider.GetValue(targetNode, dataContext, context);
-                if (valueResult.Success && valueResult.Data.First != null)
+                // MergeResultValue handles merge conflict resolution at write time
+                if (valueProvider is MergeResultValue<TNode> mergeValue)
                 {
-                    // MergeResultValue handles merge conflict resolution at write time
-                    if (valueProvider is MergeResultValue<TNode> mergeValue)
-                    {
-                        var existing = context.NodeAdapter.GetProperty(parent, leafName);
-                        var merged = mergeValue.Merge(existing, context);
-                        context.NodeAdapter.SetProperty(parent, leafName, merged);
-                    }
-                    else
-                    {
-                        context.NodeAdapter.SetProperty(parent, leafName,
-                            context.NodeAdapter.DeepClone(valueResult.Data.First!));
-                    }
+                    var existing = context.NodeAdapter.GetProperty(parent, leafName);
+                    var merged = mergeValue.Merge(existing, context);
+                    context.NodeAdapter.SetProperty(parent, leafName, merged);
+                }
+                else
+                {
+                    context.NodeAdapter.SetProperty(parent, leafName,
+                        context.NodeAdapter.DeepClone(valueResult.Data.First!));
                 }
             }
         }

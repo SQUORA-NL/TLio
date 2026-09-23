@@ -48,7 +48,9 @@ public class Fetch<TNode> : FunctionBase<TNode>
         if (pathStr == null || !context.ItemsFetcher.IsPathExpression(pathStr))
             return FunctionResult<TNode>.Successful(pathResult.Data.First);
 
-        var nodes = context.ItemsFetcher.SelectNodes(pathStr, dataContext);
+        // A relative path ("@.field") is anchored on currentNode, not the document root — the
+        // node fetch() is being called *from*, e.g. the matched entry in a resolve setting.
+        var nodes = RelativePathResolution.SelectRelative(pathStr, currentNode, dataContext, context);
         if (nodes.Count == 0)
         {
             // Optional second argument: return as default value when path resolves to nothing

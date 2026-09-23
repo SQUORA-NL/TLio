@@ -217,10 +217,26 @@ there are no separate camelCase aliases.
 | `@.field` | Child of current node | JSON, YAML |
 | `@.<--` | Parent of current node | JSON, YAML |
 | `@.<--.sibling` | Sibling via parent | JSON, YAML |
+| `./field` | Child of current node | XML |
 
 > **Rule**: Relative paths in JSON/YAML always use `@.` (with the dot).
 > `@field` (no dot) is invalid in JSON/YAML context and triggers a parser warning —
 > at value level and inside function arguments alike.
+>
+> **XML's relative marker is `.`, not `@.`** — `IItemsFetcher.CurrentItemPathIndicator` is `"@"`
+> for JSON/YAML but `"."` for XML (matching XPath's own "current node" dot), so the relative form
+> is `./field`, the same one `decisionTable`'s XML inputs already write (`<path>./status</path>`).
+> Writing `@.field` in an XML script is not a parser error — `@` has no reserved meaning to XML's
+> path language outside an XPath attribute predicate (§9) — so it is read as a *literal string*,
+> not a path. A function that receives it as an argument (`=fetch(@.field)`) resolves nothing and
+> silently returns that literal text; a `resolve` `targetPath` that computes it produces a property
+> named `@.field` and fails to write, since that is not a legal element name — see
+> `docs/ai-ref/commands/Resolve.md`'s note on this for the exact failure shape. This applies
+> wherever `@.` is being resolved by the *engine's* per-format mechanism — a bare `@.field` value
+> or path argument, `fetch(@.field)`, a predicate's path argument. It does not apply to the four
+> fields inside a `resolve` setting (`keyPath`, `referenceKeyPath`, and the literal — not function
+> — form of `targetPath`/`value`), which read `@.` themselves, hardcoded, the same way in every
+> format; that is a deliberate exception specific to `resolve`, documented there.
 
 A path that matches nothing produces no value and logs a warning naming the path, so a
 typo shows up in the execution log instead of silently writing nothing.

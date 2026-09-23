@@ -39,9 +39,126 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
 
     public string GetPath(JToken node)
     {
-        if (node?.Path == null || string.IsNullOrEmpty(node.Path))
-            return RootPathIndicator;
-        return $"{RootPathIndicator}{PathDelimiter}{node.Path}";
+        if (node == null) return RootPathIndicator;
+        var path = FastPath(node);
+        return string.IsNullOrEmpty(path) ? RootPathIndicator : $"{RootPathIndicator}{PathDelimiter}{path}";
+    }
+
+    // ── Fast path computation ─────────────────────────────────────────────────
+    //
+    // Newtonsoft's own JToken.Path walks every array ancestor and, at each one, finds this
+    // node's own index by scanning the array's children from the start — O(index). A script
+    // that reads several relative ("@.field") paths per element of a large array (a decisionTable
+    // with N inputs, a resolve with several values) ends up paying that scan once per read per
+    // element, which sums to O(total elements²) across the array, not O(elements). Prototyped
+    // and measured against TLio.Sample/AFD conversion scripts: at 20,000 array elements this was
+    // the dominant cost, ~150s of a ~150s run.
+    //
+    // The fix targets exactly that scan and nothing else: an index cache per JArray, built once
+    // in a single forward pass and invalidated whenever the array's Count no longer matches what
+    // the cache was built from — cheap to check on every call, and correct by construction: it
+    // caches a purely structural fact (this array's current child order), invalidated the moment
+    // the array's own shape changes, which is the only thing that can make it wrong. It is not
+    // memoising a *value* that an unrelated write elsewhere in the document could make stale —
+    // that would be unsafe, since a later step in the same activity must see an earlier step's
+    // change, and nothing here weakens that.
+    // Known gap: an in-place reorder that leaves Count unchanged (swapping two elements without
+    // adding/removing any) would go undetected. No built-in TLio function does that today —
+    // `sort`/`sortBy` build and return a new array rather than reordering the source in place —
+    // but a future one that does would need to invalidate this cache explicitly (see
+    // InvalidateIndexCache below) rather than mutate an array's element order silently.
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<JArray, ArrayIndexCache> IndexCaches = new();
+
+    private sealed class ArrayIndexCache
+    {
+        public int Count = -1;
+        public Dictionary<JToken, int>? Map;
+    }
+
+    /// <summary>
+    /// Escape hatch for a future array-mutating-in-place function/command: drop this array's
+    /// cached index map so the next GetPath call rebuilds it. Not called anywhere today because
+    /// nothing needs it today (see the remarks on GetPath) — here so that guarantee has a place
+    /// to be enforced from if it ever stops holding.
+    /// </summary>
+    internal static void InvalidateIndexCache(JArray array) => IndexCaches.Remove(array);
+
+    private static int IndexOfCached(JArray array, JToken child)
+    {
+        if (!IndexCaches.TryGetValue(array, out var cache))
+        {
+            cache = new ArrayIndexCache();
+            IndexCaches.Add(array, cache);
+        }
+
+        if (cache.Map == null || cache.Count != array.Count || !cache.Map.TryGetValue(child, out var index))
+        {
+            var map = new Dictionary<JToken, int>(array.Count, ReferenceEqualityComparer.Instance);
+            var i = 0;
+            foreach (var item in array)
+                map[item] = i++;
+            cache.Map = map;
+            cache.Count = array.Count;
+            map.TryGetValue(child, out index);
+        }
+
+        return index;
+    }
+
+    /// <summary>
+    /// Builds the same path text as <c>JToken.Path</c>, walking from <paramref name="node"/> to
+    /// the document root, but resolving each array-element step via <see cref="IndexOfCached"/>
+    /// instead of Newtonsoft's per-call scan. Any container shape this does not specifically
+    /// know how to walk (only <see cref="JProperty"/> and <see cref="JArray"/> parents are
+    /// handled — a plain JSON document never has anything else) falls back to <c>node.Path</c>
+    /// itself, so a shape this misses is slower, never wrong.
+    /// </summary>
+    private static string FastPath(JToken node)
+    {
+        var segments = new List<(bool IsIndex, string Text)>();
+        var current = node;
+        while (current.Parent != null)
+        {
+            var parent = current.Parent;
+            if (parent is JProperty property)
+            {
+                // A property whose own Parent is null has been removed from its owning object —
+                // e.g. a still-nested match under a node an earlier step in the same recursive
+                // walk already detached (RemoveTests.CanRemoveRecursiveValues hits exactly this).
+                // Newtonsoft's own node.Path handles that case; match it exactly rather than
+                // guess, since it is neither this node's array-index step nor the shape this
+                // fast path exists to speed up.
+                if (property.Parent == null)
+                    return node.Path;
+                segments.Add((false, property.Name));
+                current = property.Parent;
+            }
+            else if (parent is JArray array)
+            {
+                var index = IndexOfCached(array, current);
+                segments.Add((true, index.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                current = array;
+            }
+            else
+            {
+                return node.Path;
+            }
+        }
+
+        segments.Reverse();
+        var sb = new System.Text.StringBuilder();
+        foreach (var (isIndex, text) in segments)
+        {
+            if (isIndex)
+                sb.Append('[').Append(text).Append(']');
+            else
+            {
+                if (sb.Length > 0) sb.Append('.');
+                sb.Append(text);
+            }
+        }
+        return sb.ToString();
     }
 
     // ── Parent navigation ─────────────────────────────────────────────────────

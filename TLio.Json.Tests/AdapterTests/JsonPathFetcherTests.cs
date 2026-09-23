@@ -138,6 +138,72 @@ public class JsonPathFetcherTests
         Assert.That(_fetcher.GetPath(node), Does.Contain("items"));
     }
 
+    // GetPath computes each array-element index through a per-array cache (JsonPathItemsFetcher
+    // FastPath / IndexOfCached) instead of Newtonsoft's own per-call scan, for performance at
+    // large array sizes. These tests are the ones that matter for that cache specifically: exact
+    // index text at several positions, staying correct after the array's shape changes, a nested
+    // property inside an array element, and a node detached mid-walk (Remove's own recursive
+    // descent hits this — see RemoveTests.CanRemoveRecursiveValues).
+
+    [Test]
+    public void GetPath_ArrayElement_ExactIndexAtSeveralPositions()
+    {
+        var data = JToken.Parse("{\"items\": [10, 20, 30, 40, 50]}");
+        for (var i = 0; i < 5; i++)
+        {
+            var node = _fetcher.SelectNode($"$.items[{i}]", data)!;
+            Assert.That(_fetcher.GetPath(node), Is.EqualTo($"$.items[{i}]"));
+        }
+    }
+
+    [Test]
+    public void GetPath_NestedPropertyInsideAnArrayElement()
+    {
+        var data = JToken.Parse("{\"items\": [{\"name\": \"a\"}, {\"name\": \"b\"}]}");
+        var node = _fetcher.SelectNode("$.items[1].name", data)!;
+        Assert.That(_fetcher.GetPath(node), Is.EqualTo("$.items[1].name"));
+    }
+
+    [Test]
+    public void GetPath_AfterArrayShrinks_ReflectsTheNewPositions_NotTheCachedOnes()
+    {
+        var data = JObject.Parse("""{ "items": [10, 20, 30, 40, 50] }""");
+        var items = (JArray)data["items"]!;
+        var last = items[4];
+        Assert.That(_fetcher.GetPath(last), Is.EqualTo("$.items[4]"),
+            "sanity check: the cache is now populated for this array's original shape");
+
+        items.RemoveAt(0); // [20, 30, 40, 50] — every remaining element shifts down by one
+        Assert.That(_fetcher.GetPath(last), Is.EqualTo("$.items[3]"),
+            "the array's Count changed, so the cached index map must be rebuilt, not reused");
+    }
+
+    [Test]
+    public void GetPath_AfterArrayGrows_NewElementGetsItsOwnIndex()
+    {
+        var data = JObject.Parse("""{ "items": [10, 20, 30] }""");
+        var items = (JArray)data["items"]!;
+        _ = _fetcher.GetPath(items[1]); // populate the cache for the 3-element shape
+
+        items.Add(40);
+        var node = items[3];
+        Assert.That(_fetcher.GetPath(node), Is.EqualTo("$.items[3]"));
+    }
+
+    [Test]
+    public void GetPath_DetachedNode_DoesNotThrow()
+    {
+        // A node still nested under an object that an earlier step already removed from the
+        // document (Remove's $.. recursive descent produces exactly this: the inner "myObject"
+        // is still structurally intact under the outer one at the moment it is visited, but the
+        // outer one's own JProperty has Parent == null because Remove already detached it).
+        var outer = JObject.Parse("""{ "myObject": { "inner": 1 } }""");
+        var innerNode = outer["myObject"]!["inner"]!;
+        outer.Property("myObject")!.Remove(); // detaches the "myObject" JProperty from `outer`
+
+        Assert.That(() => _fetcher.GetPath(innerNode), Throws.Nothing);
+    }
+
     // ── GetParent ─────────────────────────────────────────────────────────────
 
     [Test]

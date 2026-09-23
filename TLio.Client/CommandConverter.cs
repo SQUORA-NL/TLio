@@ -313,6 +313,7 @@ public class CommandConverter<TNode> : IScriptParser<TNode>
             {
                 var valList    = (System.Collections.IList)Activator.CreateInstance(valuesProp!.PropertyType)!;
                 var tpProp     = resolveValType.GetProperty("TargetPath");
+                var tpExprProp = resolveValType.GetProperty("TargetPathExpression");
                 var valProp    = resolveValType.GetProperty("Value");
                 var behProp    = resolveValType.GetProperty("ResolveTypeBehavior");
 
@@ -320,7 +321,22 @@ public class CommandConverter<TNode> : IScriptParser<TNode>
                 {
                     var rv = Activator.CreateInstance(resolveValType)!;
                     if (valEl.TryGetProperty("targetPath", out var tp))
-                        tpProp?.SetValue(rv, tp.GetString());
+                    {
+                        var tpText = tp.GetString();
+                        tpProp?.SetValue(rv, tpText);
+
+                        // A targetPath written as a function expression computes the property
+                        // name from the matched reference entry instead of naming it literally —
+                        // parsed the same way "value" is, kept on a separate property so the
+                        // plain "@.property" form (the overwhelming majority of scripts) is
+                        // completely unaffected.
+                        if (tpExprProp != null && tpText != null &&
+                            tpText.StartsWith("=", StringComparison.Ordinal))
+                        {
+                            var expr = ConvertJsonValue(tp, typeof(IFunctionSupportedValue<TNode>));
+                            tpExprProp.SetValue(rv, expr);
+                        }
+                    }
                     if (valEl.TryGetProperty("value", out var vEl))
                         valProp?.SetValue(rv, ConvertJsonValue(vEl, typeof(IFunctionSupportedValue<TNode>)));
                     if (valEl.TryGetProperty("resolveTypeBehavior", out var behEl) &&

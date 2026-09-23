@@ -32,11 +32,13 @@ public abstract class PredicateFunctionBase<TNode> : FunctionBase<TNode>
         var first = result.Data.First!;
 
         // Paths inside an argument list arrive as plain strings; resolve them here rather
-        // than through ResolveArg, which cannot distinguish "no match" from "failed".
+        // than through ResolveArg, which cannot distinguish "no match" from "failed". A
+        // relative one ("@.field") is anchored on currentNode, the same rule ResolveArg
+        // applies — see TLio.Core.Models.RelativePathResolution.
         var str = context.NodeAdapter.TryGetString(first);
         if (result.Data.Count == 1 && str != null && context.ItemsFetcher.IsPathExpression(str))
         {
-            var nodes = context.ItemsFetcher.SelectNodes(str, dataContext);
+            var nodes = RelativePathResolution.SelectRelative(str, currentNode, dataContext, context);
             if (nodes.Count == 0) return false;
             node = nodes.First!;
             return true;
