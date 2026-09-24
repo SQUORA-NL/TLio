@@ -26,14 +26,16 @@ A string node with leading whitespace removed via `string.TrimStart()`.
 
 Works with all adapters (JSON, XML, YAML).
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.name", "value": "=trimStart($.name)" }
+{ "command": "put", "path": "$.result", "value": "=trimstart($.padded)" }
 ```
 
-Input: `{ "name": "  Alice" }`
-Output: `{ "name": "Alice" }`
+Input: `{ "padded": "  hello  " }`
+Output: `{ "padded": "  hello  ", "result": "hello  " }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/trimstart/01-left-only.json`.
 
 ## Notes
 

@@ -34,15 +34,29 @@ execution.
 | `dd/MM/yyyy` | `"06/04/2026"` |
 | `yyyyMMddHHmmss` | `"20260406143000"` |
 
-## Example
+## Verified example
+
+`datetime()` returns the current instant, so no fixture asserts a literal value; the inline
+NUnit tests instead assert the **shape** of the result:
 
 ```json
-{ "command": "put", "path": "$.createdAt", "value": "=datetime()" }
+{ "command": "set", "path": "$.demo", "value": "=datetime()" }
 ```
 
+The default (no-argument) form matches the ISO 8601 pattern
+`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z` — verified by
+`DatetimeFunctionTests.CanGetDatetimeValueWithDefaultIso8601Format`
+(`TLio.Functions.Tests/FunctionsTests/DatetimeFunctionTests.cs:46-60`).
+
+A custom format string is passed straight to `DateTime.UtcNow.ToString(format)`:
+
 ```json
-{ "command": "put", "path": "$.date", "value": "=datetime(yyyy-MM-dd)" }
+{ "command": "put", "path": "$.year", "value": "=datetime(yyyy)" }
 ```
+
+produces a 4-digit year (e.g. `"2026"`) — verified by
+`DatetimeFunctionTests.CustomFormat_ReturnsFormattedDate` (same file, lines 106-118), which
+asserts the result matches `\d{4}` and has length 4.
 
 ## C# Usage
 
@@ -83,5 +97,5 @@ var result = engine.Execute(
 
 - **Assuming local time.** `datetime()` is always UTC. If your data uses local dates (e.g., `"2024-06-15"` without a time component), comparing a UTC `datetime()` result near midnight can cross date boundaries unexpectedly and produce wrong range results.
 - **Using datetime for "today's date" in a range comparison without UTC awareness.** `=datetime(yyyy-MM-dd)` gives today's UTC date, which may differ from the local calendar date for users in timezones ahead of UTC.
-- **Incorrect .NET format strings.** The format argument uses .NET custom date format strings (`yyyy`, `MM`, `dd`, `HH`, `mm`, `ss`). Standard format specifiers like `"s"` or `"o"` also work. An invalid format string results in a literal string rather than an error.
+- **Incorrect .NET format strings.** The format argument uses .NET custom date format strings (`yyyy`, `MM`, `dd`, `HH`, `mm`, `ss`). Standard format specifiers like `"s"` or `"o"` also work. A format string `DateTime.ToString` rejects (throws on) is caught and **silently falls back to the default ISO 8601 format** — it does not produce an error or a literal copy of the format string. Verified by `DatetimeFunctionTests.InvalidFormatArg_FallsBackToIso8601` (`TLio.Functions.Tests/FunctionsTests/DatetimeFunctionTests.cs:76-88`), which passes `"%INVALID-FORMAT-STRING%"` and asserts a non-empty result rather than an exception.
 - **Expecting the value to update across steps.** The timestamp is captured at the point `datetime()` is evaluated in the script. It does not re-evaluate on each command; use it in a `put` or `set` step early in the script if you want a consistent "run start" time.

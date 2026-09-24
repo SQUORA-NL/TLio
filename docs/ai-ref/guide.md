@@ -2,6 +2,7 @@
 
 > Use this guide to select the right command or function before writing a script.
 > For full documentation including examples and common mistakes, call tlio_describe('CommandOrFunctionName').
+> For throughput and precompilation guidance, see [performance.md](performance.md).
 
 ---
 
@@ -25,6 +26,14 @@
 | Copy node, keep source | `copy` | Source remains in document |
 | Relocate node, remove source | `move` | Source is deleted after copy |
 | Delete node entirely | `remove` | noop (not failure) if path not found |
+| Change a node's **name**, keep value/children/position | `rename` | Only command that can rename an XML document element |
+
+### Changing format
+
+| Intent | Command | Note |
+|--------|---------|------|
+| Change the whole document's format mid-script | `convert` | Needs `MultiFormatScriptRunner` — fails on a bare engine |
+| Convert one value at a path, document format unchanged | `convertValue` | Runs on the ordinary engine |
 
 ### Conditional logic
 
@@ -90,6 +99,10 @@ object, removes a node, runs several commands.
 | Find position of substring | `indexOf` |
 | **Pull a fragment out by pattern** | **`regexExtract`** — `""` when no match |
 | **Rewrite by pattern** | **`regexReplace`** — `replace` is literal-only |
+| Substitute a literal substring, case-sensitive | `replace` |
+| Character count (string) / element count (array) | `length` |
+| Left/right-pad to a fixed width | `padLeft` / `padRight` |
+| Money-style text with exactly N decimals | `toFixed` |
 
 ### Case and whitespace
 
@@ -128,7 +141,9 @@ object, removes a node, runs several commands.
 | Raise to a power | `pow` | binary |
 | **Bound to a range** | **`clamp`** | `value, low, high`, both inclusive |
 | **Direction of a number** | **`sign`** | `-1` / `0` / `1` |
-| Free-form expression string | `calculate` | one string, parsed at run time |
+| Absolute value | `abs` | unary |
+| Square root | `sqrt` | unary |
+| Free-form expression string | `calculate` | one string, parsed at run time; not cached — see [performance.md](performance.md) |
 
 **Quick rule:** reach for `multiply`/`divide` for a product or quotient of values. `calculate`
 is for a genuinely free-form expression — not for multiplying a list of numbers through

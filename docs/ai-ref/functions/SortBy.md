@@ -30,7 +30,7 @@ decision, not a fallout of the comparison: a record missing the very key it is b
 has no place in the order, so it stays out of the way at the end rather than jumping to the front
 when the direction flips.
 
-## Example
+## Verified example
 
 ```json
 { "command": "put", "path": "$.ranked", "value": "=sortby($.coverages, '$.premium', 'desc')" }
@@ -60,10 +60,21 @@ Output adds:
 }
 ```
 
+Verified by: `TLio.Functions.Tests/Fixtures/Collections/sortby/02-coverages-by-premium-descending.json`
+(the ascending default, `'$.premium'` with no third argument, is
+`01-coverages-by-premium.json`, and a nested key path `'$.rating.factor'` is
+`04-nested-key-path.json`).
+
 Missing keys go to the end regardless of direction:
 
-Input: `{ "claims": [{ "id": "b", "amount": 200 }, { "id": "x" }, { "id": "a", "amount": 100 }] }`
-`'desc'` gives `[b(200), a(100), x]`; `'asc'` gives `[a(100), b(200), x]`.
+Input: `{ "claims": [{ "id": "b", "amount": 200 }, { "id": "x" }, { "id": "a", "amount": 100 }] }`,
+script `=sortby($.claims, '$.amount', 'desc')` → `ranked: [b(200), a(100), x]`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Collections/sortby/03-missing-key-sorts-last.json`
+(descending case). The ascending case — same input, `'asc'` gives `[a(100), b(200), x]` — is
+covered by the inline test `SortByTests.SortBy_MissingKeySortsLastInBothDirections`
+(`TLio.Functions.Tests/FunctionsTests/CollectionTests/SortByTests.cs:117`), which asserts both
+directions on one input.
 
 ## When to use
 

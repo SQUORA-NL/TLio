@@ -20,14 +20,20 @@
 
 A boolean node: `true` if `from <= date <= to`, `false` otherwise.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.result", "value": "=isdatebetween($.event,$.from,$.to)" }
+{ "command": "put", "path": "$.result", "value": "=isdatebetween($.inside, $.start, $.end)" }
 ```
 
-Input: `{ "event": "2024-06-15", "from": "2024-01-01", "to": "2024-12-31", "result": null }`
+Input: `{ "start": "2024-01-01", "end": "2024-12-31", "inside": "2024-06-15" }`
 Output: `{ ..., "result": true }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/TimeDate/isdatebetween/01-in-range.json`. The same
+fixture group also covers a date before the range (`02-before-range.json`, `result: false`), a
+date after it (`03-after-range.json`, `result: false`), and both boundaries being inclusive — the
+range's own start (`04-on-start-boundary.json`, `result: true`) and end
+(`05-on-end-boundary.json`, `result: true`) both count as inside.
 
 ## When to use
 

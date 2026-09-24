@@ -26,17 +26,23 @@ A `long` — whole units, **truncated toward zero**, negative when `to` precedes
 - `days`, `hours`, `minutes`, `seconds` come from the elapsed interval, truncated.
 - A 29 February date has no anniversary in a common year; month-end clamping gives it 28 February, the same day `dateAdd(d, 1, 'years')` produces.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "put", "path": "$.calc.driverAge",
-  "value": "=dateDiff($.request.applicant.birthDate,$.request.quotedOn,'years')" }
+{ "command": "put", "path": "$.new",
+  "value": "=datediff($.request.applicant.birthDate,$.request.quotedOn,'years')" }
 ```
 
 Input: `{ "request": { "quotedOn": "2026-08-21", "applicant": { "birthDate": "1991-11-04" } } }`
-Output: `{ ..., "calc": { "driverAge": 34 } }`
+Output: `{ ..., "new": 34 }`
 
-The birthday has not come round yet in August, so the answer is 34, not 35.
+The birthday has not come round yet in August, so the answer is 34, not 35. The fixture also
+runs the old `floor(calculate(concat(...)))` YYYYMMDD-subtraction idiom side by side (into
+`$.old`) and asserts both give `34` — proof that `dateDiff` is a drop-in replacement for it.
+
+Verified by: `TLio.Functions.Tests/Fixtures/TimeDate/datediff/08-sample-driver-age-matches-the-old-idiom.json`
+(unit variants verified by `.../01-years-day-of-the-anniversary.json` through
+`.../07-hours-truncate-toward-zero.json` in the same directory)
 
 ## When to use
 

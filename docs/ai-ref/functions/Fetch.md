@@ -67,25 +67,46 @@ After the `''` → `'` unescape, the inner expression becomes:
 
 ## Path-detection rule
 
-Fetch detects whether its resolved argument is a path by checking if the string
-starts with `$` or `@`. If it does not, the value is returned directly without a
-path lookup — this means a non-path result from a nested function is always returned
-correctly rather than failing with a silent no-match.
+Fetch detects whether its resolved argument is a path by asking the active
+`IItemsFetcher.IsPathExpression` — what counts as a path is the *document format's own
+syntax*, not a fixed prefix: `$`/`@` for JSON and YAML, a leading `/` for XML. If the
+resolved value is not recognised as a path in that format, it is returned directly without
+a lookup attempt — this means a non-path result from a nested function (e.g. a literal
+string a wrapped function computed) is always returned correctly rather than failing with
+a silent no-match.
 
 ## Returns
 
 The value of the first matched node, or the default value if no match and a default is provided.
-Logs a warning and returns failed when the path matches nothing and no default is given.
+Logs a warning and returns a failed result when the path matches nothing and no default is given.
 
-## Example
+## Verified example
 
 ```json
 { "command": "set", "path": "$.target", "value": "=fetch($.source)" }
 ```
 
+Given `{ "source": "hello", "target": null }` → `{ "source": "hello", "target": "hello" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Fetch/01-fetch-string/fixture.json`
+
+Default value when the path resolves to nothing:
+
 ```json
-{ "command": "add", "path": "$.name", "value": "=fetch($.user.name,'Anonymous')" }
+{ "command": "add", "path": "$.name", "value": "=fetch($.missing,'Unknown')" }
 ```
+
+Given `{}` → `{ "name": "Unknown" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Fetch/04-fetch-with-default/fixture.json`
+
+Other fixture-backed cases: fetching a number (`Fetch/02-fetch-number`) and a nested path
+(`Fetch/03-fetch-nested`) round-trip the value unchanged, confirming `fetch` is
+type-preserving, not string-coercing.
+
+Dynamic path computation (path itself computed by a nested function) is not fixture-backed
+but follows directly from the source — `fetch`'s first argument is evaluated like any other
+argument before the path-detection check runs:
 
 ```json
 { "command": "set", "path": "$.email", "value": "=fetch('=indirect($.pathRef)')" }
@@ -121,6 +142,17 @@ var options = ParseOptions<JToken>.CreateDefault();
 | `copy` command | Standalone command | Entire matched node | You want to duplicate a whole object/array subtree |
 | `=partial()` | Function | Nth match from multi-match | You need a specific element from a wildcard result |
 | `=indirect()` | Function | Node at a stored path | The path itself is stored in a data field |
+
+## Performance
+
+`fetch` resolves its path argument, then runs a full `SelectRelative`/path-selection call
+against the document — the same cost as any other path lookup in the engine, paid again on
+every evaluation (per matched node, if the containing command targets a wildcard). Path
+selection itself is the more expensive step for the System.Text.Json adapter than for
+Newtonsoft, per the engine-wide path-selection cost noted in
+`EXECUTION_CONCURRENCY_INVESTIGATION.md` (§6) — prefer the Newtonsoft (`TLio.Json`) adapter
+when `fetch` runs inside a hot loop over many nodes, or batch reads with a single `copy`
+instead of one `fetch` per field where the source data allows it.
 
 ## Common mistakes
 

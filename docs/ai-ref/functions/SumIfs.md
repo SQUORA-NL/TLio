@@ -23,24 +23,30 @@ Requires an odd number of arguments, at least 3 (`sum_range` plus one or more
 
 A numeric node with the conditional sum. **`0` — not a failure — when nothing matches.**
 
-## Example
+## Verified example
+
+Single criteria (the same array is both `sum_range` and the criteria range):
 
 ```json
-{
-  "command": "set", "path": "$.paid_nl_total",
-  "value": "=sumifs($.amounts,$.status,'paid',$.country,'NL')"
-}
+{ "command": "put", "path": "$.result", "value": "=sumifs($.nums, $.nums, $.crit_gt3)" }
 ```
 
-Input:
+Input: `{ "nums": [1, 2, 3, 4, 5], "crit_gt3": ">3" }`
+Output: `$.result` is `9` (`4 + 5`).
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/sumifs/01-single-criteria.json`
+
+Two criteria (AND) narrow the same array further:
+
 ```json
-{
-  "status":  ["paid", "paid", "pending"],
-  "country": ["NL", "BE", "NL"],
-  "amounts": [100, 200, 150]
-}
+{ "command": "put", "path": "$.result",
+  "value": "=sumifs($.nums, $.nums, $.crit_gt3, $.nums, $.crit_lte4)" }
 ```
-Output: `"paid_nl_total": 100` — only index 0 has `status="paid"` **and** `country="NL"`.
+
+Input: `{ "nums": [1, 2, 3, 4, 5], "crit_gt3": ">3", "crit_lte4": "<=4" }`
+Output: `$.result` is `4` — only `4` is both `>3` and `<=4` (`5` fails the second criterion).
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/sumifs/02-two-criteria.json`
 
 ## Criteria syntax
 
@@ -58,6 +64,18 @@ the comparison, and `*` / `?` work as equality wildcards:
 Numeric comparison is tried first; if either side does not parse as a number the comparison
 falls back to a case-insensitive string comparison. See [SumIf.md](SumIf.md) for the same
 rules on the single-condition form.
+
+## Performance
+
+Each criteria range is resolved once up front; the outer loop then walks `sum_range`'s length,
+and for every index checks all criteria pairs (`pairs.All(...)`) before summing. Cost scales
+with `sum_range.Length × number of criteria pairs` — a handful of pairs over a large array is
+fine, but stacking many `(criteria_range, criteria)` pairs on an already-large array multiplies,
+not adds, to the per-call cost. As with `sumif`, only the quote-stripping of each criteria
+literal happens once; `ConditionEvaluator.EvaluateCondition` still re-parses the operator prefix
+(and, for wildcard criteria, rebuilds and runs a regex) on every element of every pair — there is
+no cross-call caching, so a condition repeated across many `sumifs` calls is re-evaluated
+element-by-element every time.
 
 ## When to use
 

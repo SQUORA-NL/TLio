@@ -24,15 +24,19 @@ Used as a value in any command: `"value": "=indirect($.pathRef)"`
 The value found at the dynamically resolved path. Logs a warning if either path
 resolves to nothing.
 
-## Example
-
-Given `{ "pathRef": "$.source", "source": "hello" }`:
+## Verified example
 
 ```json
 { "command": "set", "path": "$.target", "value": "=indirect($.pathRef)" }
 ```
 
-Result: `$.target` = `"hello"` (resolved via `$.pathRef` → `"$.source"` → `"hello"`).
+Input: `{ "pathRef": "$.source", "source": "hello", "target": null }`
+Output: `{ "pathRef": "$.source", "source": "hello", "target": "hello" }`
+
+Resolved via `$.pathRef` → `"$.source"` → `"hello"`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Indirect/01-indirect-basic/fixture.json`, run through
+the engine by `FixtureTests.Indirect` in `TLio.Functions.Tests/Fixtures/FixtureTests.cs`.
 
 ## C# Usage
 

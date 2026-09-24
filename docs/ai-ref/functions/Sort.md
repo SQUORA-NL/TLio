@@ -31,7 +31,7 @@ only part of it.
 
 The sort is **stable** — elements that compare equal keep their document order.
 
-## Example
+## Verified example
 
 ```json
 { "command": "put", "path": "$.ordered", "value": "=sort($.scores, 'desc')" }
@@ -49,10 +49,22 @@ Output:
 { "scores": [10, 2, 33, 4], "ordered": [33, 10, 4, 2] }
 ```
 
+Verified by: `TLio.Functions.Tests/Fixtures/Collections/sort/02-numbers-descending.json`. The same
+group covers the `'asc'` default (`01-numbers-ascending-by-default.json` → `[2, 4, 10, 33]`) and an
+empty array staying empty (`05-empty-array-stays-empty.json`).
+
 Ordinal string ordering (uppercase before lowercase):
 
 Input: `{ "codes": ["pear", "Apple", "banana"] }`
 Output adds: `"ordered": ["Apple", "banana", "pear"]`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Collections/sort/03-strings-ordinal.json`.
+
+A mixed array of numbers and text falls back to text ordering for every element:
+
+Input: `{ "values": [10, "two", 9] }` → Output: `{ "values": [10, "two", 9], "ordered": [10, 9, "two"] }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Collections/sort/04-mixed-array-uses-text-order.json`.
 
 ## When to use
 

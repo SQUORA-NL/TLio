@@ -19,14 +19,17 @@
 
 A numeric node equal to `dividend % divisor`.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.rem", "value": "=modulo($.n,$.d)" }
+{ "command": "put", "path": "$.result", "value": "=modulo($.dividend, $.divisor)" }
 ```
 
-Input: `{ "n": 10, "d": 3, "rem": 0 }`
-Output: `{ ..., "rem": 1 }`
+Input: `{ "dividend": 10, "divisor": 3 }`
+Output: `{ "dividend": 10, "divisor": 3, "result": 1 }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/modulo/01-basic.json` (the only fixture for
+this function).
 
 ## When to use
 

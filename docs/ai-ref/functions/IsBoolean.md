@@ -18,7 +18,20 @@
 
 A boolean node. A missing path is `false`.
 
-## Example
+## Verified example
+
+```json
+{ "command": "add", "path": "$.out", "value": "=isBoolean($.active)" }
+```
+
+Input: `{ "active": true, "activeText": "true" }` → Output: `{ ..., "out": true }`
+
+Verified by `PredicateFunctionTests.TypeChecks("=isBoolean($.active)", true)` in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:123`. The same method
+proves the text `"true"` is not a boolean (`=isBoolean($.activeText)` → `false`, line 124) —
+even though `and`/`or`/`not`/`ifElse` treat that same text as truthy.
+
+As an `ifElse` condition:
 
 ```json
 { "command": "ifElse",

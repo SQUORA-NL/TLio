@@ -28,15 +28,21 @@ literal is returned as-is; a branch that is a function call is executed. If the 
 is a path that matches nothing, the function fails (and the script aborts) — the branch not
 chosen is never touched.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "put", "path": "$.calc.excess",
-  "value": "=if(=lessThan($.calc.driverAge,24),=sum($.request.cover.voluntaryExcess,300),=fetch($.request.cover.voluntaryExcess))" }
+{ "command": "add", "path": "$.band", "value": "=if(=lessThan($.age,24),'young','standard')" }
 ```
 
-Input: `{ "calc": { "driverAge": 22, "excess": 0 }, "request": { "cover": { "voluntaryExcess": 300 } } }`
-Output: `{ "calc": { "driverAge": 22, "excess": 600 }, "request": { "cover": { "voluntaryExcess": 300 } } }`
+Input: `{ "age": 22, "excess": 300 }`
+Output: `{ "age": 22, "excess": 300, "band": "young" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Logic/if/01-picks-the-true-branch.json`, run through the
+engine by `FixtureTests.Logic_If` in `TLio.Functions.Tests/Fixtures/FixtureTests.cs`. The same
+fixture group also covers the false branch
+(`02-picks-the-false-branch.json`, `band: "standard"`), a branch that is a path rather than a
+literal (`03-branch-is-a-path.json`), and a missing condition path taking the false branch
+(`05-missing-condition-path-is-false.json`).
 
 Lazy evaluation makes a guarded fetch safe:
 
@@ -48,7 +54,12 @@ Input: `{ "name": "Sanne" }`
 Output: `{ "name": "Sanne", "nickname": "-" }`
 
 `fetch($.nick)` would fail and abort the script if it ran, but it never runs — the condition
-selected the other branch.
+selected the other branch. Verified by
+`TLio.Functions.Tests/Fixtures/Logic/if/04-untaken-branch-is-not-evaluated.json`, and at the unit
+level by `IfFunctionTests.If_UntakenBranchIsNeverEvaluated` and
+`IfFunctionTests.If_GuardedFetchOfMissingPath_Succeeds` in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/IfFunctionTests.cs` — the second asserts no
+`fetch` log entry was produced at all, i.e. it never ran.
 
 ## When to use
 

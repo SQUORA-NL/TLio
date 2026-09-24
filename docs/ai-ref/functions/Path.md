@@ -18,22 +18,35 @@ None. Identical behaviour to `=scriptpath()`.
 
 Works with all adapters. Path format is adapter-specific (e.g., `$.items[0]` for JSON).
 
-## Example
+## Verified example
 
 ```json
 { "command": "add", "path": "$.items[*].loc", "value": "=path()" }
 ```
 
-Input: `{ "items": [{ "id": 1 }, { "id": 2 }] }`
-Output: `{ "items": [{ "id": 1, "loc": "$.items[0]" }, { "id": 2, "loc": "$.items[1]" }] }`
+Given `{ "items": [{ "id": 1 }, { "id": 2 }] }` →
+`{ "items": [{ "id": 1, "loc": "$.items[0]" }, { "id": 2, "loc": "$.items[1]" }] }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/ScriptPath/04-path-alias/fixture.json`
 
 ## Notes
 
-- `=path()` and `=scriptpath()` are registered separately but share the same implementation (`ScriptPath<TNode>`).
+- `path` is not a separate implementation — `ParseOptions.CreateDefault()` registers the
+  *same* `ScriptPath<TNode>` class under two names (`options.FunctionsProvider.Register("path",
+  () => new ScriptPath<TNode>())` alongside the `"scriptpath"` registration in
+  `TLio.Client/ParseOptions.cs`). `=path()` and `=scriptpath()` are indistinguishable at
+  runtime, including the 3-argument find-mode shape and its cost — see
+  [ScriptPath.md](ScriptPath.md) for that shape's full behaviour and the Performance note
+  below.
 - Use `=path()` for JLio compatibility; use `=scriptpath()` for explicit TLio naming.
 - `=path()` also has a 3-argument "find" shape — `=path(*, kinds, recursive)` — that returns
   descendant *nodes* instead of a path string. See
   [ScriptPath.md#find-mode-scriptpath-kinds-recursive](ScriptPath.md#find-mode-scriptpath-kinds-recursive).
+
+## Performance
+
+See [ScriptPath.md#performance](ScriptPath.md#performance) — `path` is the same class, so the
+same per-selection cost and the same find-mode subtree-walk cost apply unchanged.
 
 ## C# Usage
 

@@ -18,7 +18,19 @@
 
 A boolean node. A missing path is `false`.
 
-## Example
+## Verified example
+
+```json
+{ "command": "add", "path": "$.out", "value": "=isObject($.address)" }
+```
+
+Input: `{ "address": { "city": "Utrecht" }, "tags": ["a", "b"] }` → Output: `{ ..., "out": true }`
+
+Verified by `PredicateFunctionTests.TypeChecks("=isObject($.address)", true)` in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:128`. The same method
+proves an array is not an object (`=isObject($.tags)` → `false`, line 129).
+
+As an `ifElse` condition:
 
 ```json
 { "command": "ifElse",

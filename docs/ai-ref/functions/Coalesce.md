@@ -19,23 +19,27 @@ Evaluation stops at the first winner, so later candidates are never evaluated.
 
 ## Returns
 
-The first qualifying node, whole — including objects and arrays.
+The first qualifying node, whole — including objects and arrays
+(`TLio.Functions.Tests/Fixtures/Logic/coalesce/04-returns-objects-whole.json`).
 
 **If nothing qualifies the function fails, and a failed function aborts the script.** That is
 deliberate: "none of these sources had a value" is a mapping error, not an empty answer. **End
 the argument list with a literal default** whenever the absent case is legitimate.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "add", "path": "$.email",
-  "value": "=coalesce($.party.email,$.contact.email,$.broker.email,'unknown')" }
+{ "command": "add", "path": "$.phone", "value": "=coalesce($.work,$.home,$.mobile)" }
 ```
 
-Input: `{ "party": { "email": null }, "contact": { "email": "" }, "broker": { "email": "sanne@example.nl" } }`
-Output: `{ ..., "email": "sanne@example.nl" }`
+Input: `{ "work": null, "home": "", "mobile": "+31 6 1234 5678" }`
+Output: `{ "work": null, "home": "", "mobile": "+31 6 1234 5678", "phone": "+31 6 1234 5678" }`
 
-Missing paths are skipped just like nulls:
+Both `null` (`work`) and `""` (`home`) are skipped before the first real value wins.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Logic/coalesce/01-first-non-empty.json`.
+
+A candidate whose path does not exist in the document is skipped exactly the same way:
 
 ```json
 { "command": "add", "path": "$.email", "value": "=coalesce($.party.email,$.contact.email,'unknown')" }
@@ -43,6 +47,8 @@ Missing paths are skipped just like nulls:
 
 Input: `{ "party": { "role": "policyholder" } }`
 Output: `{ "party": { "role": "policyholder" }, "email": "unknown" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Logic/coalesce/02-missing-paths-are-skipped.json`.
 
 ## When to use
 
@@ -79,9 +85,10 @@ Output: `{ "party": { "role": "policyholder" }, "email": "unknown" }`
 - **Forgetting the literal default.** `=coalesce($.a,$.b)` with both absent does not produce
   `null` — it fails and aborts the whole script. If "no value" is a legal outcome, write
   `=coalesce($.a,$.b,'')` or `=coalesce($.a,$.b,'unknown')`.
-- **Expecting `0` or `false` to be skipped.** They are values and they win. `=coalesce($.voluntaryExcess,300)`
+- **Expecting `0` or `false` to be skipped.** They are values and they win. `=coalesce($.voluntaryExcess,$.standardExcess)`
   returns `0` when the customer chose a zero excess — which is almost certainly what you want,
-  but it is not what a JavaScript `||` would do.
+  but it is not what a JavaScript `||` would do
+  (verified by `TLio.Functions.Tests/Fixtures/Logic/coalesce/03-zero-is-a-value.json`).
 - **Expecting `[]` or `{}` to be skipped.** Only `null` and the empty string are skipped. An
   empty array is a value.
 - **Assuming `fetch(path, default)` behaves the same.** It does not skip a present-but-null:

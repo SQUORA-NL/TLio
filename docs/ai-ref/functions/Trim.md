@@ -24,14 +24,16 @@ A string node with leading and trailing whitespace removed via `string.Trim()`.
 
 Works with all adapters (JSON, XML, YAML).
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.name", "value": "=trim($.name)" }
+{ "command": "put", "path": "$.result", "value": "=trim($.padded)" }
 ```
 
-Input: `{ "name": "  Alice  " }`
-Output: `{ "name": "Alice" }`
+Input: `{ "padded": "  hello  " }`
+Output: `{ "padded": "  hello  ", "result": "hello" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/trim/01-both-ends.json`.
 
 ## C# Usage
 

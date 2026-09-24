@@ -20,19 +20,35 @@
 
 A boolean node. A missing value is `false`.
 
-## Example
+## Verified example
+
+```json
+{ "command": "add", "path": "$.out", "value": "=in($.status, $.allowed)" }
+```
+
+Input: `{ "status": "gold", "allowed": ["gold", "silver"] }` → Output: `{ ..., "out": true }`
+
+Verified by `PredicateFunctionTests.MembershipAndPattern("=in($.status, $.allowed)", true)` in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:139` — run end to end
+through the real engine, so the notation is verified along with the logic. The same test method
+also covers a literal option list (`=in($.status, 'gold', 'silver')` → `true`,
+`=in($.status, 'bronze', 'silver')` → `false`), numeric options
+(`=in($.age, 36, 37, 38)` → `true`), and a missing value path
+(`=in($.missing, 'gold')` → `false`), all in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:137-141`.
+
+As an `ifElse` condition — the case it was added for:
 
 ```json
 { "command": "ifElse",
-  "condition": "=in($.status, 'gold', 'silver', 'platinum')",
-  "ifScript": [{ "command": "add", "path": "$.prioritySupport", "value": true }] }
+  "condition": "=in($.status, 'gold', 'silver')",
+  "ifScript": [{ "command": "add", "path": "$.tier", "value": "eligible" }],
+  "elseScript": [{ "command": "add", "path": "$.tier", "value": "rejected" }] }
 ```
 
-Options can come from the document itself:
-
-```json
-{ "condition": "=in($.status, $.config.allowedStatuses)" }
-```
+Verified by `PredicateFunctionTests.Predicate_DrivesIfElseBranch`, which combines `in` with
+`greaterOrEqual` under `and` in one condition
+(`=and(greaterOrEqual($.age, 18), in($.status, $.allowed))`).
 
 ## When to use
 

@@ -28,7 +28,7 @@
 
 Works with all adapters (JSON, XML, YAML).
 
-## Example
+## Verified example
 
 ```json
 { "command": "add", "path": "$.str", "value": "=toString($.obj)" }
@@ -36,6 +36,8 @@ Works with all adapters (JSON, XML, YAML).
 
 Input: `{ "obj": { "a": 1, "b": 2 } }`
 Output: `{ "obj": { "a": 1, "b": 2 }, "str": "{\"a\":1,\"b\":2}" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/tostring/01-object-to-string.json`.
 
 ## Notes
 

@@ -18,7 +18,20 @@
 
 A boolean node.
 
-## Example
+## Verified example
+
+```json
+{ "command": "add", "path": "$.out", "value": "=isNull($.nickname)" }
+```
+
+Input: `{ "nickname": null, "empty": "" }` → Output: `{ ..., "out": true }`
+
+Verified by `PredicateFunctionTests.Existence("=isNull($.nickname)", true)` in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:108`. The same method
+also proves a missing path counts as null (`=isNull($.missing)` → `true`, line 109) and that an
+empty string is **not** null (`=isNull($.empty)` → `false`, line 111) — for that, use `isEmpty`.
+
+As an `ifElse` condition:
 
 ```json
 { "command": "ifElse",

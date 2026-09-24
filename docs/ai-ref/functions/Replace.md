@@ -20,20 +20,27 @@
 
 ## Returns
 
-A string node with all occurrences of `old` replaced by `new`. Case-sensitive.
+A string node with all occurrences of `old` replaced by `new`. Case-sensitive (`StringComparison.Ordinal`).
+
+An empty `old` argument is special-cased to return the source string unchanged rather than
+throwing — `string.Replace` itself rejects an empty search string, so `replace` guards against it.
 
 ## Formats
 
 Works with all adapters. Uses `string.Replace`.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.code", "value": "=replace($.code, '-', '_')" }
+{ "command": "put", "path": "$.result", "value": "=replace($.str, $.old, $.new)" }
 ```
 
-Input: `{ "code": "my-value-key" }`
-Output: `{ "code": "my_value_key" }`
+Input: `{ "str": "Hello World", "old": "World", "new": "TLio" }`
+Output: `{ ..., "result": "Hello TLio" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/replace/01-basic.json` (and
+`02-no-occurrence.json`, where `old` does not appear in `str` and the source is returned
+unchanged — not a failure).
 
 ## C# Usage
 

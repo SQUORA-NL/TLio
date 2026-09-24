@@ -48,6 +48,14 @@ Full adapter details, path-syntax tables, and "When NOT to use" guidance:
 
 ---
 
+## Performance
+
+Thread-safety rules, precompilation (`ScriptEngine<TNode>.Compile` / `MultiFormatScriptRunner.Compile`),
+and known command/function hotspots (with real numbers) are in [performance.md](performance.md) —
+read it before building a high-throughput pipeline.
+
+---
+
 ## Path Notation Basics
 
 | Adapter | Root | Child | Nested | Array index | Wildcard |
@@ -126,9 +134,9 @@ var result  = engine.Execute(scriptJson, data, JsonExecutionContext.CreateDefaul
 // ETL commands: flatten, restore, resolve, tocsv
 options.CommandsProvider.RegisterETL<JToken>();
 
-// Text functions: concat, format, substring, right, toLower, toUpper, trim, split, join,
-//   contains, startsWith, endsWith, indexOf, isEmpty, replace, regexReplace, regexExtract,
-//   parse, toString, toFixed, newguid, padleft, padright, length
+// Text functions: concat, format, substring, right, toLower, toUpper, trim, trimStart, trimEnd,
+//   split, join, contains, startsWith, endsWith, indexOf, isEmpty, replace, regexReplace,
+//   regexExtract, parse, toString, toFixed, newguid, padleft, padright, length
 options.FunctionsProvider.RegisterText<JToken>();
 
 // Math functions: sum, subtract, multiply, divide, clamp, sign, round, ceiling, floor,

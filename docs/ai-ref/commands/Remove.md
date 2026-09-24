@@ -24,14 +24,52 @@
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
 
-## Example
+## Verified example
 
 ```json
-[
-  { "command": "remove", "path": "$.tempId" },
-  { "command": "remove", "path": "$.items[?(@.active == false)]" }
-]
+// input
+{ "a": 1, "b": 2 }
+
+// script
+[ { "command": "remove", "path": "$.a" } ]
+
+// result
+{ "b": 2 }
 ```
+
+Verified by: `TLio.UnitTests/Fixtures/Remove/01-remove-property/fixture.json`
+
+Removing a path that does not exist is a no-op — the document is unchanged and a warning is
+logged, not an error:
+
+```json
+// input
+{ "a": 1 }
+
+// script
+[ { "command": "remove", "path": "$.absent" } ]
+
+// result
+{ "a": 1 }
+```
+
+Verified by: `TLio.Parity.Tests/Fixtures/Remove/05-remove-missing-is-noop/fixture.json`
+
+A `null`-valued node is a real node and is removed like any other — it does not need to hold a
+value to be a target:
+
+```json
+// input
+{ "a": null, "b": 1 }
+
+// script
+[ { "command": "remove", "path": "$.a" } ]
+
+// result
+{ "b": 1 }
+```
+
+Verified by: `TLio.Parity.Tests/Fixtures/Remove/06-remove-null-node/fixture.json`
 
 ## C# Fluent API
 

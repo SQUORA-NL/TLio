@@ -23,23 +23,27 @@ argument is silently ignored rather than rejected.
 A numeric node equal to `base − subtract`. Whole results come out as an integer (`5`, not
 `5.0`).
 
-## Example
+## Verified example
 
 ```json
-{ "command": "put", "path": "$.margin", "value": "=subtract($.premium,$.cost)" }
+{ "command": "put", "path": "$.result", "value": "=subtract($.a, $.b)" }
 ```
 
-Input: `{ "premium": 412.5, "cost": 398.2 }`
-Output: `{ "premium": 412.5, "cost": 398.2, "margin": 14.3 }`
+Input: `{ "a": 10, "b": 3, "nums": [1, 2, 3] }`
+Output: adds `"result": 7`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/subtract/01-two-scalars.json`
 
 Arrays are summed before subtracting — the mirror of `divide`:
 
 ```json
-{ "command": "put", "path": "$.result", "value": "=subtract($.nums,$.b)" }
+{ "command": "put", "path": "$.result", "value": "=subtract($.nums, $.b)" }
 ```
 
-Input: `{ "nums": [10, 5], "b": 3 }`
-Output: `{ "nums": [10, 5], "b": 3, "result": 12 }`
+Input: `{ "a": 10, "b": 3, "nums": [1, 2, 3] }`
+Output: adds `"result": 3` (`nums` sums to `6`, then `6 − 3 = 3`).
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/subtract/02-array-minus-scalar.json`
 
 ## When to use
 
@@ -63,7 +67,7 @@ Output: `{ "nums": [10, 5], "b": 3, "result": 12 }`
 |----------|-----------|-------|--------|------------------|
 | `subtract` | `a − b` | uses first 2 | each side summed first | ignored, not rejected |
 | `sum` | `a + b + …` | variadic | flattened into the total | all used |
-| `divide` | `a ÷ b` | exactly 2 | each side summed first | n/a (fails on 3rd? no — see Divide.md) |
+| `divide` | `a ÷ b` | exactly 2 | each side summed first | see [Divide.md](Divide.md) |
 | `modulo` | remainder of `a ÷ b` | exactly 2 | no (single scalar each) | n/a |
 
 ## Common mistakes

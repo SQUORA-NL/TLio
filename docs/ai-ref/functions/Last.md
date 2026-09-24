@@ -21,28 +21,28 @@ Exactly one argument. Two or more is an error.
 The last node in the match, as it is. A path that matches nothing **fails** and aborts the
 script — the same answer `partial` gives when its index addresses nothing.
 
-## Example
+## Verified example
 
 ```json
 { "command": "put", "path": "$.latest", "value": "=last($.items[*])" }
 ```
 
-Input:
+Input: `{ "items": ["first", "second", "third"] }`
+Output: `{ "items": ["first", "second", "third"], "latest": "third" }`
 
-```json
-{ "items": ["first", "second", "third"] }
-```
-
-Output:
-
-```json
-{ "items": ["first", "second", "third"], "latest": "third" }
-```
+Verified by: `TLio.Functions.Tests/Fixtures/Collections/last/01-last-element.json`, run through the
+engine by `FixtureTests.Collections_Last` in `TLio.Functions.Tests/Fixtures/FixtureTests.cs`.
 
 Objects come back whole:
 
-Input: `{ "events": [{ "on": "2024-01-01" }, { "on": "2024-06-01" }] }`
-`=last($.events[*])` → `{ "on": "2024-06-01" }`
+```json
+{ "command": "put", "path": "$.mostRecent", "value": "=last($.events[*])" }
+```
+
+Input: `{ "events": [{ "on": "2024-01-01", "type": "start" }, { "on": "2024-06-01", "type": "renewal" }] }`
+Output: adds `"mostRecent": { "on": "2024-06-01", "type": "renewal" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Collections/last/02-last-object.json`.
 
 ## When to use
 

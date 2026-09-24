@@ -26,14 +26,16 @@ A string node with trailing whitespace removed via `string.TrimEnd()`.
 
 Works with all adapters (JSON, XML, YAML).
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.name", "value": "=trimEnd($.name)" }
+{ "command": "put", "path": "$.result", "value": "=trimend($.padded)" }
 ```
 
-Input: `{ "name": "Alice  " }`
-Output: `{ "name": "Alice" }`
+Input: `{ "padded": "  hello  " }`
+Output: `{ "padded": "  hello  ", "result": "  hello" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/trimend/01-right-only.json`.
 
 ## Notes
 

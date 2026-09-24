@@ -29,14 +29,19 @@ returns the whole string, and a `count` of zero or less returns `""`. Neither th
 
 Works with all adapters.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "add", "path": "$.last4", "value": "=right($.iban, 4)" }
+{ "command": "put", "path": "$.last", "value": "=right($.str, 5)" }
 ```
 
-Input: `{ "iban": "NL91ABNA0417164300" }`
-Output: `{ "iban": "NL91ABNA0417164300", "last4": "4300" }`
+Input: `{ "str": "Hello World" }`
+Output: `{ "str": "Hello World", "last": "World" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/right/01-basic.json`, with sibling fixtures
+covering the clamp behavior against `"abc"`: `02-count-above-length.json`
+(`=right($.str, 99)` → `"abc"`, the whole string) and `03-zero-count.json`
+(`=right($.str, 0)` → `""`).
 
 ## C# Usage
 

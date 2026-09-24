@@ -5,6 +5,7 @@
 ## Syntax
 
 ```
+=padright(<source>, <width>)
 =padright(<source>, <width>, <padChar>)
 ```
 
@@ -14,20 +15,33 @@
 |---|------|----------|-------------|
 | 1 | string or path | yes | The string to pad. |
 | 2 | integer or path | yes | Total width of the output string. |
-| 3 | string or path | yes | Single character used for padding. |
+| 3 | string or path | no | Pad character. Defaults to a space `' '` when omitted. If a multi-character string is passed, only its **first** character is used — the call does not fail. |
 
 ## Returns
 
 A string node padded on the right to the specified width.
 
-## Example
+## Verified example
+
+Default padding (space):
 
 ```json
-{ "command": "set", "path": "$.padded", "value": "=padright($.id,6,'*')" }
+{ "command": "put", "path": "$.result", "value": "=padright($.str, $.width)" }
 ```
 
-Input: `{ "id": "42", "padded": "" }`
-Output: `{ ..., "padded": "42****" }`
+Input: `{ "str": "42", "width": 5, "pad": "0" }`
+Output: `{ ..., "result": "42   " }`
+
+With an explicit pad character:
+
+```json
+{ "command": "put", "path": "$.result", "value": "=padright($.str, $.width, $.pad)" }
+```
+
+Same input → `{ ..., "result": "42000" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/padright/01-default-space.json` and
+`02-with-char.json`.
 
 ## When to use
 
@@ -51,7 +65,10 @@ Output: `{ ..., "padded": "42****" }`
 
 ## Common mistakes
 
-- **padChar must be exactly 1 character**: passing `'**'` or `''` as the pad character will fail or produce unexpected results. Always use a single character.
+- **A multi-character padChar is not an error**: `padright('42', 5, '00')` produces `"42000"` —
+  only the **first** character of the third argument is used; the call does not fail.
+- **An empty-string padChar does fail**: `padright('42', 5, '')` fails and logs an error, unlike a
+  multi-character string. Omit the argument entirely for the space default instead of passing `''`.
 - **Width is total, not additional**: `padright('Hi', 6, '-')` produces `"Hi----"` (total 6 chars), not `"Hi--------"`. The width is the final string length.
 - **No truncation**: if the source string is already longer than the target width, `padright` returns it unchanged. Truncate first with `substring` if needed.
 - **Path resolution**: arguments resolve against the document root (dataContext). `@.field` inside a function refers to the ROOT, not a parent element.

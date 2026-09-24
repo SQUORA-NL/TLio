@@ -18,14 +18,19 @@
 
 A long node equal to `Math.Ceiling(value)`.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.c", "value": "=ceiling($.v)" }
+{ "command": "put", "path": "$.result", "value": "=ceiling($.up)" }
 ```
 
-Input: `{ "v": 7.1, "c": 0 }`
-Output: `{ "v": 7.1, "c": 8 }`
+Input: `{ "whole": 4, "up": 4.1, "neg": -4.1 }`
+Output: adds `"result": 5`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/ceiling/02-fractional.json`
+(`01-whole-number.json` verifies a whole input passes through unchanged — `ceiling($.whole)`
+→ `4` — and `03-negative.json` verifies the "toward +∞" direction on a negative input —
+`ceiling($.neg)` → `-4`, not `-5`.)
 
 ## When to use
 

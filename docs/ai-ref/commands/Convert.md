@@ -65,7 +65,7 @@ after a boundary address the tree that page describes:
 insist on it, and it is not the default because in that shape the *parent* element is what
 reads as the array — so a path after the boundary lands somewhere else.
 
-## Example
+## Verified example
 
 ```json
 [
@@ -82,6 +82,26 @@ reads as the array — so a path after the boundary lands somewhere else.
 
 Note the path language changing at each boundary: JSONPath, then YAML dot-notation, then
 XPath. That is inherent — the paths address the document, and the document has changed format.
+
+Verified by: `TLio.FormatConverter.Tests/Integration/MidScriptConvertTests.cs` —
+`CommandsRunOnBothSidesOfEveryBoundary` (json → yaml → xml, work done in all three sections,
+asserted against exactly this script and this result).
+
+## Performance
+
+`convert` mid-script means `MultiFormatScriptRunner` parses every section's script text on every
+call — for a script of any size, that parse is the dominant cost. The AfdApi sample
+(`samples/TLio.Sample.AfdApi/`) measured this directly: before compilation, converting
+`afdshort-to-afd2`'s multi-MB script cost around 220ms per request, roughly 130ms of which was
+pure parse time. `ConversionRegistry.cs` now calls `MultiFormatScriptRunner.Compile` once at
+startup, producing a `CompiledMultiFormatScript` that `Run()` re-executes against new documents
+without re-parsing — the multi-format analogue of `ScriptEngine<TNode>.Compile` /
+`CompiledScript<TNode>` — and `Program.cs` sends a real warm-up HTTP request through each
+direction before the server accepts traffic, so the JIT has already tiered up before a real
+client's first request. With both in place, steady-state latency for all three conversion
+directions dropped to the 15-70ms range (occasional spikes into the low hundreds of ms under
+Server GC are inherent to .NET processing multi-MB payloads repeatedly, not specific to this
+sample).
 
 ## C# setup
 

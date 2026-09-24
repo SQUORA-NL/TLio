@@ -19,13 +19,26 @@
 
 A boolean node.
 
-## Example
+## Verified example
+
+Input (subset of the shared test document):
 
 ```json
-{ "command": "ifElse",
-  "condition": "=notEquals($.country, 'NL')",
-  "ifScript": [{ "command": "add", "path": "$.needsVatCheck", "value": true }] }
+{ "name": "Sanne" }
 ```
+
+Script:
+
+```json
+[{ "command": "add", "path": "$.out", "value": "=notEquals($.name, 'Other')" }]
+```
+
+Result: `out` is `true`.
+
+Verified by: `PredicateFunctionTests.Equality("=notEquals($.name, 'Other')", true)` —
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:66`. The same test
+class also asserts `=notEquals($.age, 37)` → `false` (line 67, since `$.age` is `37`), and
+cross-format use appears in `TLio.Parity.Tests/Sweep/sweep.json:355`.
 
 ## When to use
 

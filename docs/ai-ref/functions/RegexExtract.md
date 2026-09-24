@@ -40,32 +40,38 @@ about the document, the second is about the script.
 
 Works with all adapters. Uses .NET `Regex.Match` with a one-second match timeout.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "add", "path": "$.bankCode", "value": "=regexExtract($.iban, '[A-Z]{4}')" }
+{ "command": "put", "path": "$.bank", "value": "=regexExtract($.iban, '[A-Z]{4}')" }
 ```
 
 Input: `{ "iban": "NL91ABNA0417164300" }`
-Output: `{ "iban": "NL91ABNA0417164300", "bankCode": "ABNA" }`
+Output: `{ "iban": "NL91ABNA0417164300", "bank": "ABNA" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/regexextract/01-whole-match.json`.
 
 With a capture group — the letters half of a Dutch postcode:
 
 ```json
-{ "command": "add", "path": "$.letters", "value": "=regexExtract($.postcode, '^(\\d{4})\\s*([A-Z]{2})$', 2)" }
+{ "command": "put", "path": "$.letters", "value": "=regexExtract($.postcode, '^(\\d{4})\\s*([A-Z]{2})$', 2)" }
 ```
 
 Input: `{ "postcode": "1234 AB" }`
 Output: `{ "postcode": "1234 AB", "letters": "AB" }`
 
+Verified by: `TLio.Functions.Tests/Fixtures/Text/regexextract/02-capture-group.json`.
+
 No match — an answer, not an error:
 
 ```json
-{ "command": "add", "path": "$.letters", "value": "=regexExtract($.postcode, '^\\d{9}$')" }
+{ "command": "put", "path": "$.digitsOnly", "value": "=regexExtract($.postcode, '^\\d{9}$')" }
 ```
 
 Input: `{ "postcode": "1234 AB" }`
-Output: `{ "postcode": "1234 AB", "letters": "" }`
+Output: `{ "postcode": "1234 AB", "digitsOnly": "" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/regexextract/03-no-match-empty-string.json`.
 
 ## C# Usage
 
@@ -78,6 +84,21 @@ var result = engine.Execute(
     JObject.Parse("{\"iban\":\"NL91ABNA0417164300\"}"),
     JsonExecutionContext.CreateDefault());
 ```
+
+## Performance
+
+`regexExtract` constructs a **fresh `Regex` instance on every call** —
+`new Regex(pattern, RegexOptions.None, MatchTimeout)` in `RegexExtract.cs`. This is different from
+`regexReplace` (see [its Performance section](RegexReplace.md#performance)), which calls the
+static `Regex.Replace(...)` overload and benefits from .NET's built-in process-wide regex cache
+(15 entries by default, keyed on pattern/options/timeout). Because `regexExtract` always calls
+`new Regex(...)` directly, it never reads from or writes to that cache — the same pattern re-used
+across thousands of rows in a script is recompiled from its text every single call. For most
+patterns and row counts this overhead is negligible next to the rest of the pipeline, but in a
+tight, high-volume loop with a complex pattern, this is the one to watch: there is currently no
+way from script authoring alone to avoid the recompilation, since the function is stateless by
+design (see `EXECUTION_CONCURRENCY_INVESTIGATION.md` on why functions avoid instance-level mutable
+state).
 
 ## When to use
 

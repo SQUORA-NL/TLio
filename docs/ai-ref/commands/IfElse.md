@@ -31,16 +31,30 @@
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
 
-## Example
+## Verified example
+
+Condition via `=fetch()`, if-branch taken:
 
 ```json
 {
-  "command": "ifElse",
-  "condition": "=fetch($.user.active)",
-  "ifScript":   [{ "command": "set", "path": "$.status", "value": "enabled" }],
-  "elseScript": [{ "command": "set", "path": "$.status", "value": "disabled" }]
+  "input": { "flag": true },
+  "script": [{
+    "command": "ifElse",
+    "condition": "=fetch($.flag)",
+    "ifScript":   [{ "command": "put", "path": "$.result", "value": "yes" }],
+    "elseScript": [{ "command": "put", "path": "$.result", "value": "no" }]
+  }],
+  "result": { "flag": true, "result": "yes" }
 }
 ```
+
+Verified by: `TLio.UnitTests/Fixtures/IfElse/03-condition-fetch/fixture.json`
+(parity mirror: `TLio.Parity.Tests/Fixtures/IfElse/03-condition-fetch`).
+
+The literal-boolean cases are pinned the same way, one fixture per branch:
+
+- `"condition": true` → if-branch runs — `TLio.UnitTests/Fixtures/IfElse/01-condition-true/fixture.json`
+- `"condition": false` → else-branch runs — `TLio.UnitTests/Fixtures/IfElse/02-condition-false/fixture.json`
 
 ## C# Fluent API
 

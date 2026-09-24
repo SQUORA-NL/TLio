@@ -30,23 +30,38 @@ fails, which aborts the script.
 
 Works with all adapters. Uses .NET `Regex.Replace` with a one-second match timeout.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "add", "path": "$.postcode", "value": "=regexReplace($.postcodeRaw, '^(\\d{4})([a-zA-Z]{2})$', '$1 $2')" }
+{ "command": "put", "path": "$.formatted", "value": "=regexReplace($.postcode, '^(\\d{4})([a-zA-Z]{2})$', '$1 $2')" }
 ```
 
-Input: `{ "postcodeRaw": "1234ab" }`
-Output: `{ "postcodeRaw": "1234ab", "postcode": "1234 ab" }`
+Input: `{ "postcode": "1234ab" }`
+Output: `{ "postcode": "1234ab", "formatted": "1234 ab" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/regexreplace/02-backreference.json`.
 
 Stripping separators out of a licence plate:
 
 ```json
-{ "command": "add", "path": "$.plateCompact", "value": "=regexReplace($.plate, '[^A-Z0-9]', '')" }
+{ "command": "put", "path": "$.compact", "value": "=regexReplace($.plate, '[^A-Z0-9]', '')" }
 ```
 
 Input: `{ "plate": "XX-99-YY" }`
-Output: `{ "plate": "XX-99-YY", "plateCompact": "XX99YY" }`
+Output: `{ "plate": "XX-99-YY", "compact": "XX99YY" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/regexreplace/01-strip-separators.json`.
+
+No match — the source is returned unchanged:
+
+```json
+{ "command": "put", "path": "$.formatted", "value": "=regexReplace($.postcode, '^\\d{6}$', 'X')" }
+```
+
+Input: `{ "postcode": "1234ab" }`
+Output: `{ "postcode": "1234ab", "formatted": "1234ab" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/regexreplace/03-no-match-unchanged.json`.
 
 ## C# Usage
 
@@ -59,6 +74,20 @@ var result = engine.Execute(
     JObject.Parse("{\"plate\":\"XX-99-YY\"}"),
     JsonExecutionContext.CreateDefault());
 ```
+
+## Performance
+
+`regexReplace` calls the **static** `Regex.Replace(str, pattern, replacement, RegexOptions.None,
+MatchTimeout)` overload rather than constructing a `Regex` instance itself. .NET's static
+`Regex.Replace`/`Match`/`IsMatch` methods share a process-wide cache of compiled regexes (15
+entries by default, keyed on pattern + options + timeout), so calling `regexReplace` with the same
+pattern repeatedly — the common case of one script's pattern applied across many rows — reuses the
+compiled regex from the second call onward instead of recompiling it each time. This is the
+opposite of `regexExtract` (see [its Performance section](RegexExtract.md#performance)), which
+constructs `new Regex(...)` directly and therefore never touches that cache. If a script rotates
+through more than 15 distinct patterns in the same process, older entries are evicted and get
+recompiled again on next use — worth knowing if a very large, varied set of `regexReplace` calls
+runs in one long-lived process.
 
 ## When to use
 

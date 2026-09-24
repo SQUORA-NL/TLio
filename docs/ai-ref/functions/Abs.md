@@ -18,14 +18,19 @@
 
 A numeric node equal to `Math.Abs(value)`.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.ab", "value": "=abs($.neg)" }
+{ "command": "put", "path": "$.result", "value": "=abs($.neg)" }
 ```
 
-Input: `{ "neg": -5, "ab": 0 }`
-Output: `{ "neg": -5, "ab": 5 }`
+Input: `{ "pos": 3, "neg": -5, "frac": -2.7 }`
+Output: adds `"result": 5`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/abs/02-negative.json`
+(`01-positive.json` verifies a positive input passes through unchanged, `=abs($.pos)` → `3`;
+`03-negative-fractional.json` verifies a negative fraction, `=abs($.frac)` → `2.7`, so the
+result stays a `double`/`float` node rather than being rounded.)
 
 ## When to use
 

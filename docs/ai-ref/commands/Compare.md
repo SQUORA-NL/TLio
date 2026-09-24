@@ -29,8 +29,8 @@
 
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
-| fromPath | string | yes | — | Path to the first node (left-hand side of comparison). Alias: `firstPath`. |
-| toPath | string | yes | — | Path to the second node (right-hand side). Alias: `secondPath`. |
+| firstPath | string | yes | — | Path to the first node (left-hand side of comparison). JLio-compatible alias: `fromPath` (write-only — sets `firstPath`). |
+| secondPath | string | yes | — | Path to the second node (right-hand side). JLio-compatible alias: `toPath` (write-only — sets `secondPath`). |
 | resultPath | string | yes | — | Path where the result is written (upsert). |
 | settings | object | no | — | Diff configuration. Omit for defaults. |
 | settings.arraySettings | array | no | `[]` | Per-array key matching rules. |
@@ -100,23 +100,93 @@ repeated `<object>` elements under `resultPath`.
 
 See [overview.md](../overview.md) for per-adapter path syntax.
 
-## Examples
+## Verified example
 
-### Deep object diff
-
-```json
-[{ "command": "compare", "firstPath": "$.expected", "secondPath": "$.actual", "resultPath": "$.diff" }]
-```
+### Scalar — using the `fromPath`/`toPath` aliases
 
 Input:
 
 ```json
-{ "expected": { "a": 1, "only": true }, "actual": { "a": 2 } }
+{ "a": 10, "b": 20 }
 ```
 
-Result at `$.diff` — a `valueDifference` for `a` and a `structureDifference` for `only`.
+Script:
+
+```json
+[{ "command": "compare", "fromPath": "$.a", "toPath": "$.b", "resultPath": "$.result" }]
+```
+
+Result:
+
+```json
+{ "a": 10, "b": 20, "result": "less" }
+```
+
+`fromPath`/`toPath` are the JLio-compatible spellings of `firstPath`/`secondPath` — this
+fixture is the one place in the corpus that exercises them instead of the canonical names.
+
+Verified by: `TLio.UnitTests/Fixtures/Compare/04-compare-from-to-path/fixture.json`
+
+### Structured diff — object with a value difference and a structure difference
+
+Input:
+
+```json
+{
+  "first": { "a": 1, "b": "x", "only": true },
+  "second": { "a": 2, "b": "x" }
+}
+```
+
+Script:
+
+```json
+[{
+  "command": "compare",
+  "firstPath": "$.first",
+  "secondPath": "$.second",
+  "resultPath": "$.result",
+  "settings": { "resultTypes": ["valueDifference", "structureDifference"] }
+}]
+```
+
+Result at `$.result`:
+
+```json
+[
+  {
+    "foundDifference": true,
+    "differenceType": "valueDifference",
+    "differenceSubType": "lessThan",
+    "firstPath": "$.first.a",
+    "secondPath": "$.second.a",
+    "description": "The values are different LessThan. Source: ($.first.a) --> 1 - Target:($.second.a) --> 2"
+  },
+  {
+    "foundDifference": true,
+    "differenceType": "structureDifference",
+    "differenceSubType": "notEquals",
+    "firstPath": "$.first.only",
+    "secondPath": "$.second.only",
+    "description": "The structure is different. Source: ($.first.only) --> True - Target:($.second.only) --> False"
+  }
+]
+```
+
+Verified by: `TLio.UnitTests/Fixtures/Compare/05-compare-object-diff/fixture.json`
 
 ### Array diff with key matching
+
+Input:
+
+```json
+{
+  "first": [{ "id": 1, "v": "a" }, { "id": 2, "v": "b" }],
+  "second": [{ "id": 2, "v": "b" }, { "id": 1, "v": "a" }]
+}
+```
+
+Script:
 
 ```json
 [{
@@ -125,24 +195,53 @@ Result at `$.diff` — a `valueDifference` for `a` and a `structureDifference` f
   "secondPath": "$.second",
   "resultPath": "$.result",
   "settings": {
-    "arraySettings": [{ "arrayPath": "$.first", "keyPaths": ["@.id"] }],
-    "resultTypes": ["valueDifference", "structureDifference"]
+    "arraySettings": [{ "arrayPath": "$.first", "keyPaths": ["@.id"], "uniqueIndexMatching": true }],
+    "resultTypes": ["arrayDifference"]
   }
 }]
 ```
 
-Elements are paired by `id` rather than by position, so a reordered array reports no
-differences, and a changed field inside a matched element is reported against that
-element's path (`$.first[0].v`).
+Elements are paired by `id` rather than by position, so the reordered array reports no
+`valueDifference`/`structureDifference` entries — only `arrayDifference` entries, and because
+`uniqueIndexMatching` is on, one `indexDifference` per element that moved:
+
+```json
+[
+  { "foundDifference": false, "differenceType": "arrayDifference", "differenceSubType": "equals",
+    "firstPath": "$.first", "secondPath": "$.second",
+    "description": "Both arrays have 2 items. Source: ($.first) - Target:($.second)" },
+  { "foundDifference": false, "differenceType": "arrayDifference", "differenceSubType": "equals",
+    "firstPath": "$.first", "secondPath": "$.second",
+    "description": "Both arrays contain a matching item. Source: ($.first) - Target:($.second). Value:{\"id\":1,\"v\":\"a\"}" },
+  { "foundDifference": true, "differenceType": "arrayDifference", "differenceSubType": "indexDifference",
+    "firstPath": "$.first", "secondPath": "$.second",
+    "description": "The indexes of the matched items are different. Source: ($.first)[0] - Target:($.second)[1]" },
+  { "foundDifference": false, "differenceType": "arrayDifference", "differenceSubType": "equals",
+    "firstPath": "$.first", "secondPath": "$.second",
+    "description": "Both arrays contain a matching item. Source: ($.first) - Target:($.second). Value:{\"id\":2,\"v\":\"b\"}" },
+  { "foundDifference": true, "differenceType": "arrayDifference", "differenceSubType": "indexDifference",
+    "firstPath": "$.first", "secondPath": "$.second",
+    "description": "The indexes of the matched items are different. Source: ($.first)[1] - Target:($.second)[0]" }
+]
+```
+
+Verified by: `TLio.UnitTests/Fixtures/Compare/06-compare-array-key-matching/fixture.json`
 
 ### Report only real differences
 
-`resultTypes` filters by type, not by `foundDifference`. To drop the informational
+`resultTypes` filters by `differenceType`, not by `foundDifference` — to drop the informational
 "they match" entries, exclude `noDifference` and `arrayDifference`:
 
 ```json
 "settings": { "resultTypes": ["valueDifference", "structureDifference", "typeDifference"] }
 ```
+
+## Cross-format note
+
+On XML, an empty element (`<k/>`) reads as *null* rather than as an empty object — so two
+empty elements verdict `equal` and an empty element against a scalar verdicts `different`,
+the same compact answers JSON gives for `null`, rather than a `typeDifference` against an
+empty object. See `docs/behaviour-decisions.md`, section E5, for the full rationale.
 
 ## C# Fluent API
 
@@ -213,7 +312,8 @@ var diff = new TLioScript<JToken>()
   `keyPaths` are relative to an array element: use `"id"` or `"@.id"`, not `"$.first[0].id"`.
 
 - **Expecting `compare` to modify source data.**
-  `compare` is read-only on `fromPath` and `toPath`. It writes only to `resultPath`.
+  `compare` is read-only on `firstPath`/`fromPath` and `secondPath`/`toPath`. It writes only
+  to `resultPath`.
 
 - **Comparing nodes that do not exist.**
   If either path resolves to no node, nothing is written and a warning is logged.
@@ -225,7 +325,8 @@ var diff = new TLioScript<JToken>()
 - **Trace: `N result(s), differences: true|false`** — the structured shape was used.
   `differences: false` means every entry is informational.
 - **No trace / result path unchanged** — one or both paths did not resolve to a node.
-  Verify `fromPath` and `toPath` point to existing nodes in the current document.
+  Verify `firstPath` and `secondPath` (or their `fromPath`/`toPath` aliases) point to existing
+  nodes in the current document.
 - **Fewer entries than expected** — `settings.resultTypes` is filtering them out.
 - **Array reported as fully different despite matching content** — `arrayPath` did not match
   the array's absolute path, so index-based comparison was used on a reordered array.

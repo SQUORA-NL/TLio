@@ -20,10 +20,12 @@ A **new array**. Elements are deep clones, so the source array is never modified
 
 - Order-preserving: the **first** occurrence of a value keeps its position, later duplicates are dropped.
 - Equality is structural (`DeepEquals`), so two identical objects collapse into one — not reference equality.
-- A single non-array node comes back as a one-element array, matching how the Math pack flattens a scalar into a one-item list.
-- An array that exists but is empty comes back as an empty array. That is an answer, not a failure.
+- A single non-array node comes back as a one-element array, matching how the Math pack flattens a scalar into a one-item list
+  (`TLio.Functions.Tests/Fixtures/Collections/distinct/04-scalar-becomes-one-element-array.json`).
+- An array that exists but is empty comes back as an empty array. That is an answer, not a failure
+  (`TLio.Functions.Tests/Fixtures/Collections/distinct/03-empty-array-stays-empty.json`).
 
-## Example
+## Verified example
 
 ```json
 { "command": "put", "path": "$.unique", "value": "=distinct($.codes)" }
@@ -44,10 +46,14 @@ Output:
 }
 ```
 
+Verified by: `TLio.Functions.Tests/Fixtures/Collections/distinct/01-strings-first-occurrence-wins.json`.
+
 Objects de-duplicate structurally:
 
-Input: `{ "c": [{ "code": "wa" }, { "code": "casco" }, { "code": "wa" }] }`
-Output adds: `"unique": [{ "code": "wa" }, { "code": "casco" }]`
+Input: `{ "coverages": [{ "code": "wa", "premium": 120 }, { "code": "casco", "premium": 240 }, { "code": "wa", "premium": 120 }] }`
+Output adds: `"unique": [{ "code": "wa", "premium": 120 }, { "code": "casco", "premium": 240 }]`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Collections/distinct/02-objects-compare-structurally.json`.
 
 ## When to use
 

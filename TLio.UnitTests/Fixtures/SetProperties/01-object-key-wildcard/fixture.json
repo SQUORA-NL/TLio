@@ -1,0 +1,17 @@
+{
+  "input": {
+    "widgets": {
+      "w1": { "status": "active", "qty": 1 },
+      "w2": { "status": "inactive", "qty": 2 }
+    }
+  },
+  "script": [
+    { "command": "setProperties", "path": "$.widgets.*", "properties": ["status"], "value": "=toArray()" }
+  ],
+  "result": {
+    "widgets": {
+      "w1": { "status": ["active"], "qty": 1 },
+      "w2": { "status": ["inactive"], "qty": 2 }
+    }
+  }
+}

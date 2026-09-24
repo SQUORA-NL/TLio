@@ -32,14 +32,38 @@ Two-argument form (select parent, name child property):
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
 
-## Example
+## Verified example
+
+Update an existing property (the node must already exist):
 
 ```json
-[
-  { "command": "set", "path": "$.address.city", "value": "Amsterdam" },
-  { "command": "set", "path": "$.items[*]", "property": "active", "value": true }
-]
+// input
+{ "name": "old" }
+
+// script
+[ { "command": "set", "path": "$.name", "value": "new" } ]
+
+// result
+{ "name": "new" }
 ```
+
+Verified by: `TLio.UnitTests/Fixtures/Set/01-set-string/fixture.json`
+
+`set` never creates a missing path — a target that does not exist is a no-op, document
+unchanged:
+
+```json
+// input
+{ "a": 1 }
+
+// script
+[ { "command": "set", "path": "$.absent", "value": "x" } ]
+
+// result
+{ "a": 1 }
+```
+
+Verified by: `TLio.Parity.Tests/Fixtures/Set/07-set-missing-is-noop/fixture.json`
 
 ## When to use
 

@@ -18,14 +18,16 @@
 
 A double node equal to `Math.Sqrt(value)`.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.sq", "value": "=sqrt($.n)" }
+{ "command": "put", "path": "$.result", "value": "=sqrt($.perfect)" }
 ```
 
-Input: `{ "n": 16, "sq": 0 }`
-Output: `{ "n": 16, "sq": 4 }`
+Input: `{ "perfect": 9, "two": 2 }`
+Output: adds `"result": 3`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/sqrt/01-perfect-square.json`
 
 ## When to use
 
@@ -34,13 +36,19 @@ Output: `{ "n": 16, "sq": 4 }`
 
 ## When NOT to use
 
-- The input might be **negative** — `sqrt` of a negative number produces `NaN`, not a failure. You must guard against negative inputs explicitly.
+- The input might be **negative** — `sqrt` of a negative number is a script failure (see Common
+  mistakes), not a silent `NaN`. Guard against negative inputs explicitly if they are possible.
 - You need a general **Nth root** — use `pow($.x, 0.5)` for square root via pow if you need consistency, or implement via `pow` for other roots.
 - You need to raise a value to a power — use `pow`.
 
 ## Common mistakes
 
-- **Negative input produces NaN, not failure** — `sqrt(-4)` returns `NaN` silently. If the input might be negative, validate it before calling `sqrt`.
-- **Path not found = failure** — if the path does not resolve, the command fails (distinct from NaN).
+- **Negative input fails the function, it does not return `NaN`.** `Sqrt<TNode>.Execute`
+  checks the result of `Math.Sqrt` for `NaN`/`Infinity` and turns either into a failed
+  function with a logged error — `=sqrt(-4)` aborts the script rather than writing `NaN`
+  into the document. Verified by `SqrtTests.Sqrt_Negative_ReturnsFailed`
+  (`TLio.Functions.Tests/FunctionsTests/MathTests/SqrtTests.cs`).
+- **Path not found = failure** — if the path does not resolve, the command fails, for the
+  same reason (no numeric value to take the root of).
 - **Expecting an integer result** — `sqrt(2)` is `1.414...`, a double. If you need an integer, wrap with `round`/`floor`/`ceiling`.
 - **Wrong path scope** — path arguments resolve against the document root.

@@ -16,16 +16,38 @@
 
 ## Returns
 
-A numeric node equal to the median value.
+A numeric node equal to the median value. The array is sorted internally before picking
+the middle value(s) — the input order does not matter.
 
-## Example
+## Notes
+
+- Path not found (the argument does not resolve at all) → command **fails**.
+- A present-but-**empty** array is different: `median` returns `0` rather than failing
+  (same rule as `avg`, unlike `min`/`max`, which fail on empty too).
+- Found-but-`null` values are treated as `0` and take part in the sort like any other value.
+
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.mid", "value": "=median($.values)" }
+{ "command": "put", "path": "$.result", "value": "=median($.odd)" }
 ```
 
-Input: `{ "values": [3, 1, 4, 1, 5], "mid": 0 }`
-Output: `{ ..., "mid": 3 }`
+Input: `{ "odd": [1, 3, 5], "even": [1, 2, 3, 4], "a": 2, "b": 6 }`
+Output: adds `"result": 3` — the middle of the three sorted values.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/median/01-odd-count.json`
+
+An even-length array averages its two middle values:
+
+```json
+{ "command": "put", "path": "$.result", "value": "=median($.even)" }
+```
+
+Same input → adds `"result": 2.5` (`(2 + 3) / 2`, the two central values of `[1, 2, 3, 4]`).
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/median/02-even-count.json`
+(`03-two-scalars.json` verifies `=median($.a, $.b)` — with only two values, the median is
+their mean, `4`.)
 
 ## When to use
 

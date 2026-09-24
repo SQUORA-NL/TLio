@@ -23,7 +23,22 @@ A boolean node. A missing path is `false` — it has no type at all.
 JSON carries its own types, so `"37"` is a string and `37` is not. XML and YAML scalars have
 no type system; there a value is reported by its apparent type, so `37` reads as a number.
 
-## Example
+## Verified example
+
+```json
+{ "command": "add", "path": "$.out", "value": "=isString($.name)" }
+```
+
+Input: `{ "name": "Sanne", "ageText": "37", "age": 37 }` → Output: `{ ..., "out": true }`
+
+Verified by `PredicateFunctionTests.TypeChecks("=isString($.name)", true)` in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:117`. The same method
+proves the JSON *type* wins over appearance — numeric text is still a string
+(`=isString($.ageText)` → `true`, line 118) and an actual number is not
+(`=isString($.age)` → `false`, line 119) — and that a missing path has no type at all
+(`=isString($.missing)` → `false`, line 130).
+
+As an `ifElse` condition:
 
 ```json
 { "command": "ifElse",

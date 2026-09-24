@@ -17,16 +17,23 @@
 
 ## Returns
 
-A long node with the index, or -1 if not found.
+A long node with the index, or -1 if not found. The match is **case-insensitive**
+(`StringComparison.OrdinalIgnoreCase`) — `indexOf('Hello World','world')` is `6`, not `-1`.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.pos", "value": "=indexOf($.str,$.sub)" }
+{ "command": "put", "path": "$.result", "value": "=indexof($.str, $.sub)" }
 ```
 
-Input: `{ "str": "Hello World", "sub": "World", "pos": 0 }`
-Output: `{ ..., "pos": 6 }`
+Input: `{ "str": "Hello World", "sub": "World", "no": "XYZ" }`
+Output: `{ "str": "Hello World", "sub": "World", "no": "XYZ", "result": 6 }`
+
+Verified by `TLio.Functions.Tests/Fixtures/Text/indexof/01-found.json`. The same directory covers
+the not-found case (`02-not-found.json`, `result: -1`), and the case-insensitive match is proven
+at the unit level by `IndexOfTests.IndexOf_CaseInsensitive_LowercaseMatchesUppercase` in
+`TLio.Functions.Tests/FunctionsTests/TextTests/IndexOfTests.cs` — `"world"` still finds
+`"Hello World"` at index 6.
 
 ## When to use
 
@@ -39,7 +46,9 @@ Output: `{ ..., "pos": 6 }`
 - You only need a boolean answer — use `contains` instead. Using `indexOf` and comparing to -1 is noisier and requires an extra step.
 - You only need to check the prefix — use `startsWith` instead.
 - You only need to check the suffix — use `endsWith` instead.
-- You need case-insensitive search — normalise with `toLower` in a prior step.
+- You need a case-*sensitive* search — `indexOf` (like `contains`) already ignores case, and
+  there is no built-in switch to make it sensitive; compare an extracted `substring` with `equals`
+  instead.
 - The input may be null — `indexOf` will fail on a null source; guard with `isEmpty` first.
 
 ## Comparison
@@ -53,7 +62,10 @@ Output: `{ ..., "pos": 6 }`
 
 ## Common mistakes
 
-- **Case sensitivity**: `indexOf` is case-sensitive. `indexOf($.str,'world')` returns -1 for `"Hello World"`. Normalise first.
+- **Assuming it is case-sensitive.** It is not: `indexOf` matches ordinally *ignoring case*, so
+  `indexOf($.str,'world')` finds `"Hello World"` at position 6, not -1. If a case-sensitive match
+  is what you actually need, there is no built-in for it — compare the raw text yourself (e.g.
+  `equals(substring(...), ...)`).
 - **Treating result as boolean**: a return value of `0` means the substring was found at position 0 (the start) — it does NOT mean "not found". Only `-1` means not found.
 - **Null input**: null source argument fails. Guard with `isEmpty` first.
 - **Path resolution**: arguments resolve against the document root (dataContext). `@.field` inside a function refers to the ROOT, not a parent element.

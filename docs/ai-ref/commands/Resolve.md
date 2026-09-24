@@ -12,7 +12,7 @@
 {
   "command": "resolve",
   "path": "$.orders[*]",
-  "settings": [
+  "resolveSettings": [
     {
       "referencesCollectionPath": "$.products",
       "resolveKeys": [
@@ -31,7 +31,7 @@
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | path | string | yes | — | Selects the nodes to resolve (the "left side"). |
-| settings | array | yes | — | Array of resolve setting objects (see Settings below). |
+| resolveSettings | array | yes | — | Array of resolve setting objects (see Settings below). The JSON key is `resolveSettings`, not `settings` — see Common mistakes. |
 
 ### Resolve setting object
 
@@ -108,13 +108,74 @@ the match.
 **Functions in the value**: — no value field  
 **Functions in the path**: — not resolved here; resolve it in a preceding step
 
-## Notes
+## Verified example
 
-- The JSON key for the settings array is `"resolveSettings"` (the `settings` field name in JSON).
-- The join is indexed once per `resolveSettings` entry and reused for every node `path` selects —
-  runtime scales with the number of targets, not with `targets × references`. This holds for a
-  scalar `keyPath`/`referenceKeyPath` pair (the common case); an array-based (`[*]`) key still
-  falls back to an exact scan, as it always has.
+The textbook join: one `orders` array, one `products` reference collection, matched on
+`productId`/`id`, writing a single derived field back onto the order.
+
+```json
+{
+  "input": {
+    "orders":   [{ "productId": 1, "qty": 2 }],
+    "products": [{ "id": 1, "name": "Widget" }]
+  },
+  "script": [
+    {
+      "command": "resolve",
+      "path": "$.orders[*]",
+      "resolveSettings": [
+        {
+          "referencesCollectionPath": "$.products[*]",
+          "resolveKeys": [
+            { "keyPath": "@.productId", "referenceKeyPath": "@.id" }
+          ],
+          "values": [
+            { "targetPath": "@.productName", "value": "Widget" }
+          ]
+        }
+      ]
+    }
+  ],
+  "result": {
+    "orders":   [{ "productId": 1, "qty": 2, "productName": "Widget" }],
+    "products": [{ "id": 1, "name": "Widget" }]
+  }
+}
+```
+
+Verified by: `TLio.UnitTests/CommandsTests/ETLTests/ResolveTests.cs::Resolve_KeyMatch_SetsValueAtTargetPath`
+(the test writes the value as a fixed `"Widget"` literal rather than `=fetch(@.name)`, but the
+join mechanics — `keyPath`/`referenceKeyPath` matching and `@.productName` as `targetPath` — are
+identical to the syntax example above).
+
+A cross-format variant of the same shape — one JSON-notation lookup by `@.code`/`@.code` and one
+dynamic-`targetPath` lookup via `=fetch(@.to)` — runs through JSON, XML and YAML in
+`TLio.Parity.Tests/Sweep/sweep.json` (`$.etl.resolveRef`, `$.etl.dynamicRef`) and
+`TLio.Parity.Tests/Sweep/sweep.xml`.
+
+## Performance
+
+`resolve` builds the join once per `resolveSettings` entry, not once per target: for each entry,
+`BuildIndex` selects the reference collection a single time and buckets every reference by a
+composite key made from its `referenceKeyPath` values, before the command starts iterating the
+nodes `path` selects. Each target then does one bucket lookup instead of a scan of the whole
+reference collection, so runtime scales with the number of targets `path` selects, not with
+`targets × references`. A bucket lookup is a performance heuristic only — `IsMatch` re-verifies
+every candidate it returns with `DeepEquals`, so a hash collision (two different keys landing in
+the same bucket) can only add a few extra comparisons, never a wrong match. This holds for a
+scalar `keyPath`/`referenceKeyPath` pair, which is the common case; a reference whose key
+extraction yields more than one value for some key (an array-based `[*]` key, most commonly) is
+excluded from the index and always falls back to the old exact linear scan for that one
+reference, same as before the indexing was added.
+
+`ResolveIndexingTests.EachTargetFindsItsOwnMatch_AmongManyReferences` in
+`TLio.UnitTests/CommandsTests/ETLTests/ResolveIndexingTests.cs` is the clearest illustration: 5,000
+references are indexed once, and four separate targets each resolve their own distinct match
+(and one target that matches nothing resolves to nothing) — a full per-target scan of the
+reference collection would have made this `4 × 5000` comparisons instead of one indexing pass
+plus four bucket lookups. The same file's `ManyReferencesShareOneKey_AllAreReturned` and
+`TypeMismatch_StillDoesNotMatch_AmongManyCandidates` tests confirm a shared or colliding bucket
+never turns into a missed or false match.
 
 ## Formats
 

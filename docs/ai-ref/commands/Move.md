@@ -26,14 +26,34 @@
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
 
-## Example
+## Verified example
+
+Input:
 
 ```json
-[
-  { "command": "move", "fromPath": "$.draft.title", "toPath": "$.published.title" },
-  { "command": "move", "fromPath": "$.temp", "toPath": "$.permanent" }
-]
+{ "src": "moved" }
 ```
+
+Script:
+
+```json
+[{ "command": "move", "fromPath": "$.src", "toPath": "$.dst" }]
+```
+
+Result:
+
+```json
+{ "dst": "moved" }
+```
+
+`src` is gone from the result — `move` removed it from its parent after the copy
+succeeded (`CopyMoveBase<TNode>.Execute`, `IsMove` branch).
+
+Verified by: `TLio.UnitTests/Fixtures/Move/01-move-property/fixture.json`
+
+> `move` with `toPath: "/"` on an XML document replaces the document body but keeps the
+> document element's own name — see [Rename.md](Rename.md#formats) for the one operation
+> that *can* rename the document element itself.
 
 ## C# Fluent API
 
@@ -79,6 +99,6 @@ var script = new TLioScript<JToken>()
 
 | Trace message | What it means | Action |
 |---------------|---------------|--------|
-| `"0 nodes found at FromPath"` | `fromPath` matched nothing — noop, source not deleted, document unchanged | Verify the path expression; check capitalisation and array indices |
-| `"moved N node(s) from X to Y. Source 'X' removed."` | Success — N nodes written to destination and source deleted | Confirm the "Source removed" note; source path is now absent from document |
+| `"FromPath 'X' matched 0 nodes; nothing moved."` | `fromPath` matched nothing — noop, source not deleted, document unchanged | Verify the path expression; check capitalisation and array indices |
+| `"moved N node(s) from 'X' to 'Y'. Source 'X' removed."` | Success — N nodes written to destination and source deleted | Confirm the "Source removed" note; source path is now absent from document |
 | No trace entry for this step | Step was skipped (script compilation issue) | Check script JSON for syntax errors |

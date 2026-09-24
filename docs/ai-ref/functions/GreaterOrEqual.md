@@ -19,13 +19,27 @@
 
 A boolean node. `false` (with a warning) when either side is missing, null, an object or an array.
 
-## Example
+## Verified example
+
+Input (subset of the shared test document):
 
 ```json
-{ "command": "ifElse",
-  "condition": "=greaterOrEqual($.age, 18)",
-  "ifScript": [{ "command": "add", "path": "$.adult", "value": true }] }
+{ "age": 37 }
 ```
+
+Script:
+
+```json
+[{ "command": "add", "path": "$.out", "value": "=greaterOrEqual($.age, 37)" }]
+```
+
+Result: `out` is `true` — the boundary value itself passes.
+
+Verified by: `PredicateFunctionTests.Ordering("=greaterOrEqual($.age, 37)", true)` —
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:75`. A full `ifElse`
+built on this same family of predicates is asserted end-to-end in
+`PredicateFunctionTests.Predicate_DrivesIfElseBranch` (condition
+`=and(greaterOrEqual($.age, 18), in($.status, $.allowed))`, lines 151-165).
 
 ## When to use
 

@@ -66,6 +66,10 @@ public class FixtureTests
     public void DecisionTable(JToken input, string script, JToken expected)
         => RunFixture(input, script, expected);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.Load), new object[] { "SetProperties" })]
+    public void SetProperties(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.Load), new object[] { "EscapeChars" })]
     public void EscapeChars(JToken input, string script, JToken expected)
         => RunFixture(input, script, expected);

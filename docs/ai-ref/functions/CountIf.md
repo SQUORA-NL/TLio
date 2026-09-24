@@ -13,20 +13,25 @@
 | # | Type | Required | Description |
 |---|------|----------|-------------|
 | 1 | array path | yes | Path to the array to evaluate. |
-| 2 | string literal | yes | The value to match (single-quoted: `'active'`). |
+| 2 | string literal or path | yes | The criteria to match — either a single-quoted literal (`'active'`) or a path to a string node holding the criteria string. |
 
 ## Returns
 
-A long node with the count of matching elements.
+A long node with the count of matching elements. `0` when nothing matches (not a failure).
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.active_count", "value": "=countif($.status,'active')" }
+{ "command": "put", "path": "$.result", "value": "=countif($.nums, $.crit_gt3)" }
 ```
 
-Input: `{ "status": ["active","inactive","active"], "active_count": 0 }`
-Output: `{ ..., "active_count": 2 }`
+Input: `{ "nums": [1, 2, 3, 4, 5], "cat": ["A", "B", "A", "C", "A"], "crit_gt3": ">3", "crit_A": "A", "crit_Z": "Z" }`
+Output: `..., "result": 2` — `4` and `5` are the only elements `>3`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/countif/01-numeric-criteria.json`. The sibling
+`02-string-criteria.json` runs `=countif($.cat, $.crit_A)` over the same input → `3` (string
+equality against `"A"`), and `03-no-match.json` confirms a criteria that matches nothing
+(`$.crit_Z` = `"Z"`) returns `0`, not a failure.
 
 ## Criteria syntax
 
@@ -48,6 +53,15 @@ functions share the same evaluator.
 - You need an **unconditional count** — use `count`.
 - You need **two or more conditions at once** (AND) — use `countifs`.
 - The criteria is a **numeric literal** — wrap it in single quotes: `'42'`, not `42`.
+
+## Performance
+
+`countif` walks the resolved range once, calling `ConditionEvaluator.EvaluateCondition` per
+element — cost is O(n) in the range's length. The criteria string itself is parsed fresh on
+every call (no compiled/cached predicate), so re-running the same `countif` many times (e.g.
+once per row from an outer loop) re-parses the same criteria each time; that cost is small
+per call but adds up linearly with how often the function runs, separately from the O(n) scan
+inside each call.
 
 ## Comparison
 

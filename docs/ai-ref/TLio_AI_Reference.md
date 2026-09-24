@@ -4,6 +4,9 @@ TLio is a data-format-agnostic scripting framework. Scripts are JSON arrays of c
 values can be literals or `=function()` expressions. The same script runs against JSON, XML, or
 YAML documents by swapping the execution context — no script changes needed.
 
+For throughput, thread-safety and precompilation guidance (which commands/functions are expensive
+and why), see [performance.md](performance.md).
+
 ---
 
 ## Adapter Selection
@@ -1810,6 +1813,8 @@ Input: `{ "name": "  Alice" }` → `"name": "Alice"`
 |---------|------------------------|-------------------|--------|------|
 | add | Create-only; noop if field exists | ✅ | `.Add(v).OnPath(p)` | built-in |
 | compare | Classify two values, or structurally diff two sub-trees | ❌ | `.Compare(a).With(b).Using(s).SetResultOn(r)` | built-in |
+| convert | Change the whole document's format mid-script (needs `MultiFormatScriptRunner`) | — (`to` is a literal) | — | FormatConverter |
+| convertValue | Convert one value's format in place; document format unchanged | — (`from`/`to` are literals; path supports wildcards) | — | FormatConverter |
 | copy | Copy node, keep source | ❌ | `.Copy().From(a).To(b)` | built-in |
 | decisionTable | 3+ outcomes or evolving rule sets | ✅ (results only) | — | built-in |
 | flatten | Nested → flat key-value | ❌ | — | ETL |
@@ -1818,29 +1823,44 @@ Input: `{ "name": "  Alice" }` → `"name": "Alice"`
 | move | Copy node, delete source | ❌ | `.Move().From(a).To(b)` | built-in |
 | put | Upsert — safe default write | ✅ | `.Put(v).OnPath(p)` | built-in |
 | remove | Delete a node | ❌ | `.Remove().OnPath(p)` | built-in |
+| rename | Change a node's **name**, keeping value/children/position; only way to rename an XML document element | ❌ (`name` is a literal) | `.Rename(name).OnPath(p)` | built-in |
 | resolve | Join / fan-out by key | ❌ | — | ETL |
 | restore | Flat key-value → nested (reverses flatten) | ❌ | — | ETL |
 | set | Update-only; noop if field absent | ✅ | `.Set(v).OnPath(p)` | built-in |
 | setProperties | Run a value against a named/found selection under one or more objects — the only way to write through an object-key wildcard | ✅ | — | built-in |
 | tocsv | Export array to CSV string | ❌ | — | ETL |
 
+`convert`/`convertValue` are the two FormatConverter commands — see
+[commands/Convert.md](commands/Convert.md) and [commands/ConvertValue.md](commands/ConvertValue.md).
+Known gap: unlike the other 16 commands, neither is exercised by `TLio.Parity.Tests/Sweep/sweep.json`
+or `sweep.xml` — fixing that means re-recording the sweep (`dotnet test TLio.Parity.Tests --filter
+"Name~RecordSweep"`), which is out of scope for a docs pass.
+
 ### Function Summary
 
 | Function | Syntax | When to use (one line) | Pack |
 |----------|--------|------------------------|------|
 | concat | `=concat(a,b,...)` | Fixed fields, mixed separators | Text |
+| contains | `=contains(str,substr)` | Substring anywhere in string; case-insensitive | Text |
 | datetime | `=datetime()` / `=datetime(fmt)` | Current UTC timestamp | built-in |
+| endsWith | `=endsWith(str,suffix)` | String ends with suffix; case-insensitive | Text |
 | fetch | `=fetch(path)` / `=fetch(path,default)` | Read a value inline; workhorse for value transfer | built-in |
 | format | `=format(tpl,v0,...)` | Prose template with `{0}` placeholders | Text |
+| indexOf | `=indexOf(str,substr)` | Position of substring; `-1` if absent; case-insensitive | Text |
 | indirect | `=indirect(pathToPath)` | Path stored in data — dynamic dispatch | built-in |
-| length | `=length(str)` | String character count | Text |
+| join | `=join(array,separator)` | Array of values, single separator | Text |
+| length | `=length(str)` | Character count for a string; **element count** for an array | Text |
 | newGuid | `=newGuid()` | Generate unique ID | built-in / Text (`newguid`) |
+| padLeft | `=padLeft(str,width)` | Left-pad to a total width | Text |
+| padRight | `=padRight(str,width)` | Right-pad to a total width | Text |
 | parse | `=parse(str)` | JSON string → structured node | Text |
 | partial | `=partial(path)` / `=partial(path,i)` | One element from multi-match by index | built-in |
 | path | `=path()` | Absolute path of current node (JLio alias) | built-in |
 | promote | `=promote(path)` / `=promote(path,name)` | Wrap node in parent object | built-in |
-| replace | `=replace(str,old,new)` | Substitute substring | Text |
+| replace | `=replace(str,old,new)` | Substitute substring; literal-only, case-sensitive | Text |
 | scriptpath | `=scriptpath()` / `=scriptpath(@.child)` | Absolute path of current node | built-in |
+| split | `=split(str,delimiter)` | Delimited string → array of substrings | Text |
+| startsWith | `=startsWith(str,prefix)` | String starts with prefix; case-insensitive | Text |
 | substring | `=substring(str,start)` / `=substring(str,start,n)` | Extract by position | Text |
 | toLower | `=toLower(str)` | Lowercase | Text |
 | toString | `=toString(node)` | Node → JSON string | Text |
@@ -1850,15 +1870,39 @@ Input: `{ "name": "  Alice" }` → `"name": "Alice"`
 | trimStart | `=trimStart(str)` | Leading whitespace removal | Text |
 | toFixed | `=toFixed(v,n)` / `=toFixed(v,n,sep)` | Money-style text with exactly n decimals | Text |
 | right | `=right(str,n)` | Last n characters | Text |
-| regexReplace | `=regexReplace(str,pattern,repl)` | Rewrite by pattern; `$1` backreferences work | Text |
-| regexExtract | `=regexExtract(str,pattern)` / `=regexExtract(str,pattern,group)` | Pull a fragment out; `""` when no match | Text |
+| regexReplace | `=regexReplace(str,pattern,repl)` | Rewrite by pattern; `$1` backreferences work; static-cache friendly | Text |
+| regexExtract | `=regexExtract(str,pattern)` / `=regexExtract(str,pattern,group)` | Pull a fragment out; `""` when no match; recompiles every call | Text |
+| sum | `=sum(a,b,...)` | Total; variadic, flattens arrays | Math |
+| subtract | `=subtract(a,b)` | Difference; both sides sum arrays first | Math |
 | multiply | `=multiply(a,b,...)` | Product of values — mirrors `sum` | Math |
-| divide | `=divide(a,b)` | Quotient — mirrors `subtract` | Math |
+| divide | `=divide(a,b)` | Quotient — mirrors `subtract`; zero divisor fails | Math |
+| modulo | `=modulo(dividend,divisor)` | Remainder of division | Math |
+| pow | `=pow(base,exp)` | Raise to a power | Math |
+| abs | `=abs(v)` | Absolute value | Math |
+| sqrt | `=sqrt(v)` | Square root | Math |
+| round | `=round(v)` / `=round(v,n)` | Nearest integer, or `n` decimal places | Math |
+| ceiling | `=ceiling(v)` | Always up | Math |
+| floor | `=floor(v)` | Always down | Math |
 | clamp | `=clamp(v,low,high)` | Bound a value to a range | Math |
 | sign | `=sign(v)` | `-1` / `0` / `1` | Math |
+| avg | `=avg(path)` | Arithmetic mean | Math |
+| count | `=count(path)` | Count of elements/matching nodes | Math |
+| min | `=min(path)` | Smallest numeric value in an array | Math |
+| max | `=max(path)` | Largest numeric value in an array | Math |
+| median | `=median(path)` | Middle value; robust to outliers | Math |
+| calculate | `=calculate(expr)` | Free-form expression string, parsed **fresh every call** — no caching | Math |
+| sumif / sumifs | `=sumif(range,criteria)` / `=sumifs(range,r1,c1,...)` | Conditional total; one condition / all conditions (AND) | Math |
+| countif / countifs | `=countif(range,criteria)` / `=countifs(r1,c1,...)` | Conditional count; one condition / all conditions (AND) | Math |
+| averageif / averageifs | `=averageif(range,criteria)` / `=averageifs(avg_range,r1,c1,...)` | Conditional mean; `0` when nothing matches | Math |
+| minifs / maxifs | `=minifs(range,r1,c1,...)` / `=maxifs(range,r1,c1,...)` | Conditional min/max; **fails** when nothing matches | Math |
 | dateDiff | `=dateDiff(from,to)` / `=dateDiff(from,to,unit)` | How far apart two dates are; unit defaults to `days` | TimeDate |
 | dateAdd | `=dateAdd(date,n)` / `=dateAdd(date,n,unit)` | Shift a date; `n` may be negative | TimeDate |
 | datePart | `=datePart(date,part)` | One component of a date, as a long | TimeDate |
+| dateCompare | `=dateCompare(d1,d2)` | Relative order of two dates; long `-1`/`0`/`1` — never a string | TimeDate |
+| isDateBetween | `=isDateBetween(date,from,to)` | Date within a range; both bounds inclusive | TimeDate |
+| minDate | `=minDate(a,b,...)` | Earliest date; variadic — scalars, arrays, or a mix | TimeDate |
+| maxDate | `=maxDate(a,b,...)` | Latest date; variadic — scalars, arrays, or a mix | TimeDate |
+| avgDate | `=avgDate(a,b,...)` | Chronological midpoint; variadic — scalars, arrays, or a mix | TimeDate |
 | formatDate | `=formatDate(date,fmt)` | Render a **stored** date — `datetime` only formats now | TimeDate |
 | parseDate | `=parseDate(text)` / `=parseDate(text,fmt)` | Normalise a non-ISO date to canonical ISO | TimeDate |
 | startOfMonth | `=startOfMonth(date)` | First day of that month | TimeDate |
@@ -1876,8 +1920,13 @@ what `tlio_describe` serves.
 
 ### Predicate Summary (conditions)
 
-All built in — no pack registration needed, because `ifElse` and `decisionTable` are core commands.
-Every one returns a boolean node; a path that matches nothing is an answer, not an error.
+All built in — no pack registration needed, because `ifElse` and `decisionTable` are core commands
+— **except `isEmpty`**, which lives in the Text pack (`RegisterText<TNode>()`) and is listed here
+because it is used as a condition the same way the rest of this table is; it also diverges from
+every other row by failing the script on a missing path instead of treating that as an answer
+(see its own row below).
+Every one returns a boolean node; a path that matches nothing is an answer, not an error — the
+one exception, again, is `isEmpty`.
 
 | Function | Syntax | When to use (one line) |
 |----------|--------|------------------------|

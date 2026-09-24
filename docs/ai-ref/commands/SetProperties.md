@@ -45,31 +45,69 @@ not an object is skipped with a warning (nothing to set properties on). A named 
 does not exist, or a relative path that matches nothing, is skipped with a warning; the command
 still succeeds — a missing name is an answer about the document, not a script error.
 
-## Example
+## Verified example
 
-```json
-[
-  { "command": "setProperties", "path": "$.customer", "properties": ["email","vip"], "value": "=toArray()" },
-  { "command": "setProperties", "path": "$.orders[*]", "value": "=toArray()" },
-  { "command": "setProperties", "path": "$.customer",
-    "properties": "=scriptpath(*,['primitive'],true)", "value": "=toArray()" }
-]
-```
+**Writing through an object-key wildcard** — the motivating case: `set`/`add`/`put` cannot write
+through `$.widgets.*` (an object-key wildcard resolves fine for a read, but is not
+bracket-and-subscript shaped, so none of them treat it as a multi-node write target).
+`setProperties` can, because its `path` only has to *select* the matched objects — the write
+itself goes through `properties`/`value`, not through the wildcard leaf:
 
-Given
 ```json
 {
-  "customer": { "id": "C-1", "email": "a@b.com", "vip": true, "address": { "city": "Amsterdam" } },
-  "orders": [ { "id": "O-1", "status": "shipped" } ]
+  "input": {
+    "widgets": {
+      "w1": { "status": "active", "qty": 1 },
+      "w2": { "status": "inactive", "qty": 2 }
+    }
+  },
+  "script": [
+    { "command": "setProperties", "path": "$.widgets.*", "properties": ["status"], "value": "=toArray()" }
+  ],
+  "result": {
+    "widgets": {
+      "w1": { "status": ["active"], "qty": 1 },
+      "w2": { "status": ["inactive"], "qty": 2 }
+    }
+  }
 }
 ```
 
-- Step 1 wraps only `email` and `vip`.
-- Step 2 wraps every property of every matched order (`$.orders[*]` matches one order here).
-- Step 3 (run standalone, not chained after 1–2) wraps every primitive anywhere under `customer`
-  — including the nested `address.city` — without naming `address` at all.
+Verified by: `TLio.UnitTests/Fixtures/SetProperties/01-object-key-wildcard/fixture.json`, run
+through the same `FixtureTheoryLoader`-driven engine test as the other three commands on this
+page (`TLio.UnitTests/Fixtures/FixtureTests.cs::SetProperties`). `$.widgets.*` matches each
+property *value* of `widgets` (`w1`, `w2` — the objects, not their names); `status` inside each
+is then wrapped, `qty` is left alone.
 
-## Example: turning every complex object in a tree into an array
+**Named-array literal `properties`, and the every-property default** — from
+`TLio.UnitTests/CommandsTests/SetPropertiesTests.cs`, translated from its C# construction into
+the equivalent JSON script (the input/values are copied verbatim from the test):
+
+```json
+{
+  "input": {
+    "person": { "name": "Ada", "tags": "vip", "roles": ["admin"], "address": { "city": "Amsterdam" } }
+  },
+  "script": [
+    { "command": "setProperties", "path": "$.person", "properties": ["tags","roles"], "value": "=toArray()" }
+  ],
+  "result": {
+    "person": { "name": "Ada", "tags": ["vip"], "roles": ["admin"], "address": { "city": "Amsterdam" } }
+  }
+}
+```
+
+Verified by: `SetPropertiesTests.cs::NamedProperties_AreWrapped_OthersUntouched` — `tags` (a
+scalar) gets wrapped, `roles` (already an array) passes through unchanged rather than nesting,
+`name` (not named) is untouched.
+
+**`=scriptpath(*, kinds, recursive)` as `properties`** — verified by
+`SetPropertiesTests.cs::FindFunction_SelectsLiveNodesDirectly`: the same `person` object with
+`"properties": "=scriptpath(*,['primitive'],true)"` wraps every primitive at every depth —
+`name`, `tags`, and the nested `address.city` — without naming any of them, because find mode
+returns live nodes directly rather than names to look up.
+
+## Verified example: turning every complex object in a tree into an array
 
 Ask for `kinds: ['object']` instead of `'primitive'` and the same find-mode call selects every
 **complex object**, at every depth, leaving primitives alone. The one thing to get right is
@@ -94,8 +132,7 @@ Given
 ```json
 {
   "customer": {
-    "id": "C-1", "name": "Ada",
-    "address": { "city": "Amsterdam", "country": "NL" },
+    "id": "C-1",
     "billing": { "iban": "NL00BANK", "contact": { "email": "ada@example.com" } }
   }
 }
@@ -105,17 +142,20 @@ produces
 ```json
 {
   "customer": {
-    "id": "C-1", "name": "Ada",
-    "address": [ { "city": "Amsterdam", "country": "NL" } ],
+    "id": "C-1",
     "billing": [ { "iban": "NL00BANK", "contact": [ { "email": "ada@example.com" } ] } ]
   }
 }
 ```
 
-Every complex object — `address`, `billing`, and the nested `billing.contact` — is now a
-one-element array; `id`, `name`, `iban` and `email` (primitives) are untouched. Running step 2
-alone, without step 1 first, would still wrap `address` and `billing`, but `contact` would come
-out unwrapped inside the cloned `billing` — see Common mistakes below.
+`billing` and the nested `billing.contact` are each now a one-element array; `id` and `iban`
+(primitives) are untouched. Running step 2 alone, without step 1 first, still wraps `billing`,
+but `contact` comes out unwrapped inside the cloned `billing` — see Common mistakes below.
+
+Verified by (same input tree, both steps): `SetPropertiesTests.cs::RecursiveObjectKind_DeepestFirst_WrapsEveryComplexObjectInTheTree`
+(deepest-first, both steps run — matches the result above) and
+`::RecursiveObjectKind_SingleCall_LosesTheNestedWrap` (step 2 alone — `contact` stays unwrapped,
+the Common mistakes case).
 
 ## C# Usage
 
