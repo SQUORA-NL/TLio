@@ -79,7 +79,7 @@ public abstract class TextFunctionBase<TNode> : FunctionBase<TNode>
             return true;
         }
 
-        var nodes = context.ItemsFetcher.SelectNodes(text, dataContext);
+        var nodes = RelativePathResolution.SelectRelative(text, currentNode, dataContext, context);
         if (nodes.Count == 0)
         {
             context.LogError(funcName, $"{funcName}: argument path not found.");

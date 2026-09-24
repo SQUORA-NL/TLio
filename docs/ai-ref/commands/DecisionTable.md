@@ -64,6 +64,13 @@
 
 - The JSON key `"decisionTable"` is accepted as an alias for `"config"` (JLio compatibility, 008+).
 - No C# fluent builder — construct the config object directly and serialize with `TLioConvert`.
+- A result value is evaluated *before* its output path is created. When it fails, the document is
+  left untouched at that path — no `{}` placeholder is written, and an earlier rule's value at the
+  same path (`allMatches`/`priority` or `lastWins`) is not overwritten by the failing one.
+- A nested function argument written as `@.field` (e.g. a result of `"=concat(@.a,'-',@.b)"`)
+  resolves relative to the node currently being processed, the same as a bare `@.field` result —
+  not relative to the document root. This holds for every function, not just ones written inside
+  `decisionTable`; see [Notation Reference](../notation-reference.md).
 
 ## Formats
 

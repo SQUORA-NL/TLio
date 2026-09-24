@@ -17,11 +17,7 @@ public class PathValue<TNode> : IFunctionSupportedValue<TNode>
 
     public FunctionResult<TNode> GetValue(TNode currentNode, TNode dataContext, IExecutionContext<TNode> context)
     {
-        var absolutePath = _path.StartsWith(context.ItemsFetcher.CurrentItemPathIndicator)
-            ? context.ItemsFetcher.ResolveRelativePath(_path, currentNode, dataContext)
-            : _path;
-        var resolved = context.ItemsFetcher.ProcessIndirectPath(absolutePath, dataContext) ?? absolutePath;
-        var nodes = context.ItemsFetcher.SelectNodes(resolved, dataContext);
+        var nodes = RelativePathResolution.SelectRelative(_path, currentNode, dataContext, context);
 
         if (nodes.Count == 0)
         {

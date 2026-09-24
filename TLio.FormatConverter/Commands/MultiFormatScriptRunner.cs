@@ -83,6 +83,57 @@ public sealed class MultiFormatScriptRunner
         string initialFormatId, string inputDocument, string script, ScriptFormat? notation = null)
     {
         var sections = ScriptSectionSplitter.Split(initialFormatId, script, notation);
+        return RunSections(sections, initialFormatId, inputDocument,
+            (executor, section, _, document) => executor.Execute(section.ScriptText, document));
+    }
+
+    /// <summary>
+    /// Parse <paramref name="script"/> once and return a handle that can run it against many
+    /// input documents via <see cref="CompiledMultiFormatScript.Run"/>, without re-parsing.
+    /// </summary>
+    /// <remarks>
+    /// For a large script, parsing text into commands is the dominant per-run cost — this is the
+    /// multi-format equivalent of <c>ScriptEngine{TNode}.Compile</c>. Only
+    /// sections whose registered executor implements <see cref="ICompilableFormatSectionExecutor"/>
+    /// are pre-parsed; the rest still parse on every <see cref="CompiledMultiFormatScript.Run"/>
+    /// call, so mixing a compilable and a non-compilable executor degrades gracefully rather than
+    /// failing.
+    /// </remarks>
+    /// <exception cref="FormatNotRegisteredException">When a <c>convert</c> command targets an unregistered format.</exception>
+    /// <exception cref="SectionExecutorNotRegisteredException">When a section has commands and no executor to run them.</exception>
+    public CompiledMultiFormatScript Compile(
+        string initialFormatId, string script, ScriptFormat? notation = null)
+    {
+        var sections = ScriptSectionSplitter.Split(initialFormatId, script, notation);
+        var compiledSections = new object?[sections.Count];
+
+        for (var i = 0; i < sections.Count; i++)
+        {
+            var section = sections[i];
+            if (section.CommandCount == 0)
+                continue;
+
+            var executor = ResolveExecutor(section.FormatId);
+            if (executor is ICompilableFormatSectionExecutor compilable)
+                compiledSections[i] = compilable.Compile(section.ScriptText);
+        }
+
+        return new CompiledMultiFormatScript(this, initialFormatId, sections, compiledSections);
+    }
+
+    internal MultiFormatScriptResult RunCompiled(
+        string initialFormatId, string inputDocument, List<ScriptSection> sections, object?[] compiledSections) =>
+        RunSections(sections, initialFormatId, inputDocument, (executor, section, index, document) =>
+            compiledSections[index] is { } handle && executor is ICompilableFormatSectionExecutor compilable
+                ? compilable.ExecuteCompiled(handle, document)
+                : executor.Execute(section.ScriptText, document));
+
+    private MultiFormatScriptResult RunSections(
+        List<ScriptSection> sections,
+        string initialFormatId,
+        string inputDocument,
+        Func<IFormatSectionExecutor, ScriptSection, int, string, SectionExecutionResult> runSection)
+    {
         var currentDocument = inputDocument;
         var currentFormat = initialFormatId;
         var logs = new LogEntries();
@@ -106,14 +157,8 @@ public sealed class MultiFormatScriptRunner
             if (section.CommandCount == 0)
                 continue;
 
-            if (!_executors.TryGetValue(section.FormatId, out var executor))
-            {
-                // Silently dropping the commands is the one thing this must not do: the script
-                // would report success having applied none of it.
-                throw new SectionExecutorNotRegisteredException(section.FormatId, _executors.Keys.ToList());
-            }
-
-            var result = executor.Execute(section.ScriptText, currentDocument);
+            var executor = ResolveExecutor(section.FormatId);
+            var result = runSection(executor, section, i, currentDocument);
             currentDocument = result.Document;
             logs.AddRange(result.Logs);
             success &= result.Success;
@@ -122,4 +167,15 @@ public sealed class MultiFormatScriptRunner
         return new MultiFormatScriptResult(currentDocument, currentFormat, success, logs);
     }
 
+    private IFormatSectionExecutor ResolveExecutor(string formatId)
+    {
+        if (!_executors.TryGetValue(formatId, out var executor))
+        {
+            // Silently dropping the commands is the one thing this must not do: the script
+            // would report success having applied none of it.
+            throw new SectionExecutorNotRegisteredException(formatId, _executors.Keys.ToList());
+        }
+
+        return executor;
+    }
 }

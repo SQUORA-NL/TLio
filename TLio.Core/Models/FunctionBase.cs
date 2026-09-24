@@ -41,10 +41,15 @@ public abstract class FunctionBase<TNode> : IFunction<TNode>
     /// Evaluate a function argument and resolve it to its actual data node(s).
     /// When the argument evaluates to a single string that the fetcher recognises as a path
     /// expression (<see cref="IItemsFetcher{TNode}.IsPathExpression"/>), the string is
-    /// re-evaluated against <paramref name="dataContext"/> via
-    /// <see cref="IItemsFetcher{TNode}.SelectNodes"/>.
+    /// re-evaluated the same way <see cref="PathValue{TNode}"/> resolves a top-level value: a
+    /// relative path (starting with <see cref="IItemsFetcher{TNode}.CurrentItemPathIndicator"/>)
+    /// is anchored on <paramref name="currentNode"/> before being selected, an absolute path is
+    /// used as-is, and either way selection itself always runs against
+    /// <paramref name="dataContext"/>.
     /// This allows value-consuming functions (Math, Text, TimeDate) to accept inline
-    /// path args written as =funcname($.field) without needing a dedicated PathValue.
+    /// path args written as =funcname($.field) or =funcname(@.field) without needing a
+    /// dedicated PathValue — the constant path text `FunctionConverter` gives an "@." or "$."
+    /// argument inside a call.
     /// </summary>
     protected static FunctionResult<TNode> ResolveArg(
         IFunctionSupportedValue<TNode> arg,
@@ -58,7 +63,7 @@ public abstract class FunctionBase<TNode> : IFunction<TNode>
         var str = context.NodeAdapter.TryGetString(result.Data[0]);
         if (str != null && context.ItemsFetcher.IsPathExpression(str))
         {
-            var nodes = context.ItemsFetcher.SelectNodes(str, dataContext);
+            var nodes = RelativePathResolution.SelectRelative(str, currentNode, dataContext, context);
             return nodes.Count > 0
                 ? FunctionResult<TNode>.Successful(nodes)
                 : FunctionResult<TNode>.Failed(currentNode);

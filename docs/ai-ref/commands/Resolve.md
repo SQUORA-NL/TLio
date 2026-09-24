@@ -43,9 +43,35 @@
 
 - `keyPath`: path relative to the current node (`@.property`) — the dot after `@` is always required
 - `referenceKeyPath`: path in the reference entry (absolute or `$.property`)
-- `targetPath`: where to write the result — `@.property` writes relative to current node
+- `targetPath`: where to write the result — `@.property` writes relative to current node; a
+  function expression (`"=..."`) instead **computes** the property name — see below
 - `value`: `@.property` reads it off the **matched reference entry**; anything else — a literal,
   a function expression, an absolute path — is evaluated the ordinary way
+
+### A dynamic `targetPath` — property names driven by a lookup table
+
+Written as a plain string, `targetPath` names the property literally. Written as a function
+expression (starts with `"="`, e.g. `"=fetch(@.to)"`), it instead **computes** the name by
+evaluating the expression against the matched reference entry — exactly the way `value` is
+evaluated. This is what lets one `resolve` rename or remap many properties from a table of
+`{from, to}` pairs, instead of one `values` entry per property:
+
+```json
+{
+  "command": "resolve",
+  "path": "$.node",
+  "resolveSettings": [{
+    "referencesCollectionPath": "$.table[*]",
+    "resolveKeys": [{ "keyPath": "@._code", "referenceKeyPath": "@.code" }],
+    "values": [{ "targetPath": "=fetch(@.to)", "value": "=fetch(@.from)" }]
+  }]
+}
+```
+
+Requires exactly one match. With zero matches there is nothing to name the property after; with
+more than one there is no defined meaning for writing several differently-named properties from
+one `targetPath` expression. Either case is a warning and a skip — resolve never throws — and the
+target must be an object (a dynamic name has nowhere to go on a scalar or array target).
 
 > See [Notation Reference](../notation-reference.md) for relative-path rules.
 
@@ -62,6 +88,19 @@ path can name — `referencesCollectionPath` matched several nodes and this is o
 they all share an absolute path, so a path-based read would return the first sibling rather than
 the match.
 
+> **This uniform `@.` is the *bare* form only — a `targetPath`/`value` written as a function
+> expression does not get it.** `"targetPath": "@.to"` is resolve's own reader, hardcoded to `@.`
+> regardless of format. `"targetPath": "=fetch(@.to)"` is a function call; the `@.to` inside it is
+> just another argument, resolved the *ordinary* way — through the document format's own relative
+> marker, not resolve's. That marker is `@.` for JSON and YAML, but **`.`** for XML (matching
+> XPath's own "current node" dot, the same one `decisionTable`'s XML inputs already use as
+> `./status`). Writing `=fetch(@.to)` in an XML script does not fail loudly: `@.to` is simply not
+> a path XML's fetcher recognises, so the function returns the literal text `"@.to"` — a target
+> named `<@.to>` cannot be created, so the write silently does nothing. Write `=fetch(./to)` for
+> XML. This is exactly the trap the cross-format sweep test (`TLio.Parity.Tests`) caught: two
+> attempts at the "obvious" JSON-style spelling both passed for JSON and YAML and both silently
+> did nothing in XML, and only the sweep's per-format apply-and-compare noticed.
+
 > **`sourcePath` is not a key `resolve` reads.** A `values` entry written
 > `{"sourcePath": "@.label", "targetPath": "@.label"}` binds no value and writes nothing, with no
 > warning. The key is `value`.
@@ -72,6 +111,10 @@ the match.
 ## Notes
 
 - The JSON key for the settings array is `"resolveSettings"` (the `settings` field name in JSON).
+- The join is indexed once per `resolveSettings` entry and reused for every node `path` selects —
+  runtime scales with the number of targets, not with `targets × references`. This holds for a
+  scalar `keyPath`/`referenceKeyPath` pair (the common case); an array-based (`[*]`) key still
+  falls back to an exact scan, as it always has.
 
 ## Formats
 

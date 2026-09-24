@@ -116,6 +116,16 @@ paid-licence and Newtonsoft-bound.
 | `samples/TLio.Sample.Api.IntegrationTests` | End-to-end API tests |
 | `samples/TLio.Sample.Cli` | CLI sample (file-in / transformed-out) |
 | `samples/TLio.Sample.DockerPlugin` | Docker API with NuPlane hot-loading of `.nupkg` plugins |
+| `samples/TLio.Sample.AfdApi` | SIVI AFD 1.0 / AFD Short / AFD 2.0 conversion demo API |
+
+### Running the samples
+
+```sh
+cd samples/TLio.Sample.Api && dotnet run
+cd samples/TLio.Sample.Cli && dotnet run -- --input <file> --script <file> --output <file>
+cd samples/TLio.Sample.AfdApi && dotnet run
+cd samples/TLio.Sample.DockerPlugin && docker compose up
+```
 
 ## Commands
 

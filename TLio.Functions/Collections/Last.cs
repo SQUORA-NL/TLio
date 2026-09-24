@@ -37,7 +37,7 @@ public class Last<TNode> : FunctionBase<TNode>
         if (pathStr == null)
             return FunctionResult<TNode>.Failed(currentNode);
 
-        var nodes = context.ItemsFetcher.SelectNodes(pathStr, dataContext);
+        var nodes = RelativePathResolution.SelectRelative(pathStr, currentNode, dataContext, context);
         if (nodes.Count == 0)
         {
             context.LogError(FunctionName, $"{FunctionName}(): path '{pathStr}' matched no nodes.");

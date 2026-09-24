@@ -692,6 +692,41 @@
   },
   {
     "command": "put",
+    "path": "$.etl.dynamicRef.code",
+    "value": "A"
+  },
+  {
+    "command": "add",
+    "path": "$.etl.dynamicLookup[0]",
+    "value": {
+      "code": "A",
+      "to": "renamedLabel",
+      "from": "RenamedValue"
+    }
+  },
+  {
+    "command": "resolve",
+    "path": "$.etl.dynamicRef",
+    "resolveSettings": [
+      {
+        "referencesCollectionPath": "$.etl.dynamicLookup[*]",
+        "resolveKeys": [
+          {
+            "keyPath": "@.code",
+            "referenceKeyPath": "@.code"
+          }
+        ],
+        "values": [
+          {
+            "value": "=fetch(@.from)",
+            "targetPath": "=fetch(@.to)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "command": "put",
     "path": "$.dt.status",
     "value": "active"
   },
