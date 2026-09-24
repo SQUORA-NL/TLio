@@ -26,14 +26,16 @@ A string node with all characters converted to uppercase via `string.ToUpperInva
 
 Works with all adapters (JSON, XML, YAML).
 
-## Example
+## Verified example
 
 ```json
-{ "command": "add", "path": "$.upper", "value": "=toUpper($.name)" }
+{ "command": "put", "path": "$.result", "value": "=toupper($.mixed)" }
 ```
 
-Input: `{ "name": "Alice" }`
-Output: `{ "name": "Alice", "upper": "ALICE" }`
+Input: `{ "mixed": "Hello World" }`
+Output: `{ "mixed": "Hello World", "result": "HELLO WORLD" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/toupper/01-basic.json`.
 
 ## Notes
 

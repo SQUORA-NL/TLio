@@ -41,14 +41,31 @@ Numeric and boolean arguments keep their type, so standard .NET specifiers work:
 `F` rounds half to even (`{0:F0}` on `14.5` gives `"14"`). For money-style rounding use
 [toFixed](ToFixed.md), which rounds half away from zero.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "add", "path": "$.greeting", "value": "=format('Hello, {0}!', $.name)" }
+{ "command": "put", "path": "$.result", "value": "=format($.tmpl, $.name)" }
 ```
 
-Input: `{ "name": "Alice" }`
-Output: `{ "name": "Alice", "greeting": "Hello, Alice!" }`
+Input: `{ "tmpl": "Hello {0}!", "name": "World", "tmpl2": "{0} and {1}", "a": "foo", "b": "bar" }`
+Output: `{ ..., "result": "Hello World!" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/format/01-one-arg.json`, with sibling fixtures
+against the same input: `02-two-args.json` (`=format($.tmpl2, $.a, $.b)` → `"foo and bar"`) and
+`03-no-placeholders.json` (a template with no `{N}` tokens passes through unchanged, and no
+value arguments are required beyond the template itself).
+
+## Performance
+
+`=format(...)` calls `string.Format` fresh on every invocation — .NET does not cache a compiled
+form of the template string between calls, so a template re-used across many rows or many script
+executions is re-parsed for its `{0}`, `{1}`, … placeholders each time. This is cheap for typical
+short templates and is not something to work around; it only becomes worth noting in very
+high-throughput, per-row transformation loops where the same static template is applied millions
+of times, in which case building the string manually (or hoisting the formatting outside the
+per-row loop, if the host application allows it) avoids the repeated parse. There is no
+process-wide cache to prime, unlike `regexReplace`'s use of `Regex.Replace` (see
+[regexReplace](RegexReplace.md#performance)).
 
 ## C# Usage
 

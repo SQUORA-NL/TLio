@@ -24,16 +24,37 @@ Only a boolean value, or the text `"true"` / `"false"` (case-insensitive), count
 non-empty strings and objects are **not** truthy — `=and($.count)` is false even when count is 5.
 Use an explicit predicate: `=and(greaterThan($.count, 0))`.
 
-## Example
+## Verified example
+
+Input (subset of the shared test document):
 
 ```json
-{ "command": "ifElse",
-  "condition": "=and(greaterOrEqual($.age, 18), equals($.country, 'NL'), not(isNull($.email)))",
-  "ifScript": [{ "command": "add", "path": "$.eligible", "value": true }] }
+{ "age": 37, "status": "gold", "allowed": ["gold", "silver"] }
 ```
 
+Script:
+
+```json
+[{ "command": "ifElse",
+   "condition": "=and(greaterOrEqual($.age, 18), in($.status, $.allowed))",
+   "ifScript":   [{ "command": "add", "path": "$.tier", "value": "eligible" }],
+   "elseScript": [{ "command": "add", "path": "$.tier", "value": "rejected" }] }]
+```
+
+Result: `tier` is `"eligible"` — both arguments are true, `$.age` is 37 (>= 18) and `$.status`
+(`"gold"`) is a member of `$.allowed`.
+
 Nested calls do not need their own `=`: `=and(equals($.a, 1), exists($.b))` is the same as
-`=and(=equals($.a, 1), =exists($.b))`.
+`=and(=equals($.a, 1), =exists($.b))` — confirmed by
+`PredicateFunctionTests.BooleanLogic("=and(equals($.name, 'Sanne'), greaterThan($.age, 30))", true)`
+alongside the explicit-`=` form on the preceding line (both true).
+
+Verified by: `PredicateFunctionTests.Predicate_DrivesIfElseBranch` —
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:151-165` (the same
+condition also drives the `elseScript` branch to `"rejected"` in
+`Predicate_DrivesIfElseElseBranch`, lines 167-181). Truthiness cases (`$.active` boolean `true`,
+`$.activeText` text `"true"`, `$.age` a number that is *not* truthy) are asserted at lines 95-96,
+and cross-format use appears in `TLio.Parity.Tests/Sweep/sweep.json:380`.
 
 ## When to use
 

@@ -26,14 +26,54 @@
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
 
-## Example
+## Verified example
+
+### Copy a sibling property
+
+Input:
 
 ```json
-[
-  { "command": "copy", "fromPath": "$.original.name", "toPath": "$.copy.name" },
-  { "command": "copy", "fromPath": "$.items[*].id", "toPath": "$.ids[*]", "destinationAsArray": true }
-]
+{ "src": "hello" }
 ```
+
+Script:
+
+```json
+[{ "command": "copy", "fromPath": "$.src", "toPath": "$.dst" }]
+```
+
+Result:
+
+```json
+{ "src": "hello", "dst": "hello" }
+```
+
+Verified by: `TLio.UnitTests/Fixtures/Copy/01-copy-property/fixture.json`
+
+### Copy deep-to-deep, across parents that don't yet exist
+
+Input:
+
+```json
+{ "source": { "value": 42 } }
+```
+
+Script:
+
+```json
+[{ "command": "copy", "fromPath": "$.source.value", "toPath": "$.target.result" }]
+```
+
+Result:
+
+```json
+{ "source": { "value": 42 }, "target": { "result": 42 } }
+```
+
+`toPath`'s parent (`$.target`) does not exist in the input — `copy` creates it
+(`IItemsFetcher.EnsurePath`) before writing.
+
+Verified by: `TLio.UnitTests/Fixtures/Copy/02-copy-deep-to-deep/fixture.json`
 
 ## C# Fluent API
 
@@ -78,6 +118,6 @@ var script = new TLioScript<JToken>()
 
 | Trace message | What it means | Action |
 |---------------|---------------|--------|
-| `"0 nodes found at FromPath"` | `fromPath` matched nothing — noop, document unchanged | Verify the path expression; check capitalisation and array indices |
-| `"copied N node(s) from X to Y"` | Success — N nodes written to destination | None |
+| `"FromPath 'X' matched 0 nodes; nothing copied."` | `fromPath` matched nothing — noop, document unchanged | Verify the path expression; check capitalisation and array indices |
+| `"copied N node(s) from 'X' to 'Y'."` | Success — N nodes written to destination | None |
 | No trace entry for this step | Step was skipped (script compilation issue) | Check script JSON for syntax errors |

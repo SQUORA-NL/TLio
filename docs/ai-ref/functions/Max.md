@@ -18,14 +18,18 @@
 
 A numeric node equal to the largest value in the array.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.highest", "value": "=max($.temps)" }
+{ "command": "put", "path": "$.result", "value": "=max($.nums)" }
 ```
 
-Input: `{ "temps": [15, 22, 8, 31], "highest": 0 }`
-Output: `{ "temps": [...], "highest": 31 }`
+Input: `{ "nums": [3, 1, 4, 1, 5], "a": 10, "b": 3 }`
+Output: adds `"result": 5`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/max/01-array.json`
+(`02-two-values.json` verifies multiple path arguments — `=max($.a, $.b)` → `10`, the
+larger of the two scalars.)
 
 ## When to use
 
@@ -44,10 +48,10 @@ Output: `{ "temps": [...], "highest": 31 }`
 
 | Function | Returns | Fails on empty/missing? |
 |----------|---------|------------------------|
-| `max` | Largest value | Yes |
-| `min` | Smallest value | Yes |
-| `median` | Middle value | Yes |
-| `avg` | Arithmetic mean | Yes |
+| `max` | Largest value | Yes — on a missing path, and on a present-but-empty array |
+| `min` | Smallest value | Yes — on a missing path, and on a present-but-empty array |
+| `median` | Middle value | Only on a missing path — an empty array returns `0` |
+| `avg` | Arithmetic mean | Only on a missing path — an empty array returns `0` |
 
 ## Common mistakes
 

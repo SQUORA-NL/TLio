@@ -19,24 +19,28 @@
 
 A numeric node equal to `dividend / divisor`. Whole results come out as an integer (`5`, not `5.0`).
 
-## Example
+## Verified example
 
 ```json
 { "command": "put", "path": "$.perMonth",
-  "value": "=round(=divide(=multiply($.currentValue,$.cascoRate),12),2)" }
+  "value": "=round(=divide(=multiply($.currentValue, $.cascoRate), 12), 2)" }
 ```
 
 Input: `{ "currentValue": 18000, "cascoRate": 0.042 }`
 Output: `{ "currentValue": 18000, "cascoRate": 0.042, "perMonth": 63 }`
 
+Verified by: `TLio.Functions.Tests/Fixtures/Math/divide/04-monthly-instalment.json`
+
 Arrays are summed before dividing — the mirror of `subtract`:
 
 ```json
-{ "command": "put", "path": "$.result", "value": "=divide($.nums,$.b)" }
+{ "command": "put", "path": "$.result", "value": "=divide($.nums, $.b)" }
 ```
 
 Input: `{ "nums": [1, 2, 3], "b": 2 }`
 Output: `{ "nums": [1, 2, 3], "b": 2, "result": 3 }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/divide/03-array-dividend-summed.json`
 
 ## When to use
 

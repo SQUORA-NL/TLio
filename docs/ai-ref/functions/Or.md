@@ -18,13 +18,30 @@
 
 A boolean node.
 
-## Example
+## Verified example
+
+Input (subset of the shared test document):
 
 ```json
-{ "command": "ifElse",
-  "condition": "=or(equals($.status, 'gold'), greaterThan($.spend, 1000))",
-  "ifScript": [{ "command": "add", "path": "$.priority", "value": true }] }
+{ "name": "Sanne", "age": 37 }
 ```
+
+Script:
+
+```json
+[{ "command": "add", "path": "$.out",
+   "value": "=or(equals($.name, 'Other'), greaterThan($.age, 30))" }]
+```
+
+Result: `out` is `true` — the first argument is false but the second is true, and `or` needs only
+one.
+
+Verified by: `PredicateFunctionTests.BooleanLogic("=or(equals($.name, 'Other'), greaterThan($.age, 30))", true)`
+— `TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:91`. The same test
+class asserts a three-argument form true only via the third condition —
+`=or(equals($.a, 1), equals($.b, 2), equals($.age, 37))` → `true` (line 97, the first two
+arguments reference missing paths) — and cross-format use appears in
+`TLio.Parity.Tests/Sweep/sweep.json:385`.
 
 ## When to use
 

@@ -18,14 +18,19 @@
 
 A long node equal to `Math.Floor(value)`.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.f", "value": "=floor($.v)" }
+{ "command": "put", "path": "$.result", "value": "=floor($.down)" }
 ```
 
-Input: `{ "v": 7.9, "f": 0 }`
-Output: `{ "v": 7.9, "f": 7 }`
+Input: `{ "whole": 4, "down": 4.9, "neg": -4.1 }`
+Output: adds `"result": 4`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/floor/02-fractional.json`
+(`01-whole-number.json` verifies a whole input passes through unchanged — `floor($.whole)`
+→ `4` — and `03-negative.json` verifies the "toward -∞" direction on a negative input —
+`floor($.neg)` → `-5`, not `-4`.)
 
 ## When to use
 

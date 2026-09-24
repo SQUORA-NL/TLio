@@ -31,7 +31,7 @@ An array. Its contents depend on the node being wrapped:
 | Already an array | A deep clone of it, unchanged — no double-wrapping |
 | Anything else (scalar, object) | `[<deep clone of the node>]` |
 
-## Example
+## Verified example
 
 Wrapping a value at a path:
 
@@ -39,7 +39,9 @@ Wrapping a value at a path:
 { "command": "set", "path": "$.result", "value": "=toArray($.tag)" }
 ```
 
-Given `{ "tag": "red" }` → `$.result` = `["red"]`
+Given `{ "tag": "red", "result": null }` → `{ "tag": "red", "result": ["red"] }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/ToArray/01-wrap-scalar/fixture.json`
 
 Wrapping the current node, over a wildcard match — each match is its own current node, so
 the same call wraps every element individually:
@@ -48,9 +50,13 @@ the same call wraps every element individually:
 { "command": "set", "path": "$.tags[*]", "value": "=toArray()" }
 ```
 
-Given `{ "tags": ["red", "blue"] }` → `$.tags` = `[["red"], ["blue"]]`
+Given `{ "tags": ["red", "blue"] }` → `{ "tags": [["red"], ["blue"]] }`
 
-Normalizing a field that is sometimes absent, sometimes scalar, sometimes already an array:
+Verified by: `TLio.Functions.Tests/Fixtures/ToArray/02-no-arg-current-node/fixture.json`
+
+Normalizing a field that is sometimes absent, sometimes scalar, sometimes already an array
+(illustrative — not fixture-backed, but a direct composition of the two verified cases above
+and the `null`/already-array branches in `ToArray<TNode>.Wrap`):
 
 ```json
 { "command": "set", "path": "$.tags", "value": "=toArray($.tags)" }

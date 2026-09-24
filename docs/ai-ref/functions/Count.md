@@ -18,14 +18,38 @@
 
 A long (integer) node with the element count.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.n", "value": "=count($.tags)" }
+{ "command": "put", "path": "$.result", "value": "=count($.nums)" }
 ```
 
-Input: `{ "tags": ["a", "b", "c"], "n": 0 }`
-Output: `{ "tags": [...], "n": 3 }`
+Input: `{ "nums": [1, 2, 3, 4], "a": 10, "b": 20 }`
+Output: adds `"result": 4`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/count/01-array.json`
+(`02-two-scalars.json` verifies `=count($.a, $.b)` counting two scalar arguments as `2`.)
+
+A path that does not resolve to anything returns `0` — `count` does **not** fail, unlike
+`sum`/`avg`/`min`/`max`/`median`:
+
+```json
+{ "command": "put", "path": "$.result", "value": "=count($.missing)" }
+```
+
+Input: `{ "nums": [1, 2, 3, 4] }` → Output: `{ "nums": [1, 2, 3, 4], "result": 0 }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/count/03-path-not-found-returns-zero.json`
+
+A found-but-`null` node counts as **one** item, not zero and not excluded:
+
+```json
+{ "command": "put", "path": "$.result", "value": "=count($.nul)" }
+```
+
+Input: `{ "nul": null }` → Output: `{ "nul": null, "result": 1 }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/count/04-null-counts-as-one.json`
 
 ## When to use
 
@@ -50,6 +74,9 @@ Output: `{ "tags": [...], "n": 3 }`
 
 ## Common mistakes
 
+- **Assuming `count` fails like `sum`/`avg`/`min`/`max` on a missing path.** It does not —
+  a non-existent path is simply skipped, so `=count($.missing)` succeeds with `0` rather than
+  aborting the script. If you need to *detect* the path is missing, use `exists` first.
 - **Using `sum` when you want a count** — if each element happens to be 1, `sum` produces the count, but this breaks the moment values differ. Use `count`.
 - **Using `count` when you want a total** — `count` ignores the numeric value of elements; it only counts them.
 - **Wildcard path** — `=count($.items[*].id)` counts the resolved id nodes, not the items array length. Both give the same number when every item has an id, but differ when ids are missing. Use `$.items` to count the array itself.

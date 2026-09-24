@@ -25,15 +25,19 @@ A date-only string, `yyyy-MM-dd`. Any time component is dropped — the answer i
 | `=startOfMonth('2024-02-01')` | `2024-02-01` |
 | `=startOfMonth('2025-01-31')` | `2025-01-01` |
 
-## Example
+## Verified example
 
 ```json
 { "command": "put", "path": "$.policy.termStart",
-  "value": "=startOfMonth($.request.requestedStartDate)" }
+  "value": "=startofmonth($.request.requestedStartDate)" }
 ```
 
 Input: `{ "request": { "requestedStartDate": "2026-09-15" } }`
 Output: `{ ..., "policy": { "termStart": "2026-09-01" } }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/TimeDate/startofmonth/04-sample-term-start.json`
+(mid-month, timestamp-drops-the-time, and December verified by `.../01-mid-month.json`,
+`.../02-timestamp-drops-the-time.json`, `.../03-december.json` in the same directory)
 
 ## When to use
 

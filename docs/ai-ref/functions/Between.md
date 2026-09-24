@@ -31,7 +31,7 @@ and fails on an unparseable date. It matches the `greaterOrEqual` / `lessOrEqual
 Comparison follows the library-wide rule: if both sides read as numbers they compare numerically
 (so the text `"24"` equals `24`); otherwise they compare as ordinal text.
 
-## Example
+## Verified example
 
 ```json
 { "command": "add", "path": "$.inBand", "value": "=between($.age,$.band.from,$.band.to)" }
@@ -39,6 +39,11 @@ Comparison follows the library-wide rule: if both sides read as numbers they com
 
 Input: `{ "age": 30, "band": { "from": 25, "to": 39 } }`
 Output: `{ "age": 30, "band": { "from": 25, "to": 39 }, "inBand": true }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Logic/between/01-inside-the-band.json`. The same fixture
+group also covers a value outside the band (`03-outside-the-band.json`, `inBand: false`), both
+bounds inclusive at once (`02-bounds-are-inclusive.json`), and a missing value path
+(`04-missing-path-is-false.json`, `inBand: false` with a logged warning, not a script abort).
 
 As an `ifElse` condition — the band check every rate table needs:
 
@@ -48,6 +53,10 @@ As an `ifElse` condition — the band check every rate table needs:
   "ifScript":   [{ "command": "put", "path": "$.factor", "value": 1.1 }],
   "elseScript": [{ "command": "put", "path": "$.factor", "value": 1.0 }] }
 ```
+
+Input: `{ "mileage": 12000, "factor": 1.0 }` → Output: `{ "mileage": 12000, "factor": 1.1 }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Logic/between/05-drives-an-ifelse-condition.json`.
 
 ## When to use
 

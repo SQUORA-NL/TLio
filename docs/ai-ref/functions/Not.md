@@ -18,13 +18,26 @@
 
 A boolean node.
 
-## Example
+## Verified example
+
+Input (subset of the shared test document):
 
 ```json
-{ "command": "ifElse",
-  "condition": "=not(in($.status, 'cancelled', 'refunded'))",
-  "ifScript": [{ "command": "add", "path": "$.billable", "value": true }] }
+{ "name": "Sanne" }
 ```
+
+Script:
+
+```json
+[{ "command": "add", "path": "$.out", "value": "=not(equals($.name, 'Other'))" }]
+```
+
+Result: `out` is `true`.
+
+Verified by: `PredicateFunctionTests.BooleanLogic("=not(equals($.name, 'Other'))", true)` —
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:93`. The same test
+class also asserts `=not($.active)` → `false` when `$.active` is the boolean `true` (line 94),
+and cross-format use appears in `TLio.Parity.Tests/Sweep/sweep.json:390`.
 
 ## When to use
 

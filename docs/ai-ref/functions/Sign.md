@@ -18,7 +18,9 @@
 
 A whole-number node: `-1`, `0` or `1`. Always an integer, never `-1.0`.
 
-## Example
+## Verified example
+
+Composed with `subtract` to classify a change in direction:
 
 ```json
 { "command": "put", "path": "$.direction",
@@ -26,7 +28,12 @@ A whole-number node: `-1`, `0` or `1`. Always an integer, never `-1.0`.
 ```
 
 Input: `{ "quoted": 412.5, "renewal": 398.2 }`
-Output: `{ "quoted": 412.5, "renewal": 398.2, "direction": -1 }`
+Output: adds `"direction": -1` (the renewal came in lower than the quote).
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/sign/04-difference-direction.json`
+(the plainer `01-positive.json`, `02-negative.json` and `03-zero.json` in the same
+directory each apply `sign` directly to a single value — `42` → `1`, `-0.001` → `-1`,
+`0` → `0` — confirming all three outcomes.)
 
 ## When to use
 

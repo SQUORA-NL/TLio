@@ -14,7 +14,7 @@
 | # | Type | Required | Description |
 |---|------|----------|-------------|
 | 1 | array path | yes | Path to the array evaluated against `criteria`. |
-| 2 | string literal | yes | The value to match (single-quoted). See [SumIf.md — criteria syntax](SumIf.md) for operators and wildcards. |
+| 2 | string literal or path | yes | The criteria to match — single-quoted literal or a path to a string node. See [SumIf.md — criteria syntax](SumIf.md) for operators and wildcards. |
 | 3 | array path | no | Array to average, parallel to `range`. Defaults to `range` itself when omitted. |
 
 ## Returns
@@ -22,27 +22,31 @@
 A numeric node — the mean of the matching elements. **`0` — not a failure — when nothing
 matches**, unlike `minifs`/`maxifs`.
 
-## Example
+## Verified example
 
 Two-argument form (average the matching elements of the range itself):
 
 ```json
-{ "command": "set", "path": "$.avg_high_scores", "value": "=averageif($.scores,'>=80')" }
+{ "command": "put", "path": "$.result", "value": "=averageif($.nums, $.crit_gt3)" }
 ```
 
-Input: `{ "scores": [95, 60, 88, 40] }` → `"avg_high_scores": 91.5` — mean of `95` and `88`.
+Input: `{ "nums": [1, 2, 3, 4, 5], "values": [10, 20, 30, 40, 50], "cat": ["A", "B", "A", "C", "A"], "crit_gt3": ">3", "crit_A": "A", "crit_Z": "Z" }`
+Output: `..., "result": 4.5` — mean of `4` and `5`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/averageif/01-numeric-criteria.json`.
 
 Three-argument form (criteria on one array, average a parallel array):
 
 ```json
-{
-  "command": "set", "path": "$.avg_paid_amount",
-  "value": "=averageif($.status,'paid',$.amounts)"
-}
+{ "command": "put", "path": "$.result", "value": "=averageif($.cat, $.crit_A, $.values)" }
 ```
 
-Input: `{ "status": ["paid","pending","paid"], "amounts": [100, 200, 150] }`
-Output: `"avg_paid_amount": 125` — mean of `100` and `150`.
+Same input → `..., "result": 30` — mean of `10`, `30`, `50` (the three `"A"` positions in
+`$.cat`, read from the parallel `$.values`).
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/averageif/02-with-average-range.json`. The
+sibling `03-no-match.json` runs `=averageif($.cat, $.crit_Z)` (nothing is `"Z"`) → `0`, not a
+failure — confirming the no-match contract above.
 
 ## When to use
 
@@ -57,6 +61,13 @@ Output: `"avg_paid_amount": 125` — mean of `100` and `150`.
 - You need **more than one condition** — use `averageifs`.
 - The result should **fail** rather than read `0` when nothing matches — `averageif` never
   fails on a no-match; guard with `countif` first if that distinction matters.
+
+## Performance
+
+`averageif` walks `min(range.Count, averageRange.Count)` once, evaluating the criteria per
+element — O(n). Like the rest of the `*if`/`*ifs` family, the criteria string is parsed fresh
+on every call rather than compiled once, so the per-call overhead is dominated by the array
+scan for anything but a tiny range.
 
 ## Comparison
 

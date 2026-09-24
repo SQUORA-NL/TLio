@@ -37,19 +37,59 @@ Where a node's name lives is format-specific, and that decides what can be renam
 Renaming a JSON/YAML root, or an array/sequence element (named by position, not by a key),
 logs a warning and changes nothing. It is not a failure.
 
-## Example
+## Verified example
+
+### JSON — renaming an object property
+
+Input:
 
 ```json
-[
-  { "command": "rename", "path": "/order",          "name": "opdracht" },
-  { "command": "rename", "path": "/order/customer", "name": "client"   },
-  { "command": "rename", "path": "//item",          "name": "line"     }
-]
+{ "a": { "x": 1 } }
 ```
 
-`<order id="7"><customer>Ada</customer></order>` becomes
-`<opdracht id="7"><client>Ada</client></opdracht>` — the attribute and the element order
-both survive.
+Script:
+
+```json
+[{ "command": "rename", "path": "$.a", "name": "z" }]
+```
+
+Result:
+
+```json
+{ "z": { "x": 1 } }
+```
+
+Verified by: `TLio.Parity.Tests/Fixtures/Rename/02-rename-object/fixture.json`
+
+### XML — renaming the document element itself
+
+This is the case called out above: `path` still names the element being renamed
+(`/order`), and because XML elements carry their own name, the rename reaches the
+document element — something a JSON/YAML root can never do.
+
+Input:
+
+```xml
+<order><customer>Ada</customer></order>
+```
+
+Script:
+
+```xml
+<rename path="/order" name="opdracht"/>
+```
+
+Result:
+
+```xml
+<opdracht><customer>Ada</customer></opdracht>
+```
+
+Verified by: `TLio.Xml.Tests/Fixtures/XmlRename/02-rename-root/fixture.xml` (also exercised
+generically through `XmlFixtureTests.Rename`, and directly via
+`XmlRenameTests.Rename_TheDocumentElement_RenamesTheRoot` /
+`Rename_TheDocumentElement_KeepsAttributesAndChildren` /
+`Rename_TheDocumentElement_LeavesTheCallersReferenceLive` in `TLio.Xml.Tests/Commands/XmlRenameTests.cs`)
 
 ## C# Fluent API
 

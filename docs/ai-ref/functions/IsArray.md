@@ -18,7 +18,21 @@
 
 A boolean node. An empty array is still an array (`true`); a missing path is `false`.
 
-## Example
+## Verified example
+
+```json
+{ "command": "add", "path": "$.out", "value": "=isArray($.tags)" }
+```
+
+Input: `{ "tags": ["a", "b"], "noTags": [], "address": { "city": "Utrecht" } }` → Output: `{ ..., "out": true }`
+
+Verified by `PredicateFunctionTests.TypeChecks("=isArray($.tags)", true)` in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:125` — run end to end
+through the real engine. The same method also proves an **empty** array is still true
+(`=isArray($.noTags)` → `true`, line 126) and that an object is not an array
+(`=isArray($.address)` → `false`, line 127).
+
+As an `ifElse` condition:
 
 ```json
 { "command": "ifElse",

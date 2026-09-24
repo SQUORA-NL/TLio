@@ -19,15 +19,17 @@
 
 A numeric node. Whole results come out as an integer (`24`, not `24.0`); fractional results keep their fraction.
 
-## Example
+## Verified example
 
 ```json
 { "command": "put", "path": "$.premium",
-  "value": "=round(=multiply($.basePremium,$.regionFactor,$.ageFactor),2)" }
+  "value": "=round(=multiply($.basePremium, $.regionFactor, $.ageFactor), 2)" }
 ```
 
 Input: `{ "basePremium": 42.5, "regionFactor": 1.2, "ageFactor": 0.8 }`
 Output: `{ "basePremium": 42.5, "regionFactor": 1.2, "ageFactor": 0.8, "premium": 40.8 }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/multiply/03-factor-chain.json`
 
 A single array argument is the product of its elements:
 
@@ -37,6 +39,8 @@ A single array argument is the product of its elements:
 
 Input: `{ "factors": [2, 3, 4] }`
 Output: `{ "factors": [2, 3, 4], "result": 24 }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/multiply/02-array-product.json`
 
 ## When to use
 
@@ -64,7 +68,7 @@ Output: `{ "factors": [2, 3, 4], "result": 24 }`
 
 ## Common mistakes
 
-- **Found-but-null multiplies as 0, not as 1.** `=multiply($.a,$.missingFactor)` where `missingFactor` is present and `null` returns `0`, collapsing the whole chain — and one `null` element inside an array argument collapses that product too. This is deliberate: every function in the Math pack maps a found null to 0, and `multiply` does not get its own rule. A rate table with a hole should produce a visibly wrong zero, not a premium priced as if the factor were neutral. Guard the value first (`=fetch($.factor,1)`) if 1 is what you mean.
+- **Found-but-null multiplies as 0, not as 1.** `=multiply($.a,$.missingFactor)` where `missingFactor` is present and `null` returns `0`, collapsing the whole chain — and one `null` element inside an array argument collapses that product too. This is deliberate: every function in the Math pack maps a found null to 0, and `multiply` does not get its own rule. A rate table with a hole should produce a visibly wrong zero, not a premium priced as if the factor were neutral. Guard the value first (`=fetch($.factor,1)`) if 1 is what you mean. Verified by: `TLio.Functions.Tests/Fixtures/Math/multiply/04-found-null-is-zero.json` (`=multiply($.a, $.missingFactor)` with `missingFactor: null` → `0`).
 - **Path not found is a failure, not a zero.** A null that *exists* is 0; a path that resolves to nothing fails the function and aborts the script. The two are different states.
 - **A wildcard path is one argument, not several.** `=multiply($.items[*].factor)` multiplies every matched node together — that is usually what you want, but it means adding a second matching element silently changes the result.
 - **Non-numeric strings fail.** Numeric strings (`"2.5"`) are parsed with the invariant culture; `"2,5"` and `"abc"` fail the function.

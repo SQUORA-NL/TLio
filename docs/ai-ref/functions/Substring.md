@@ -35,14 +35,22 @@ Only the index arguments are numeric. Everything text functions consume and prod
 
 Works with all adapters. Uses `string.Substring`.
 
-## Example
+## Verified example
+
+Two-argument form (to end of string):
 
 ```json
-{ "command": "add", "path": "$.abbr", "value": "=substring($.name, 0, 3)" }
+{ "command": "put", "path": "$.result", "value": "=substring($.str, $.start)" }
 ```
 
-Input: `{ "name": "Alice" }`
-Output: `{ "name": "Alice", "abbr": "Ali" }`
+Input: `{ "str": "Hello World", "start": 6, "len": 5 }`
+Output: `{ ..., "result": "World" }`
+
+Three-argument form (explicit length) gives the same result here:
+`=substring($.str, $.start, $.len)` → `"World"`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/substring/01-from-start.json`,
+`02-with-length.json`, and `03-from-zero.json` (`=substring($.str, 0, 5)` → `"Hello"`).
 
 ## C# Usage
 

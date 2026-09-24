@@ -1,0 +1,5 @@
+{
+  "input": { "price": 14.5 },
+  "script": [{ "command": "put", "path": "$.result", "value": "=toFixed($.price, 2)" }],
+  "result": { "price": 14.5, "result": "14.50" }
+}

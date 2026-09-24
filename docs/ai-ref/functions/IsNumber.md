@@ -23,7 +23,20 @@ A boolean node. A missing path is `false`.
 In JSON, `37` is a number and `"37"` is not. In XML and YAML — which have no type system —
 a scalar that looks numeric reads as a number.
 
-## Example
+## Verified example
+
+```json
+{ "command": "add", "path": "$.out", "value": "=isNumber($.age)" }
+```
+
+Input: `{ "age": 37, "ageText": "37" }` → Output: `{ ..., "out": true }`
+
+Verified by `PredicateFunctionTests.TypeChecks("=isNumber($.age)", true)` in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:120`. The same method
+proves numeric-looking *text* is not a number (`=isNumber($.ageText)` → `false`, line 122) and a
+missing path is not a number either (`=isNumber($.missing)` → `false`, line 131).
+
+As an `ifElse` condition:
 
 ```json
 { "command": "ifElse",

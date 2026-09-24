@@ -18,14 +18,18 @@
 
 A numeric node equal to the smallest value in the array.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.lowest", "value": "=min($.temps)" }
+{ "command": "put", "path": "$.result", "value": "=min($.nums)" }
 ```
 
-Input: `{ "temps": [15, 22, 8, 31], "lowest": 0 }`
-Output: `{ "temps": [...], "lowest": 8 }`
+Input: `{ "nums": [3, 1, 4, 1, 5], "a": 10, "b": 3 }`
+Output: adds `"result": 1`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/min/01-array.json`
+(`02-two-values.json` verifies multiple path arguments — `=min($.a, $.b)` → `3`, the
+smaller of the two scalars.)
 
 ## When to use
 
@@ -44,10 +48,10 @@ Output: `{ "temps": [...], "lowest": 8 }`
 
 | Function | Returns | Fails on empty/missing? |
 |----------|---------|------------------------|
-| `min` | Smallest value | Yes |
-| `max` | Largest value | Yes |
-| `median` | Middle value | No explicit note — treat as yes |
-| `avg` | Arithmetic mean | Yes |
+| `min` | Smallest value | Yes — on a missing path, and on a present-but-empty array |
+| `max` | Largest value | Yes — on a missing path, and on a present-but-empty array |
+| `median` | Middle value | Only on a missing path — an empty array returns `0` |
+| `avg` | Arithmetic mean | Only on a missing path — an empty array returns `0` |
 
 ## Common mistakes
 

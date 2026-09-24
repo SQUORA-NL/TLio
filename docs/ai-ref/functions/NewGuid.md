@@ -18,14 +18,20 @@ None. Takes no arguments.
 
 Works with all adapters (returns a string node via `NodeAdapter.CreateString`).
 
-## Example
+## Verified example
 
 ```json
 { "command": "add", "path": "$.id", "value": "=newGuid()" }
 ```
 
-Input: `{}`
-Output: `{ "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }` (any valid UUID v4)
+`newGuid()` is random, so no fixture asserts a literal value; the inline NUnit tests assert
+the two properties that matter instead:
+
+- The result parses as a GUID (`Guid.TryParse` succeeds) — verified by
+  `NewGuidTests.NewGuid_ReturnsString`
+  (`TLio.Functions.Tests/FunctionsTests/TextTests/NewGuidTests.cs:23-31`).
+- Two calls produce different values — verified by `NewGuidTests.NewGuid_EachCallIsUnique`
+  (same file, lines 33-40).
 
 ## Notes
 

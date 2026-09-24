@@ -53,7 +53,9 @@ independent:
   pack commands do not resolve `=indirect()`; compute the path in a preceding step.
 
 Per-command detail is in [`docs/ai-ref/commands/`](docs/ai-ref/commands/); notation rules are in
-[`docs/ai-ref/notation-reference.md`](docs/ai-ref/notation-reference.md).
+[`docs/ai-ref/notation-reference.md`](docs/ai-ref/notation-reference.md); throughput,
+thread-safety and precompilation guidance is in
+[`docs/ai-ref/performance.md`](docs/ai-ref/performance.md).
 
 ## Projects
 
@@ -62,8 +64,8 @@ Per-command detail is in [`docs/ai-ref/commands/`](docs/ai-ref/commands/); notat
 | Project | Purpose |
 |---|---|
 | `TLio.Core` | Contracts + models — zero external dependencies |
-| `TLio.Commands` | add, set, put, remove, rename, copy, move, merge, compare, ifElse, decisionTable |
-| `TLio.Functions` | Built-in value-producing functions (fetch, path, indirect, promote, partial, datetime, newGuid) and the predicate set |
+| `TLio.Commands` | add, set, put, remove, rename, copy, move, merge, compare, ifElse, decisionTable, setProperties |
+| `TLio.Functions` | Built-in value-producing functions (fetch, path/scriptpath, indirect, promote, partial, toArray, datetime, newGuid), the collection functions (distinct, sort, sortBy, last), the value-choosing functions (if, coalesce, between) and the predicate set |
 | `TLio.Client` | `ScriptEngine`, `CompiledScript`, command/function registries, fluent `TLioConvert` API |
 
 ### Format adapters

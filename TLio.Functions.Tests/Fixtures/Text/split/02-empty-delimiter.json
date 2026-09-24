@@ -1,0 +1,5 @@
+{
+  "input": { "word": "abc", "delim": "" },
+  "script": [{ "command": "put", "path": "$.result", "value": "=split($.word, $.delim)" }],
+  "result": { "word": "abc", "delim": "", "result": ["a", "b", "c"] }
+}

@@ -13,7 +13,7 @@
 | # | Type | Required | Description |
 |---|------|----------|-------------|
 | 1, 3, 5… | array path | yes | A criteria range. All ranges are treated as parallel. |
-| 2, 4, 6… | string literal | yes | The criteria that its preceding range must satisfy (single-quoted). |
+| 2, 4, 6… | string literal or path | yes | The criteria that its preceding range must satisfy — single-quoted literal or a path to a string node. |
 
 Requires an even number of arguments, at least 2 — one or more
 `(criteria_range, criteria)` pairs. Unlike `sumifs`/`averageifs`, there is no separate value
@@ -24,23 +24,28 @@ range: `countifs` counts, it does not total anything.
 A long node with the count of rows where all pairs matched. `0` — not a failure — when
 nothing matches.
 
-## Example
+## Verified example
+
+Single criteria pair (behaves like `countif`):
 
 ```json
-{
-  "command": "set", "path": "$.active_nl_count",
-  "value": "=countifs($.status,'active',$.country,'NL')"
-}
+{ "command": "put", "path": "$.result", "value": "=countifs($.nums, $.crit_gt3)" }
 ```
 
-Input:
+Input: `{ "nums": [1, 2, 3, 4, 5], "crit_gt3": ">3", "crit_lte4": "<=4" }`
+Output: `..., "result": 2`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/countifs/01-single-criteria.json`.
+
+Two criteria pairs over the **same** range, AND-combined:
+
 ```json
-{
-  "status":  ["active", "active", "inactive"],
-  "country": ["NL", "BE", "NL"]
-}
+{ "command": "put", "path": "$.result", "value": "=countifs($.nums, $.crit_gt3, $.nums, $.crit_lte4)" }
 ```
-Output: `"active_nl_count": 1` — only index 0 is `active` **and** `NL`.
+
+Same input → `..., "result": 1` — only `4` is both `>3` and `<=4`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/countifs/02-two-criteria.json`.
 
 ## Criteria syntax
 
@@ -58,6 +63,16 @@ Same operator-prefix and wildcard rules as `sumifs` — see
 - You need a **total**, not a count — use `sumifs`.
 - You need an **unconditional count** — use `count`.
 - The ranges are **not parallel** — misaligned arrays compare the wrong pairs.
+
+## Performance
+
+Each criteria/range pair is resolved and flattened once up front, then `countifs` walks the
+longest range's length, evaluating all `k` criteria for every index via `List<T>.All` (short-
+circuiting on the first non-match) — roughly O(n × k) in the worst case for `n` rows and `k`
+criteria pairs. Every criteria string is re-parsed by `ConditionEvaluator` on each element it
+is tested against, since there is no per-call caching of the parsed condition. For large arrays
+or many criteria pairs evaluated repeatedly, pre-filtering the data before the script runs is
+cheaper than re-scanning with `countifs` on every invocation.
 
 ## Comparison
 

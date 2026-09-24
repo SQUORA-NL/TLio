@@ -32,14 +32,54 @@ Two-argument form (add child to matched parent):
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
 
-## Example
+## Verified example
+
+Creating a new top-level property:
 
 ```json
-[
-  { "command": "add", "path": "$.newField", "value": "created" },
-  { "command": "add", "path": "$.items", "value": ["first"] }
-]
+// input
+{ "existing": "value" }
+
+// script
+[ { "command": "add", "path": "$.newProp", "value": "added" } ]
+
+// result
+{ "existing": "value", "newProp": "added" }
 ```
+
+Verified by: `TLio.UnitTests/Fixtures/Add/01-add-new-property/fixture.json`
+
+`add` creates missing parent objects along the way — `$.a` already exists but is empty, and
+the path is built through it to the leaf:
+
+```json
+// input
+{ "a": {} }
+
+// script
+[ { "command": "add", "path": "$.a.newProp", "value": "deep" } ]
+
+// result
+{ "a": { "newProp": "deep" } }
+```
+
+Verified by: `TLio.UnitTests/Fixtures/Add/03-add-deep-path/fixture.json`
+
+The same path-creation reaches through several missing levels at once, and through a `null`
+node — `null` is treated as an unfilled container, not a value to preserve:
+
+```json
+// input
+{ "a": null }
+
+// script
+[ { "command": "add", "path": "$.a.b.c", "value": 3 } ]
+
+// result
+{ "a": { "b": { "c": 3 } } }
+```
+
+Verified by: `TLio.Parity.Tests/Fixtures/Add/10-add-deep-through-null/fixture.json`
 
 ## When to use
 
@@ -96,7 +136,13 @@ In XML the subscript sits on the item step and counts from one, so the first ele
 
 - **Using `add` to update a value**: the command will silently skip; trace outcome is `"noop"`. Switch to `put`.
 - **Expecting an error when the field exists**: `add` never errors on duplicates — it just skips. If you need a hard failure, check the trace outcome instead.
-- **Missing parent path**: if the parent object (`$.address` for `$.address.country`) does not exist, the result is `"failure"`, not a silent skip. Add an `EnsurePath` step first.
+- **Assuming a missing parent path fails**: it does not — `add` builds the parent objects along
+  the path itself (the same mechanism `put` uses), including upgrading a `null` node into an
+  object it can write into. See `TLio.UnitTests/Fixtures/Add/03-add-deep-path/fixture.json` and
+  `TLio.Parity.Tests/Fixtures/Add/10-add-deep-through-null/fixture.json`. The one path shape
+  `add` cannot build is one that runs through an array position that does not exist yet
+  (e.g. `$.items[2].name` when `items` has fewer than 3 elements) — that is a no-op with a
+  warning, not a failure.
 - **Confusing `add` with array index writes**: targeting `$.items[2]` with `add` when index 2 already exists will be treated as existing → noop. Use `put` to overwrite a specific index.
 
 ## Failure modes and what the trace tells you
@@ -104,7 +150,8 @@ In XML the subscript sits on the item step and counts from one, so the first ele
 | Situation | Trace outcome | Trace detail | Action |
 |---|---|---|---|
 | Field already exists | `noop` | contains `"already exists"` | Not an error — field was previously set. Use `put` if overwrite is intended. |
-| Parent path is missing | `failure` | path resolution error | The parent object/array does not exist. Insert an `EnsurePath` or `add`/`put` step to create it first. |
+| Parent path is missing | `success` | — | `add` creates the missing parent objects (and the leaf) as part of the write; nothing to do. |
+| Parent path runs through a missing array position | `noop` | contains `"could not be created"` | That shape cannot be auto-built. Add the array elements in order first, or restructure the path. |
 | Path resolves normally and field is absent | `success` | — | Field was created as expected. |
 
 ## C# Fluent API

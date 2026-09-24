@@ -19,14 +19,27 @@
 
 A boolean node. Returns `false` (with a warning) when either side is missing, null, an object or an array — those cannot be ordered.
 
-## Example
+## Verified example
+
+Input (subset of the shared test document):
 
 ```json
-{ "command": "ifElse",
-  "condition": "=greaterThan($.age, 17)",
-  "ifScript":   [{ "command": "add", "path": "$.adult", "value": true }],
-  "elseScript": [{ "command": "add", "path": "$.adult", "value": false }] }
+{ "age": 37 }
 ```
+
+Script:
+
+```json
+[{ "command": "add", "path": "$.out", "value": "=greaterThan($.age, 30)" }]
+```
+
+Result: `out` is `true`.
+
+Verified by: `PredicateFunctionTests.Ordering("=greaterThan($.age, 30)", true)` —
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:73`. The same test
+class also asserts `=greaterThan($.missing, 1)` → `false` and `=greaterThan($.address, 1)` →
+`false` (lines 81-82, an object is not orderable), and `=greaterThan($.name, 'A')` → `true`
+(ordinal text ordering, line 79).
 
 ## When to use
 

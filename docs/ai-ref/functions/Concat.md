@@ -1,11 +1,11 @@
 # concat
 
-> Concatenates two or more string arguments into a single string.
+> Concatenates one or more arguments as strings into a single string.
 
 ## Syntax
 
 ```
-=concat(<value1>, <value2>)
+=concat(<value1>)
 =concat(<value1>, <value2>, <valueN>, ...)
 ```
 
@@ -15,9 +15,8 @@
 
 | # | Type | Required | Description |
 |---|------|----------|-------------|
-| 1 | string or path | yes | First string segment. |
-| 2 | string or path | yes | Second string segment. |
-| 3+ | string or path | no | Additional segments (variadic). |
+| 1 | string or path | yes | First string segment. A single argument is valid — `concat` requires at least one, not two. |
+| 2+ | string or path | no | Additional segments (variadic). An array argument is flattened element-by-element and each element's string form is appended in place — it is not rejected, just not itself a common use case (see `join` for the array case). |
 
 ## Returns
 
@@ -27,14 +26,17 @@ A string node containing all arguments joined in order.
 
 Works with all adapters (JSON, XML, YAML). Each argument is resolved via `TryGetString`.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "add", "path": "$.full", "value": "=concat($.first,' ',$.last)" }
+{ "command": "put", "path": "$.result", "value": "=concat($.a, $.b, $.c)" }
 ```
 
-Input: `{ "first": "Alice", "last": "Smith" }`
-Output: `{ "first": "Alice", "last": "Smith", "full": "Alice Smith" }`
+Input: `{ "a": "Hello", "b": " ", "c": "World" }`
+Output: `{ "a": "Hello", "b": " ", "c": "World", "result": "Hello World" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/concat/01-three-strings.json` (and
+`02-single-arg.json`, `=concat($.a)` → `"Hello"`, confirming the single-argument form is valid).
 
 ## C# Usage
 
@@ -56,7 +58,10 @@ var result = engine.Execute(
 
 ## When NOT to use
 
-- You are joining the elements of an array — use `join` instead. `concat` does not accept an array argument; you would have to spell out every index.
+- You are joining the elements of an array **with a separator** — use `join` instead. `concat`
+  does accept an array argument (it flattens it element-by-element and appends each element's
+  string form), but with no separator between elements: `=concat($.tags)` on `["a","b","c"]`
+  gives `"abc"`, not `"a, b, c"`.
 - The number of values to join is dynamic or unknown at script-write time — use `join` instead.
 - You need a template with named slots — use `format` instead (cleaner syntax for sentence-style templates).
 
@@ -70,7 +75,9 @@ var result = engine.Execute(
 
 ## Common mistakes
 
-- **Joining arrays with concat**: `=concat($.tags[0],$.tags[1])` is fragile and breaks when array length varies. Use `join` for arrays.
+- **Passing an array expecting a separator**: `=concat($.tags)` silently flattens the array with
+  no separator (`"abc"`, not `"a, b, c"`) — it does not fail, so this can go unnoticed. Use `join`
+  when a separator matters.
 - **Path resolution**: arguments resolve against the document root (dataContext). `@.field` inside a function refers to the ROOT, not a parent element.
 - **Wildcard paths**: `$.items[*].name` as an argument grabs all values as a flat list, not individual concatenations. Use indexed paths for per-element work.
 - **Missing separator**: `=concat($.first,$.last)` produces `"AliceSmith"` with no space. Pass the separator as a literal arg between the fields.

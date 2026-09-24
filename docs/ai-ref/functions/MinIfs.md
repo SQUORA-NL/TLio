@@ -14,7 +14,7 @@
 |---|------|----------|-------------|
 | 1 | array path | yes | Path to the numeric array to take the minimum of. |
 | 2, 4, 6… | array path | yes | A criteria range, parallel to `min_range`. |
-| 3, 5, 7… | string literal | yes | The criteria for its preceding range (single-quoted). |
+| 3, 5, 7… | string literal or path | yes | The criteria for its preceding range — single-quoted literal or a path to a string node. |
 
 Requires an odd number of arguments, at least 3.
 
@@ -25,17 +25,17 @@ A numeric node — the smallest matching value.
 **Fails when nothing matches — it does not return `0` or `null`.** This is the opposite
 convention from `sumifs`/`averageifs`.
 
-## Example
+## Verified example
 
 ```json
-{
-  "command": "set", "path": "$.min_paid_amount",
-  "value": "=minifs($.amounts,$.status,'paid')"
-}
+{ "command": "put", "path": "$.result", "value": "=minifs($.nums, $.cat, $.crit_A)" }
 ```
 
-Input: `{ "status": ["paid","pending","paid"], "amounts": [100, 200, 150] }`
-Output: `"min_paid_amount": 100`
+Input: `{ "nums": [1, 2, 3, 4, 5], "cat": ["A", "B", "A", "C", "A"], "crit_A": "A" }`
+Output: `..., "result": 1` — the smallest of the three `nums` positions where `cat` is `"A"`
+(indices 0, 2, 4 → values `1`, `3`, `5`).
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/minifs/01-basic.json`.
 
 ## Criteria syntax
 
@@ -57,6 +57,13 @@ Same operator-prefix and wildcard rules as `sumifs` — see
 - You need the **unconditional** minimum — use `min`.
 - A no-match should be a **`0`**, not a script failure — guard with `countifs` first, or use
   `ifElse` to branch before calling `minifs`.
+
+## Performance
+
+`minifs` resolves and flattens every range once, then walks `min_range`'s length testing all
+`k` criteria per index — roughly O(n × k) for `n` rows and `k` criteria pairs, the same shape
+as `sumifs`/`averageifs`/`maxifs`. Criteria strings are parsed per element rather than compiled
+once per call.
 
 ## Comparison
 

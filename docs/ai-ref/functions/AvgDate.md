@@ -1,31 +1,47 @@
 # avgdate
 
-> Returns the average (mean) date from an array of date strings.
+> Returns the average (mean) date across one or more arguments — scalars, arrays, or a mix of both.
 
 ## Syntax
 
 ```
-=avgdate(<path>)
+=avgdate(<date1>, <date2>, ...)
 ```
 
 ## Arguments
 
 | # | Type | Required | Description |
 |---|------|----------|-------------|
-| 1 | date array or path | yes | Path to an array of ISO-8601 date strings. |
+| 1..n | date string, date array, or path | at least one | Each argument may be a single date or a path that resolves to an array of dates (or to multiple matches, e.g. a wildcard path). All dates from all arguments are pooled before averaging. A single argument is valid — the average of one date is that date. |
+
+Like `mindate` and `maxdate`, `avgdate` is variadic and shares the same argument-collection
+logic, not a single-array-only function.
 
 ## Returns
 
-A string node with the average date in `yyyy-MM-dd` format.
+A string node with the average date. The average is computed as the mean of the pooled dates'
+UTC ticks, then formatted back through the shared formatter: `yyyy-MM-dd` when the resulting
+instant falls exactly on midnight UTC (as it does for date-only inputs whose count divides
+evenly), otherwise `yyyy-MM-ddTHH:mm:ssZ`.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.avg", "value": "=avgdate($.events[*].date)" }
+{
+  "command": "put",
+  "path": "$.result",
+  "value": "=avgdate($.ts1, $.ts2)"
+}
 ```
 
-Input: `{ "events": [{ "date": "2024-01-01" }, { "date": "2024-07-01" }, { "date": "2024-12-31" }], "avg": null }`
-Output: `{ ..., "avg": "2024-07-01" }`
+Input: `{ "ts1": "2024-03-15T00:00:00Z", "ts2": "2024-03-15T12:00:00Z" }`
+Output: `{ ..., "result": "2024-03-15T06:00:00Z" }`
+
+A single argument passes through unchanged: `=avgdate($.d1)` over `"2024-01-01"` returns
+`"2024-01-01"`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/TimeDate/avgdate/01-single-date.json`,
+`.../02-timestamps-midpoint.json`
 
 ## When to use
 
@@ -55,6 +71,6 @@ Output: `{ ..., "avg": "2024-07-01" }`
 ## Common mistakes
 
 - **Confusing avgDate with maxDate or minDate.** `avgDate` returns the chronological midpoint, not the extreme. If you want the boundary of a set, use `maxDate` or `minDate`.
-- **Passing a non-array path.** The argument must resolve to an array of date strings. A single scalar date string is not valid input — for two-date comparison use `dateCompare`.
+- **Expecting a single-argument call to fail.** `=avgdate($.d1)` is valid — the average of one date is that date. It is a legitimate degenerate case, not an error.
 - **Expecting time-precision output.** `avgDate` returns a `yyyy-MM-dd` string. Sub-day precision is lost in the result even if the input strings include time components.
 - **Path args resolve against document root.** `@.field` inside the function call refers to the root. Use `$.field` or wildcard paths like `$.events[*].date` for unambiguous resolution.

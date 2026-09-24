@@ -17,16 +17,22 @@
 
 ## Returns
 
-A JSON array node of string values.
+A JSON array node of string values. An **empty delimiter** (`""`) is a special case: instead of
+producing one giant element or failing, `split` breaks the string into individual characters, one
+element per character.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.tags", "value": "=split($.csv,',')" }
+{ "command": "put", "path": "$.result", "value": "=split($.csv, $.delim)" }
 ```
 
-Input: `{ "csv": "java,python,csharp", "tags": null }`
-Output: `{ ..., "tags": ["java", "python", "csharp"] }`
+Input: `{ "csv": "a,b,c", "delim": "," }`
+Output: `{ "csv": "a,b,c", "delim": ",", "result": ["a", "b", "c"] }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/split/01-by-delimiter.json`, plus
+`02-empty-delimiter.json` for the empty-delimiter edge case: `=split($.word, "")` on `"abc"` →
+`["a", "b", "c"]` — an empty delimiter splits into individual characters rather than failing.
 
 ## When to use
 

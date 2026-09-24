@@ -26,14 +26,16 @@ A string node with all characters converted to lowercase via `string.ToLowerInva
 
 Works with all adapters (JSON, XML, YAML).
 
-## Example
+## Verified example
 
 ```json
-{ "command": "add", "path": "$.lower", "value": "=toLower($.name)" }
+{ "command": "put", "path": "$.result", "value": "=tolower($.mixed)" }
 ```
 
-Input: `{ "name": "Alice" }`
-Output: `{ "name": "Alice", "lower": "alice" }`
+Input: `{ "mixed": "Hello World" }`
+Output: `{ "mixed": "Hello World", "result": "hello world" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/tolower/01-basic.json`.
 
 ## Notes
 

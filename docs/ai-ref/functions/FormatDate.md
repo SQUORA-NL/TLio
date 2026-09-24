@@ -27,15 +27,23 @@ A string. The format is applied to the **UTC** value of the date, always with `C
 | `=formatDate('2024-03-15T14:05:09Z','HH:mm')` | `14:05` |
 | `=formatDate('2024-03-15T23:30:00+05:00','yyyy-MM-dd HH:mm')` | `2024-03-15 18:30` |
 
-## Example
+## Verified example
 
 ```json
-{ "command": "put", "path": "$.output.quotedOnDisplay",
-  "value": "=formatDate($.request.quotedOn,'dd-MM-yyyy')" }
+{ "command": "put", "path": "$.new",
+  "value": "=formatdate($.request.quotedOn,'yyyyMMdd')" }
 ```
 
 Input: `{ "request": { "quotedOn": "2026-08-21" } }`
-Output: `{ ..., "output": { "quotedOnDisplay": "21-08-2026" } }`
+Output: `{ ..., "new": "20260821" }`
+
+The fixture also runs the old `=replace($.request.quotedOn,'-','')` idiom side by side (into
+`$.old`) and asserts both give `"20260821"` — the same date-with-dashes-stripped result, but
+`formatDate` gets there by rendering the date, not by editing the string.
+
+Verified by: `TLio.Functions.Tests/Fixtures/TimeDate/formatdate/05-sample-compact-matches-the-replace-idiom.json`
+(notation, time-only and offset-to-UTC rendering verified by `.../01-dutch-notation.json`
+through `.../04-offset-renders-as-utc.json` in the same directory)
 
 ## When to use
 
@@ -58,6 +66,15 @@ Output: `{ ..., "output": { "quotedOnDisplay": "21-08-2026" } }`
 | `datetime` | format only | string | Render *now* — there is no date argument |
 | `parseDate` | text + format | ISO date string | Read a date written in another notation |
 | `datePart` | date + part name | long | One component, as a number |
+
+## Performance
+
+`CultureInfo.InvariantCulture` is a shared static instance, not built per call, and the render
+itself is a single `DateTime.ToString(format, ...)` call — there is no per-call format-provider
+construction to cache. The only real cost is the up-front `DateTimeOffset` parse of argument 1
+(`TryParseDate` tries a short static list of exact formats before falling back to a general
+parse), which is the same cost every TimeDate function pays for its date arguments. No caching
+is needed and none would meaningfully help.
 
 ## Common mistakes
 

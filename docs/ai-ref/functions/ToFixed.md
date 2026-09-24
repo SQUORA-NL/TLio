@@ -27,16 +27,24 @@ A **string** node. Trailing zeros cannot survive in a numeric node — `14.50` a
 Half away from zero: `=toFixed(14.5, 0)` → `"15"`, `=toFixed(-2.345, 2)` → `"-2.35"`.
 This differs from .NET's own `F` specifier used by `format`, which rounds half to even.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "add", "path": "$.premiumPerMonth", "value": "=toFixed($.premie, 2)" }
+{ "command": "put", "path": "$.result", "value": "=toFixed($.price, 2)" }
 ```
 
-Input: `{ "premie": 14.5 }`
-Output: `{ ..., "premiumPerMonth": "14.50" }`
+Input: `{ "price": 14.5 }`
+Output: `{ "price": 14.5, "result": "14.50" }`
 
-Locale-style output: `=toFixed($.premie, 2, ',')` → `"14,50"`.
+Locale-style output: `=toFixed($.price, 2, ',')` → `"14,50"`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/tofixed/01-two-decimals.json` and
+`02-custom-separator.json` (added as part of this documentation sweep — this function's fixture
+directory did not previously exist even though `toFixed` is a registered function; also wired
+into `ExtensionFixtureTests.Text_ToFixed`). Rounding-mode and culture-independence behavior is
+additionally covered by the inline test fixture `DecimalFormattingTests` (in
+`TLio.Functions.Tests/FunctionsTests/TextTests/`), including `=toFixed($.price, 0)` → `"15"`
+(half away from zero) and a run under `nl-NL` culture that still produces `"14.50"`.
 
 ## When to use
 

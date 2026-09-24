@@ -28,19 +28,27 @@ Used as a value in any command: `"value": "=scriptpath()"`
 A string containing the absolute JSONPath (or format-equivalent path) of the current
 node, or the resolved path if an argument is provided.
 
-## Example
+## Verified example
 
 ```json
 { "command": "set", "path": "$.result", "value": "=scriptpath()" }
 ```
 
-Result: `$.result` = `"$"` (at document root)
+Given `{ "result": null }` → `{ "result": "$" }` (at document root)
+
+Verified by: `TLio.Functions.Tests/Fixtures/ScriptPath/01-scriptpath-root/fixture.json`
+
+Stamping each element of a wildcard match with its own path (via the `path` alias — see
+[Find mode](#find-mode-scriptpath-kinds-recursive) below for the 3-argument shape):
 
 ```json
-{ "command": "set", "path": "$.items[0].selfPath", "value": "=scriptpath()" }
+{ "command": "add", "path": "$.items[*].loc", "value": "=path()" }
 ```
 
-Result: `$.items[0].selfPath` = `"$.items[0]"`
+Given `{ "items": [{ "id": 1 }, { "id": 2 }] }` →
+`{ "items": [{ "id": 1, "loc": "$.items[0]" }, { "id": 2, "loc": "$.items[1]" }] }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/ScriptPath/04-path-alias/fixture.json`
 
 ## Find mode: `=scriptpath(*, kinds, recursive)`
 
@@ -76,6 +84,18 @@ object anywhere in the subtree, at any depth. Wrapping all of them with `setProp
 call has a footgun worth knowing about first: see
 [SetProperties.md — turning every complex object in a tree into an array](../commands/SetProperties.md#example-turning-every-complex-object-in-a-tree-into-an-array).
 
+Find mode has no fixture yet (it is exercised only through inline NUnit tests); the behaviour
+above — `kinds` selecting independently of `recursive`, arrays as transparent containers,
+returned nodes being live and writable in place — is verified by
+`TLio.Functions.Tests/FunctionsTests/ScriptPathFindTests.cs`:
+`NonRecursive_PrimitiveOnly_FindsOnlyDirectScalarChildren`,
+`NonRecursive_NullOnly_FindsTheNullProperty`,
+`Recursive_ReachesNestedObjectProperties`,
+`Recursive_ArraysAreNeverThemselvesAMatch`, and
+`ReturnedNodesAreLiveReferences_ReplaceWritesBackIntoTheDocument` (mutating a returned node via
+`NodeAdapter.Replace` changes the original document). `NonWildcardName_Fails` and
+`UnrecognisedKind_Fails` cover the two validation errors.
+
 ## Notes
 
 - Also registered as `"path"` (camelCase alias, 008+) for JLio compatibility — see [Path.md](Path.md).
@@ -92,6 +112,25 @@ var result = engine.Execute(
     JObject.Parse("{\"items\":[{\"id\":1},{\"id\":2}]}"),
     JsonExecutionContext.CreateDefault());
 ```
+
+## Performance
+
+The default (path-string) shape does one `GetPath`/`SelectNodes` lookup — the same
+per-selection cost as any other path resolution in the engine (see `fetch`'s Performance
+note and `EXECUTION_CONCURRENCY_INVESTIGATION.md` §6 for the adapter-dependent cost of that
+lookup, worse on the System.Text.Json adapter than on Newtonsoft).
+
+Find mode (`recursive: true`) is the one genuinely expensive shape here: `CollectChildren`
+walks the **entire subtree** under the current node, visiting every object, array and scalar
+once, regardless of how many actually match `kinds` — cost scales with subtree size, not
+result size. There is no dedicated benchmark for find mode itself, but the underlying
+per-selection cost it shares with every other path lookup is bounded in
+`TLio.Xml.Tests/Performance/XmlPath_PerformanceTests.cs` and
+`TLio.Yaml.Tests/Performance/YamlPath_PerformanceTests.cs` (allocations kept under ~128KB/16KB
+per 1,000 iterations respectively, and a ~500-row/20-field document queried within 2 seconds
+and 50MB). Call find mode once per document region you need to touch, not once per node —
+`setProperties` already takes the *set* it returns and writes to all of them in one pass, so
+there is no need to re-run `scriptpath(*, …)` per target.
 
 ## When to use
 

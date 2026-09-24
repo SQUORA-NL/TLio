@@ -27,15 +27,20 @@ A date-only string, `yyyy-MM-dd`. Any time component is dropped — the answer i
 | `=endOfMonth('2024-04-10T22:15:00Z')` | `2024-04-30` |
 | `=endOfMonth('2024-12-05')` | `2024-12-31` |
 
-## Example
+## Verified example
 
 ```json
 { "command": "put", "path": "$.policy.termEnd",
-  "value": "=endOfMonth($.request.requestedStartDate)" }
+  "value": "=endofmonth($.request.requestedStartDate)" }
 ```
 
 Input: `{ "request": { "requestedStartDate": "2026-09-15" } }`
 Output: `{ ..., "policy": { "termEnd": "2026-09-30" } }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/TimeDate/endofmonth/05-sample-term-end.json`
+(leap February, common February, thirty-day month, and December verified by
+`.../01-leap-february.json` through `.../04-december-does-not-roll-over.json` in the same
+directory)
 
 ## When to use
 

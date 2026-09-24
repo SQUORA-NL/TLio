@@ -24,23 +24,25 @@ A long integer:
 
 **Important**: The return type is `long` (integer), not a string like "before"/"after"/"equal".
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.cmp", "value": "=datecompare($.d1,$.d2)" }
+{
+  "command": "put",
+  "path": "$.result",
+  "value": "=datecompare($.earlier, $.later)"
+}
 ```
 
-Input: `{ "d1": "2024-03-01", "d2": "2024-06-01", "cmp": null }`
-Output: `{ ..., "cmp": -1 }`
+Input: `{ "earlier": "2024-01-01", "later": "2024-06-15" }`
+Output: `{ ..., "result": -1 }`
 
-## Usage in scripts
+Swap the arguments (`=datecompare($.later, $.earlier)`) and the result is `1`; compare a date to
+itself and it is `0`. Timestamps compare the same way — `2024-03-15T10:30:00Z` vs.
+`2024-03-15T18:00:00Z` is also `-1`.
 
-```json
-{ "command": "ifElse",
-  "condition": "=datecompare($.created,$.deadline)",
-  "thenPath": "$.overdue", "thenValue": true,
-  "elsePath": "$.overdue", "elseValue": false }
-```
+Verified by: `TLio.Functions.Tests/Fixtures/TimeDate/datecompare/01-earlier.json`,
+`.../02-later.json`, `.../03-equal.json`, `.../04-timestamps.json`
 
 ## When to use
 
@@ -73,4 +75,5 @@ Output: `{ ..., "cmp": -1 }`
 - **Reversing argument order.** `dateCompare(d1, d2)` returns `-1` when `d1` is the earlier date. Swapping the arguments inverts the sign.
 - **Using dateCompare for a range check.** If the question is "is this date inside a window?", `isDateBetween` is more readable and handles both bounds inclusively without manual threshold logic.
 - **Ignoring the time component.** All date functions accept ISO-8601 strings. When time is present (`"2024-06-15T08:00:00"`), the comparison includes the time. Two dates that share the same calendar day but differ in time will not return `0`.
+- **Feeding the raw result straight into `ifElse`.** A condition is truthy only for the boolean `true` or the string `"true"` — a numeric `-1`, `0` or `1` is never truthy, so `"condition": "=datecompare(...)"` always takes the else branch. Wrap it in a comparison first, e.g. `=equals(=datecompare($.a,$.b),-1)` or `=lessThan(=datecompare($.a,$.b),0)`.
 - **Path args resolve against document root.** `@.field` inside the function call refers to the root. Use `$.field` for unambiguous root-relative paths.

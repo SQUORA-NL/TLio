@@ -68,17 +68,36 @@ That is the only available answer: a JSON document has no way to hold XML except
 
 In XML, replacing keeps the element and swaps its content — `<payload>` stays `<payload>`.
 
-## Example
+## Verified example
 
 ```json
-[
-  { "command": "convertValue", "path": "$.messages[*].body", "from": "xml", "to": "json" },
-  { "command": "add",          "path": "$.messages[0].body.m.seen", "value": "true" }
-]
+[{ "command": "convertValue", "path": "$.messages[*].body", "from": "xml", "to": "json" }]
 ```
 
-Every message body is parsed out of XML into structure, and the next command addresses it as
-ordinary JSON.
+```
+{"messages":[{"body":"<m><a>1</a></m>"},{"body":"<m><a>2</a></m>"}]}
+{"messages":[{"body":{"m":{"a":"1"}}},{"body":{"m":{"a":"2"}}}]}
+```
+
+The wildcard reaches every node the path selects, not just the first — both message bodies are
+parsed out of XML into structure in one step, and a following command can then address either
+one as ordinary JSON.
+
+Verified by: `TLio.FormatConverter.Tests/Integration/ConvertValueTests.cs` —
+`EveryMatchedNodeIsConverted`.
+
+## Performance
+
+`convertValue` runs on the ordinary `ScriptEngine<TNode>`, which has its own precompilation:
+`ScriptEngine<TNode>.Compile` parses a script once into a `CompiledScript<TNode>` that can then
+execute against many documents without re-parsing — the same parse-once principle
+`MultiFormatScriptRunner.Compile` applies on the multi-format side (see
+[convert](Convert.md#performance)). The AfdApi sample's numbers make the underlying cost
+concrete even though its scripts don't happen to use `convertValue`: parsing a multi-MB script
+used to add roughly 130ms to each ~220ms request for `afdshort-to-afd2`, and compiling once at
+startup instead of per-request brought steady-state latency for all three conversion directions
+down to the 15-70ms range. The fix is the same regardless of which commands a script contains —
+compile once, run many times, and warm up the JIT with a real request before serving traffic.
 
 ## When to use
 

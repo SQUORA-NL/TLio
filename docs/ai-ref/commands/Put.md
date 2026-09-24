@@ -1,8 +1,8 @@
 # put
 
 > **Upsert**: sets the value if the node already exists, creates it if absent.
-> Use `set` when the node must pre-exist (errors on missing), or `add` to create-only
-> (skips if exists).
+> Use `set` when the node must pre-exist (silently no-ops if missing, so you can check the
+> trace), or `add` to create-only (skips if exists).
 
 ## Syntax
 
@@ -33,14 +33,53 @@ Two-argument form (upsert child of matched parent):
 
 Works with all adapters. Path syntax differs per adapter — see [overview.md](../overview.md).
 
-## Example
+## Verified example
+
+Creating a value that does not exist yet — the parent object(s) along the path are created too:
 
 ```json
-[
-  { "command": "put", "path": "$.status", "value": "active" },
-  { "command": "put", "path": "$.meta", "property": "version", "value": 2 }
-]
+// input
+{}
+
+// script
+[ { "command": "put", "path": "$.person.address.city", "value": "Amsterdam" } ]
+
+// result
+{ "person": { "address": { "city": "Amsterdam" } } }
 ```
+
+Verified by: `TLio.UnitTests/Fixtures/Put/03-put-deep-path/fixture.json`
+
+Updating a value that already exists:
+
+```json
+// input
+{ "name": "old" }
+
+// script
+[ { "command": "put", "path": "$.name", "value": "new" } ]
+
+// result
+{ "name": "new" }
+```
+
+Verified by: `TLio.UnitTests/Fixtures/Put/02-put-update-existing/fixture.json`
+
+Writing into a `null` node upgrades it to an object instead of noop-ing — `null` is treated as
+an unfilled container, the same rule `add` follows:
+
+```json
+// input
+{ "customer": null }
+
+// script
+[ { "command": "put", "path": "$.customer.demo", "value": 3 } ]
+
+// result
+{ "customer": { "demo": 3 } }
+```
+
+Verified by: `TLio.Parity.Tests/Fixtures/Put/06-put-into-null-node/fixture.json`
 
 ## When to use
 
@@ -88,7 +127,11 @@ In XML the subscript sits on the item step and counts from one. See
 ## Common mistakes
 
 - **Using `put` when you want append-to-array**: `put` replaces the entire array. Use `add` to push a new element.
-- **Assuming `put` errors on missing parent**: if the parent object does not exist, the result is `"failure"`, not a silent create. Insert an `EnsurePath` step first.
+- **Assuming `put` errors on missing parent**: it does not — `put` creates every missing object
+  along the path (and the leaf) in one step, the same mechanism `add` uses, including upgrading
+  a `null` node. See `TLio.UnitTests/Fixtures/Put/03-put-deep-path/fixture.json`. The one shape
+  it cannot build is a path through an array position that does not exist yet — that is a no-op
+  with a warning, not a failure.
 - **Using `put` when you need to detect missing fields**: `put` never noops on a missing field — it just creates it. If detecting absence is important, use `set` and inspect the trace.
 - **Confusing `put` with a patch/merge**: `put` replaces the target node entirely; it does not deep-merge objects.
 
@@ -96,7 +139,8 @@ In XML the subscript sits on the item step and counts from one. See
 
 | Situation | Trace outcome | Trace detail | Action |
 |---|---|---|---|
-| Parent path is missing | `failure` | path resolution error | The parent object/array does not exist. Insert an `EnsurePath` or earlier `put` step to create it first. |
+| Parent path is missing | `success` | — | `put` creates the missing parent objects (and the leaf) as part of the write; nothing to do. |
+| Parent path runs through a missing array position | `noop` | contains `"could not be created"` | That shape cannot be auto-built. Add the array elements in order first, or restructure the path. |
 | Field absent, parent present | `success` | — | Field was created. |
 | Field present | `success` | — | Field was updated (overwritten). |
 

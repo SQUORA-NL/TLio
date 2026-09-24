@@ -30,15 +30,22 @@ A date string in TLio's canonical form: `yyyy-MM-dd` when the result falls on mi
 | `=dateAdd('2024-02-29',1,'years')` | `2025-02-28` |
 | `=dateAdd('2024-02-29',4,'years')` | `2028-02-29` |
 
-## Example
+## Verified example
 
 ```json
-{ "command": "put", "path": "$.policy.renewalDate",
-  "value": "=dateAdd($.request.requestedStartDate,1,'years')" }
+{ "command": "put", "path": "$.new",
+  "value": "=dateadd($.request.requestedStartDate,1,'years')" }
 ```
 
 Input: `{ "request": { "requestedStartDate": "2026-09-01" } }`
-Output: `{ ..., "policy": { "renewalDate": "2027-09-01" } }`
+Output: `{ ..., "new": "2027-09-01" }`
+
+The fixture also runs the old `concat(sum(substring(...,0,4),1),substring(...,4,6))` string-surgery
+idiom side by side (into `$.old`) and asserts both give `"2027-09-01"`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/TimeDate/dateadd/08-sample-renewal-date-matches-the-old-idiom.json`
+(month-end clamping, units, and negative amounts verified by `.../01-years.json` through
+`.../07-minutes-keep-the-time.json` in the same directory)
 
 ## When to use
 

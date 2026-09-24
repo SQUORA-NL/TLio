@@ -19,7 +19,20 @@
 
 A boolean node. `false` (with a warning) when either side is missing, null, an object or an array.
 
-## Example
+## Verified example
+
+```json
+{ "command": "add", "path": "$.out", "value": "=lessThan($.premium, 20)" }
+```
+
+Input: `{ "premium": 14.5 }` → Output: `{ ..., "out": true }`
+
+Verified by `PredicateFunctionTests.Ordering("=lessThan($.premium, 20)", true)` in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:76`. The same method
+also proves a missing operand is not orderable and answers `false`
+(`=greaterThan($.missing, 1)` → `false`, line 81) rather than throwing.
+
+As an `ifElse` condition:
 
 ```json
 { "command": "ifElse",

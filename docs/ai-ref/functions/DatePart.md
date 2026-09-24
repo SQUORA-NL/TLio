@@ -33,17 +33,22 @@ A `long`. Everything is read from the **UTC** value of the date.
 | `weekOfYear` | 1–53 | ISO 8601 week number |
 | `daysInMonth` | 28–31 | leap-year correct |
 
-## Example
+## Verified example
 
 ```json
-{ "command": "put", "path": "$.calc.startYear",
-  "value": "=datePart($.request.requestedStartDate,'year')" }
+{ "command": "put", "path": "$.new",
+  "value": "=datepart($.request.requestedStartDate,'year')" }
 ```
 
 Input: `{ "request": { "requestedStartDate": "2026-09-01" } }`
-Output: `{ ..., "calc": { "startYear": 2026 } }`
+Output: `{ ..., "new": 2026 }`
 
-Note the type: `2026`, a number — where `=substring($.request.requestedStartDate,0,4)` gives the string `"2026"`.
+Note the type: `2026`, a number — where the old idiom, `=substring($.request.requestedStartDate,0,4)`,
+gives the string `"2026"`. The fixture runs both (into `$.old` and `$.new`) to show the same year.
+
+Verified by: `TLio.Functions.Tests/Fixtures/TimeDate/datepart/08-sample-year-replaces-the-substring-idiom.json`
+(part-by-part behaviour — quarter, dayOfWeek, weekOfYear, daysInMonth, dayOfYear — verified by
+`.../01-year.json` through `.../07-dayofyear.json` in the same directory)
 
 ## When to use
 

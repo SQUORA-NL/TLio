@@ -60,17 +60,108 @@
 **Functions in the value**: ✅ rule result values only  
 **Functions in the path**: ✅ via the commands the rules execute
 
+## Verified example
+
+```json
+{
+  "input": { "status": "active" },
+  "script": [
+    {
+      "command": "decisionTable",
+      "path": "$",
+      "decisionTable": {
+        "inputs": [{ "name": "status", "path": "$.status" }],
+        "outputs": [{ "name": "label", "path": "$.label" }],
+        "rules": [
+          { "priority": 1, "conditions": { "status": "active" }, "results": { "label": "Active" } }
+        ]
+      }
+    }
+  ],
+  "result": { "status": "active", "label": "Active" }
+}
+```
+
+Verified by: `TLio.UnitTests/Fixtures/DecisionTable/01-decision-table-key/fixture.json`. Note
+the script uses the `"decisionTable"` key rather than `"config"` — this fixture is also the live
+proof that the JLio-compatibility alias works.
+
+### bestMatch and allMatches, from the C# test suite
+
+The single fixture file only exercises `firstMatch`. `bestMatch` and `allMatches` are covered by
+`TLio.UnitTests/CommandsTests/DecisionTableAdvancedTests.cs`, built via the C# config object
+rather than a JSON script; the equivalent JSON is reconstructed here (not copied verbatim from a
+`.cs` file) but the input/rules/result values are the exact ones the test asserts.
+
+`bestMatch` — the tied-conditions case, `::BestMatch_TiedConditions_LowerPriorityNumberWins`:
+
+```json
+{
+  "input": { "x": "yes" },
+  "script": [{
+    "command": "decisionTable", "path": "$",
+    "config": {
+      "inputs":  [{ "name": "x", "path": "$.x" }],
+      "outputs": [{ "name": "r", "path": "$.r" }],
+      "rules": [
+        { "priority": 5, "conditions": { "x": "=yes" }, "results": { "r": "low-prio" } },
+        { "priority": 1, "conditions": { "x": "=yes" }, "results": { "r": "high-prio" } }
+      ],
+      "strategy": { "mode": "bestMatch" }
+    }
+  }],
+  "result": { "x": "yes", "r": "high-prio" }
+}
+```
+
+Both rules match with one condition each, so the tie is broken purely by priority — lower number
+wins.
+
+`allMatches` with `conflictResolution: "priority"` — `::AllMatches_Priority_LowestPriorityNumberWins`:
+
+```json
+{
+  "input": { "v": 50 },
+  "script": [{
+    "command": "decisionTable", "path": "$",
+    "config": {
+      "inputs":  [{ "name": "v", "path": "$.v" }],
+      "outputs": [{ "name": "out", "path": "$.out" }],
+      "rules": [
+        { "priority": 0, "conditions": { "v": ">=0" }, "results": { "out": "rule-0" } },
+        { "priority": 1, "conditions": { "v": ">=0" }, "results": { "out": "rule-1" } }
+      ],
+      "strategy": { "mode": "allMatches", "conflictResolution": "priority" }
+    }
+  }],
+  "result": { "v": 50, "out": "rule-0" }
+}
+```
+
+Both rules match; `priority` conflict resolution picks rule-0's result over rule-1's because 0 is
+the lower priority number, even though rule-1 is evaluated later.
+
 ## Notes
 
 - The JSON key `"decisionTable"` is accepted as an alias for `"config"` (JLio compatibility, 008+).
 - No C# fluent builder — construct the config object directly and serialize with `TLioConvert`.
-- A result value is evaluated *before* its output path is created. When it fails, the document is
-  left untouched at that path — no `{}` placeholder is written, and an earlier rule's value at the
-  same path (`allMatches`/`priority` or `lastWins`) is not overwritten by the failing one.
 - A nested function argument written as `@.field` (e.g. a result of `"=concat(@.a,'-',@.b)"`)
   resolves relative to the node currently being processed, the same as a bare `@.field` result —
   not relative to the document root. This holds for every function, not just ones written inside
   `decisionTable`; see [Notation Reference](../notation-reference.md).
+
+## Performance
+
+`ApplyResults` evaluates a rule's result value *before* it touches the output path — it resolves
+the value first and only then calls `EnsurePath`/writes, instead of ensuring the path and writing
+into it afterward. A result that fails to evaluate (its function returns no data) therefore skips
+path construction entirely: no `{}` placeholder is ensured into the document just to sit there
+unused. This also fixes an ordering bug under conflict resolution — with `allMatches` combined
+with `priority` or `lastWins`, a later, lower-priority rule whose value fails to evaluate can no
+longer clobber an earlier rule's already-written value at the same output path by ensuring an
+empty container over it. The value itself does not depend on which parent it is written to, so
+one evaluation is reused across every parent a wildcard output path selects, rather than
+re-evaluating the value once per parent.
 
 ## Formats
 
@@ -131,13 +222,15 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 
 ## Failure modes and what the trace tells you
 
-- **Trace: `"applied decision table to N node(s). rule[priority=X] → Y, Z set"`**
+- **Trace: `"applied decision table to N node(s) at 'path'. rule[priority=X] → Y, Z set."`**
   Rule with priority X matched; output fields Y and Z were written to their configured paths.
+  (`allMatches` reads `"N rules matched → Y, Z set."` instead; `bestMatch` reads
+  `"best-match rule[priority=X] → Y, Z set."`)
 
-- **Trace: `"applied decision table to N node(s). defaultResults applied"`**
+- **Trace: `"applied decision table to N node(s) at 'path'. no rule matched → defaults applied (Y, Z set)."`**
   No rule matched; `defaultResults` values were written.
 
-- **Trace: `"applied decision table to N node(s). no match, no default"`** (or silent skip)
+- **Trace: `"applied decision table to N node(s) at 'path'. no rule matched, no defaults."`**
   No rule matched and no `defaultResults` configured — output paths unchanged.
   Check that input paths resolve correctly and that condition values match the actual data types.
 

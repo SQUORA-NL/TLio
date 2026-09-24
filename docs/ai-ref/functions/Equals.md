@@ -29,14 +29,28 @@ A boolean node.
 | One side missing / null | Equal only to another missing or null value |
 | Anything else | Ordinal (case-sensitive) text comparison |
 
-## Example
+## Verified example
+
+Input (subset of the shared test document):
 
 ```json
-{ "command": "ifElse",
-  "condition": "=equals($.status, 'gold')",
-  "ifScript":   [{ "command": "add", "path": "$.discount", "value": 0.2 }],
-  "elseScript": [{ "command": "add", "path": "$.discount", "value": 0 }] }
+{ "age": 37, "ageText": "37" }
 ```
+
+Script:
+
+```json
+[{ "command": "add", "path": "$.out", "value": "=equals($.age, $.ageText)" }]
+```
+
+Result: `out` is `true` — the number `37` and the text `"37"` compare equal because both sides
+read as numbers.
+
+Verified by: `PredicateFunctionTests.Equality("=equals($.age, $.ageText)", true)` —
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:60`. The same test
+class also asserts `=equals($.missing, null)` → true, `=equals($.missing, $.alsoMissing)` → true,
+and `=equals($.name, $.missing)` → false (lines 56-65), and cross-format use appears in
+`TLio.Parity.Tests/Sweep/sweep.json:350`.
 
 ## When to use
 

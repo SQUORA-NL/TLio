@@ -18,14 +18,22 @@
 
 A boolean node. A property that is present but null **exists**; a missing property does not.
 
-## Example
+## Verified example
+
+Input (excerpt):
 
 ```json
-{ "command": "ifElse",
-  "condition": "=exists($.address.zipCode)",
-  "ifScript":   [{ "command": "copy", "from": "$.address.zipCode", "path": "$.shipping.zipCode" }],
-  "elseScript": [{ "command": "add",  "path": "$.errors", "value": ["zipCode missing"] }] }
+{ "address": { "city": "Utrecht" } }
 ```
+
+| Expression | Result |
+|---|---|
+| `=exists($.address.city)` | `true` |
+| `=exists($.address.zip)` | `false` |
+| `=exists($.nickname)` (present, value `null`) | `true` |
+| `=exists($.missing)` | `false` |
+
+Verified by: `PredicateFunctionTests.Existence` (`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:103-113`)
 
 ## When to use
 

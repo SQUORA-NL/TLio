@@ -20,15 +20,28 @@
 
 A numeric node: `value` when it lies inside `[low, high]`, otherwise the bound it crossed. Whole results come out as an integer.
 
-## Example
+## Verified example
 
 ```json
 { "command": "put", "path": "$.cappedFactor",
-  "value": "=clamp($.bonusMalusFactor,$.low,$.high)" }
+  "value": "=clamp($.bonusMalusFactor, $.low, $.high)" }
 ```
 
 Input: `{ "bonusMalusFactor": 1.9, "low": 0.5, "high": 1.5 }`
 Output: `{ "bonusMalusFactor": 1.9, "low": 0.5, "high": 1.5, "cappedFactor": 1.5 }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/clamp/03-above-high.json`
+
+The bounds are inclusive — a value equal to `high` passes through unchanged, it is not treated
+as "above":
+
+```json
+{ "command": "put", "path": "$.result", "value": "=clamp($.v, $.low, $.high)" }
+```
+
+Input: `{ "v": 5, "low": 1, "high": 5 }` → Output: `{ ..., "result": 5 }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/clamp/04-bound-is-inclusive.json`
 
 ## When to use
 

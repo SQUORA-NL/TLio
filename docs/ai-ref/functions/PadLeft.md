@@ -5,6 +5,7 @@
 ## Syntax
 
 ```
+=padleft(<source>, <width>)
 =padleft(<source>, <width>, <padChar>)
 ```
 
@@ -14,20 +15,33 @@
 |---|------|----------|-------------|
 | 1 | string or path | yes | The string to pad. |
 | 2 | integer or path | yes | Total width of the output string. |
-| 3 | string or path | yes | Single character used for padding. |
+| 3 | string or path | no | Pad character. Defaults to a space `' '` when omitted. If a multi-character string is passed, only its **first** character is used — the call does not fail. |
 
 ## Returns
 
 A string node padded on the left to the specified width.
 
-## Example
+## Verified example
+
+Default padding (space):
 
 ```json
-{ "command": "set", "path": "$.padded", "value": "=padleft($.id,6,'0')" }
+{ "command": "put", "path": "$.result", "value": "=padleft($.str, $.width)" }
 ```
 
-Input: `{ "id": "42", "padded": "" }`
-Output: `{ ..., "padded": "000042" }`
+Input: `{ "str": "42", "width": 5, "pad": "0" }`
+Output: `{ ..., "result": "   42" }`
+
+With an explicit pad character:
+
+```json
+{ "command": "put", "path": "$.result", "value": "=padleft($.str, $.width, $.pad)" }
+```
+
+Same input → `{ ..., "result": "00042" }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Text/padleft/01-default-space.json` and
+`02-with-char.json`.
 
 ## When to use
 
@@ -52,7 +66,13 @@ Output: `{ ..., "padded": "000042" }`
 
 ## Common mistakes
 
-- **padChar must be exactly 1 character**: passing `'00'` or `''` as the pad character will fail or produce unexpected results. Always use a single character.
+- **A multi-character padChar is not an error**: `padleft('42', 5, '00')` produces `"00042"` —
+  only the **first** character of the third argument is used; the call does not fail. If you
+  intended `"0000042"` you need a different approach (repeat width computation), not a longer
+  pad string.
+- **An empty-string padChar does fail**: `padleft('42', 5, '')` fails and logs an error (there is
+  no character to take), unlike a multi-character string. Omit the argument entirely for the
+  space default instead of passing `''`.
 - **Width is total, not additional**: `padleft('42', 6, '0')` produces `"000042"` (total 6 chars), not `"42000000"`. The width is the final string length.
 - **No truncation**: if `$.id` is `"1234567"` (7 chars) and width is `6`, the result is `"1234567"` unchanged — padleft never truncates. Truncate first with `substring` if needed.
 - **Path resolution**: arguments resolve against the document root (dataContext). `@.field` inside a function refers to the ROOT, not a parent element.

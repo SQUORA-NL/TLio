@@ -29,19 +29,29 @@ Without a `format`, these are recognised: `yyyy-MM-ddTHH:mm:sszzz`, `yyyy-MM-ddT
 | `=parseDate('12/25/2026')` | `2026-12-25` |
 | `=parseDate('2024-03-15 14:05','yyyy-MM-dd HH:mm')` | `2024-03-15T14:05:00Z` |
 
-## Example
+## Verified example
 
 ```json
 [
+  { "command": "put", "path": "$.calc.quotedOn",
+    "value": "=parsedate($.request.quotedOn,'dd-MM-yyyy')" },
   { "command": "put", "path": "$.calc.birthDate",
-    "value": "=parseDate($.request.applicant.birthDate,'dd-MM-yyyy')" },
+    "value": "=parsedate($.request.applicant.birthDate,'dd-MM-yyyy')" },
   { "command": "put", "path": "$.calc.driverAge",
-    "value": "=dateDiff($.calc.birthDate,$.calc.quotedOn,'years')" }
+    "value": "=datediff($.calc.birthDate,$.calc.quotedOn,'years')" }
 ]
 ```
 
-Input: `{ "request": { "applicant": { "birthDate": "04-11-1991" } } }`
-Output: `{ ..., "calc": { "birthDate": "1991-11-04", ... } }`
+Input: `{ "request": { "quotedOn": "21-08-2026", "applicant": { "birthDate": "04-11-1991" } } }`
+Output: `{ ..., "calc": { "quotedOn": "2026-08-21", "birthDate": "1991-11-04", "driverAge": 34 } }`
+
+Both Dutch `dd-MM-yyyy` dates are normalised to ISO first, and `dateDiff` runs on the normalised
+values — this is the pattern for feeding non-ISO input into the rest of the TimeDate pack.
+
+Verified by: `TLio.Functions.Tests/Fixtures/TimeDate/parsedate/05-sample-normalises-a-dutch-date-for-datediff.json`
+(explicit format, default format list, a format with a time, and a compact `yyyyMMdd` format
+verified by `.../01-explicit-format.json` through `.../04-compact-format.json` in the same
+directory)
 
 ## When to use
 
@@ -64,6 +74,16 @@ Output: `{ ..., "calc": { "birthDate": "1991-11-04", ... } }`
 | `formatDate` | date + format | string | Write a date another way |
 | `datetime` | format only | string | Render *now* |
 | `toString` | any node | string | Plain string conversion, no date awareness |
+
+## Performance
+
+With an explicit `format`, parsing is one `DateTimeOffset.TryParseExact` call against
+`CultureInfo.InvariantCulture` — a shared static instance, not rebuilt per call. Without a
+`format`, `parsedate` (and every other TimeDate function, for its date arguments) tries a short
+static list of exact formats in order before falling back to a general parse; none of the
+formats or the culture is reconstructed per call, so there is nothing here to cache. If a script
+calls `parseDate` on the same handful of notations across many rows, the cost is dominated by
+`TryParseExact` itself, not by any avoidable setup.
 
 ## Common mistakes
 

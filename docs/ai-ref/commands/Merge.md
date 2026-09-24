@@ -46,79 +46,68 @@ deduplication) are therefore only applied to such an element when an
 `arraySettings.arrayPath` entry names its path; otherwise it is merged as an
 object, as before.
 
-## Examples
+A null *source* is one place XML cannot follow JSON/YAML exactly: merging `null` into an
+existing target overwrites it (a scalar replaces) in JSON and YAML, but XML reads an empty
+`<s/>` source element as an empty *object*, and merging an object with no properties is a
+no-op — so the XML target is left unchanged instead of nulled out. This is a deliberate,
+format-driven divergence, not a bug — see `docs/behaviour-decisions.md` section E5 for the full
+reasoning. Pinned by `SystemTextJsonNullNodeTests.Merge_OfANullSource_OverwritesTheTargetLikeAnyScalar`
+(JSON side); merging a *non-null* source into a `null` target, by contrast, behaves the same in
+every format — that case is `TLio.Parity.Tests/Fixtures/Merge/11-merge-into-null-node`.
 
-Plain merges:
+## Verified example
 
-```json
-[
-  { "command": "merge", "fromPath": "$.patch", "toPath": "$.document" },
-  { "command": "merge", "fromPath": "$.newItems", "toPath": "$.list", "arrayMergeMode": "replace" }
-]
-```
+Each snippet below is the literal `script` (and the relevant slice of `input`/`result`) from a
+passing fixture under `TLio.UnitTests/Fixtures/Merge/<NN-name>/fixture.json` — parity-mirrored
+one-for-one under `TLio.Parity.Tests/Fixtures/Merge/<NN-name>` (JSON, XML and YAML all run the
+same fixture through each format's own script notation).
 
-Key-based array merge — items with a matching `id` are updated in place, new
-items are appended:
+**Plain object merge** — `01-merge-objects`: `{ "target": {"a":1}, "source": {"b":2} }` →
+`{ "command": "merge", "path": "$.source", "targetPath": "$.target" }` → target becomes
+`{ "a": 1, "b": 2 }`.
 
-```json
-[{
-  "command": "merge",
-  "fromPath": "$.incoming",
-  "toPath": "$.current",
-  "settings": {
-    "arraySettings": [
-      { "arrayPath": "$.current.items", "keyPaths": ["id"] }
-    ]
-  }
-}]
-```
+**`fromPath`/`toPath` aliases** — `03-merge-from-to-path`: the same command written as
+`{ "command": "merge", "fromPath": "$.src", "toPath": "$.dst" }`.
 
-```jsonc
-// $.incoming.items: [ { "id": 1, "qty": 5 }, { "id": 3, "qty": 1 } ]
-// $.current.items:  [ { "id": 1, "qty": 2 }, { "id": 2, "qty": 7 } ]
-// result:           [ { "id": 1, "qty": 5 }, { "id": 2, "qty": 7 }, { "id": 3, "qty": 1 } ]
-```
+**`arrayMergeMode: "concat"` (the default)** — `02-merge-arrays-concat`: `target: [1,2]` merged
+with `source: [3,4]` → `[1, 2, 3, 4]`.
 
-Composite and nested keys:
+**Key-based array merge** — `04-merge-arrays-by-key`, items with a matching `id` are updated in
+place, new items are appended:
 
 ```json
 {
-  "arraySettings": [
-    { "arrayPath": "$.current.rows", "keyPaths": ["@.key.id", "region"] }
-  ]
+  "command": "merge", "path": "$.source", "targetPath": "$.target",
+  "settings": { "arraySettings": [ { "arrayPath": "$.target.items", "keyPaths": ["id"] } ] }
 }
 ```
 
-Append-without-duplicates for arrays of primitives or plain objects:
+`source.items: [{"id":1,"name":"one-updated"}, {"id":3,"name":"three"}]` merged into
+`target.items: [{"id":1,"name":"one"}, {"id":2,"name":"two"}]` produces
+`[{"id":1,"name":"one-updated"}, {"id":2,"name":"two"}, {"id":3,"name":"three"}]` — id `1`
+updated in place, id `2` untouched, id `3` appended.
 
-```json
-{
-  "arraySettings": [
-    { "arrayPath": "$.target.tags", "uniqueItemsWithoutKeys": true }
-  ]
-}
-```
+**Nested key path** — `10-merge-nested-key-paths`: `keyPaths: ["@.key.id"]` matches array items
+by a nested field (`item.key.id`) rather than a top-level one.
 
-Fill in gaps without overwriting anything that is already set:
+**`uniqueItemsWithoutKeys`** — `07-merge-unique-items-without-keys`: `target.tags: ["a","c"]`
+plus `source.tags: ["a","b","c"]` (with `arraySettings: [{ "arrayPath": "$.target.tags",
+"uniqueItemsWithoutKeys": true }]`) → `["a", "c", "b"]` — only the genuinely new `"b"` is
+appended.
 
-```json
-{ "command": "merge", "fromPath": "$.defaults", "toPath": "$.config",
-  "settings": { "strategy": "onlyStructure" } }
-```
+**`arrayMergeMode: "mergeByKey"` (no `keyPaths` configured)** — `09-merge-array-mode-merge-by-key`:
+falls back to whole-item matching, same effect as `uniqueItemsWithoutKeys` above.
 
-Update known fields only, never introducing new ones:
+**`strategy: "onlyStructure"`** — `05-merge-only-structure`: `target: {"a":"keep-me",
+"b":"untouched"}` merged with `source: {"a":"from-source","c":"new"}` → `{"a":"keep-me",
+"b":"untouched","c":"new"}` — the new key `c` is added, the existing `a` is **not** overwritten.
 
-```json
-{ "command": "merge", "fromPath": "$.update", "toPath": "$.record",
-  "settings": { "strategy": "onlyValues" } }
-```
+**`strategy: "onlyValues"`** — `06-merge-only-values`: same inputs, opposite strategy →
+`{"a":"from-source","b":"untouched"}` — `a` **is** overwritten, `c` is **not** added.
 
-Only merge when the objects describe the same entity:
-
-```json
-{ "command": "merge", "fromPath": "$.update", "toPath": "$.record",
-  "settings": { "matchSettings": { "keyPaths": ["id"] } } }
-```
+**`matchSettings.keyPaths`** — `08-merge-match-settings`: `source: {"id":1,"extra":"added"}`
+merged with `keyPaths: ["id"]` into two candidate targets — `{"id":1}` gains `extra`, `{"id":2}`
+is left untouched because its `id` does not match the source's.
 
 ## C# Fluent API
 

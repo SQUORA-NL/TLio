@@ -25,7 +25,7 @@ Used as a value in any command: `"value": "=promote($.person)"`
 
 An object with one key whose value is the matched node.
 
-## Example
+## Verified example
 
 Using parent property name (1-arg):
 
@@ -33,7 +33,10 @@ Using parent property name (1-arg):
 { "command": "set", "path": "$.result", "value": "=promote($.person)" }
 ```
 
-Given `{ "person": { "name": "Alice" } }` → `$.result` = `{ "person": { "name": "Alice" } }`
+Given `{ "person": { "name": "Alice", "age": 30 }, "result": null }` →
+`{ "person": { "name": "Alice", "age": 30 }, "result": { "person": { "name": "Alice", "age": 30 } } }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Promote/01-promote-nested-object/fixture.json`
 
 Using explicit name (2-arg):
 
@@ -41,7 +44,9 @@ Using explicit name (2-arg):
 { "command": "add", "path": "$.wrapped", "value": "=promote($.rawValue,'data')" }
 ```
 
-Given `{ "rawValue": 42 }` → `$.wrapped` = `{ "data": 42 }`
+Given `{ "rawValue": 42 }` → `{ "rawValue": 42, "wrapped": { "data": 42 } }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Promote/02-promote-with-name/fixture.json`
 
 ## C# Usage
 

@@ -19,7 +19,24 @@
 
 A boolean node. A missing value is `false`. An invalid pattern logs an error and produces no value.
 
-## Example
+## Verified example
+
+```json
+{ "command": "add", "path": "$.out", "value": "=matches($.email, '^[^@]+@[^@]+\\\\.[a-z]+$')" }
+```
+
+Input: `{ "email": "sanne@example.nl" }` → Output: `{ ..., "out": true }`
+
+Verified by `PredicateFunctionTests.MembershipAndPattern` in
+`TLio.Functions.Tests/FunctionsTests/LogicTests/PredicateFunctionTests.cs:142` — run end to end
+through the real engine (the doubled backslashes there are the C# raw-string escaping of the
+JSON escaping). The same method also proves it is unanchored by default
+(`=matches($.name, '^S')` → `true` for `"Sanne"`, line 143) and that a missing value is `false`
+rather than a failure (`=matches($.missing, '.*')` → `false`, line 145). An invalid pattern is
+covered separately by `PredicateFunctionTests.InvalidRegexPattern_LogsErrorAndFails`, which
+asserts an `Error`-level log entry and no output value.
+
+As an `ifElse` condition:
 
 ```json
 { "command": "ifElse",

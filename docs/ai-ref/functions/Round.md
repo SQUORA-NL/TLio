@@ -14,20 +14,34 @@
 | # | Type | Required | Description |
 |---|------|----------|-------------|
 | 1 | number or path | yes | The value to round. |
-| 2 | integer | no | Number of decimal places (default 0). |
+| 2 | integer | no | Number of decimal places (default 0). Clamped to `[0, 15]` — a negative value is treated as `0`, and anything above `15` is treated as `15`; it is never rejected. |
 
 ## Returns
 
-A numeric node rounded using midpoint-away-from-zero rounding.
+A numeric node rounded using midpoint-away-from-zero rounding (`MidpointRounding.AwayFromZero`).
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.r", "value": "=round($.v)" }
+{ "command": "put", "path": "$.result", "value": "=round($.half)" }
 ```
 
-Input: `{ "v": 7.6, "r": 0 }`
-Output: `{ "v": 7.6, "r": 8 }`
+Input: `{ "half": 4.5, "frac": 4.567, "decimals": 2 }`
+Output: adds `"result": 5` (the midpoint rounds away from zero, to `5`, not `4`).
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/round/01-to-integer.json`
+
+The two-argument form controls decimal places — here read from a path rather than written
+as a literal:
+
+```json
+{ "command": "put", "path": "$.result", "value": "=round($.frac, $.decimals)" }
+```
+
+Input: `{ "half": 4.5, "frac": 4.567, "decimals": 2 }`
+Output: adds `"result": 4.57`.
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/round/02-with-decimals.json`
 
 ## When to use
 

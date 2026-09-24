@@ -20,14 +20,29 @@ A numeric node (long when whole, double when fractional) equal to the sum of all
 
 **Failure**: returns failure (not 0) when the path does not exist. Check that the path selects at least one node.
 
-## Example
+## Verified example
 
 ```json
-{ "command": "set", "path": "$.total", "value": "=sum($.prices)" }
+{ "command": "put", "path": "$.result", "value": "=sum($.nums)" }
 ```
 
-Input: `{ "prices": [9.99, 4.99, 14.99], "total": 0 }`
-Output: `{ "prices": [...], "total": 29.97 }`
+Input: `{ "a": 5, "b": 3, "c": null, "nums": [1, 2, 3, 4], "str": "2.5" }`
+Output: adds `"result": 10` (`1 + 2 + 3 + 4`).
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/sum/03-array.json`
+
+A null array element is treated as 0, not skipped and not a failure:
+
+```json
+{ "command": "put", "path": "$.result", "value": "=sum($.nums)" }
+```
+
+Input: `{ "nums": [1, null, 3] }` → Output: `{ "nums": [1, null, 3], "result": 4 }`
+
+Verified by: `TLio.Functions.Tests/Fixtures/Math/sum/06-array-with-null-element.json`
+(`04-numeric-string.json` in the same directory also verifies that a numeric *string* like
+`"2.5"` is parsed and summed as `2.5`, and `02-two-values.json` verifies multiple path
+arguments — `=sum($.a, $.b)` — are added together.)
 
 ## Notes
 
