@@ -37,10 +37,11 @@
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | inputs | array | yes | — | Array of `{name, path}` — named input columns and their paths. |
-| outputs | array | yes | — | Array of `{name, path}` — named output columns and write paths. |
+| outputs | array | yes | — | Array of `{name, path}` — named output columns and write paths. `path` may be omitted when `outputPathTemplate` is set (see below). |
 | rules | array | yes | — | Array of rule objects (see Rules below). |
 | strategy | object | no | `firstMatch/priority` | Execution strategy (see Strategy below). |
 | defaultResults | object | no | — | `{name: value}` map written when no rule matches. |
+| outputPathTemplate | string | no | — | Fallback path for an output whose own `path` is omitted: `"{name}"` is substituted with that output's `name`, e.g. `"@._new.{name}"`. Lets a table where every result lands at the same predictable place under its own name declare its `outputs` as bare names instead of repeating the same path text once per entry. An output that does give its own `path` still uses that path — the template only fills the gap. |
 
 ### Rule object
 
@@ -141,6 +142,36 @@ wins.
 Both rules match; `priority` conflict resolution picks rule-0's result over rule-1's because 0 is
 the lower priority number, even though rule-1 is evaluated later.
 
+### outputPathTemplate — bare-name outputs, from the C# test suite
+
+`::CanParseOutputPathTemplate_FallsBackWhenPathOmitted`: the `label` output declares only a
+`name`, no `path`; `outputPathTemplate` supplies `"@._new.{name}"`, so the result lands at
+`@._new.label`:
+
+```json
+{
+  "input": { "items": [{ "code": "A" }] },
+  "script": [{
+    "command": "decisionTable", "path": "$.items[*]",
+    "config": {
+      "inputs":  [{ "name": "code", "path": "@.code" }],
+      "outputs": [{ "name": "label" }],
+      "outputPathTemplate": "@._new.{name}",
+      "rules": [
+        { "conditions": { "code": "=A" }, "results": { "label": "Alpha" } }
+      ]
+    }
+  }],
+  "result": { "items": [{ "code": "A", "_new": { "label": "Alpha" } }] }
+}
+```
+
+`::OutputPathTemplate_DoesNotOverrideAnExplicitPath` confirms the reverse: an output that
+declares its own `path` (`"@.explicit.label"`) writes there even with `outputPathTemplate` set —
+the template only fills in for outputs that omit `path`, it never overrides one that's given.
+
+Verified by: `TLio.UnitTests/CommandsTests/DecisionTableJsonParseTests.cs`.
+
 ## Notes
 
 - The JSON key `"decisionTable"` is accepted as an alias for `"config"` (JLio compatibility, 008+).
@@ -162,6 +193,23 @@ longer clobber an earlier rule's already-written value at the same output path b
 empty container over it. The value itself does not depend on which parent it is written to, so
 one evaluation is reused across every parent a wildcard output path selects, rather than
 re-evaluating the value once per parent.
+
+A matched rule's results are looked up in an `outputs`-by-name index — built once per command
+instance and cached, since a compiled script reuses the same `DecisionTable` across every
+execution — rather than walking the full `outputs` list to find the handful of keys that rule's
+`results` actually set. This matters once a table declares outputs by the thousand (a
+generated table with one output per possible field, evaluated per rule application, per target
+node): the old walk cost was proportional to the *declared* output count regardless of how many
+a given rule actually wrote; it is now proportional to the *matched* result count. Results are
+still applied in each output's original declared order — the index changes how a result's output
+is found, not the order results are written in.
+
+`outputPathTemplate` (above) is a companion size optimization for the same shape of table: once
+`outputs` no longer needs to repeat `path` on every entry, a table with a uniform output surface
+can shrink its declaration size substantially. Applying both to the SIVI AFD conversion scripts
+in `samples/TLio.Sample.AfdApi` cut their combined size from 22.0MB to 19.35MB and their combined
+decision-table rule count from 11,659 to 4,869, with byte-for-byte identical conversion output
+verified across every bundled sample fixture.
 
 ## Formats
 
