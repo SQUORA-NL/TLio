@@ -262,17 +262,67 @@ public class DecisionTable<TNode> : CommandBase<TNode>
 
     // ── Result application ───────────────────────────────────────────────────
 
+    // Built once per command instance (a compiled script reuses the same DecisionTable across
+    // every request/execution) and reused for every target node and every rule application,
+    // instead of walking the full, statically-declared Outputs list — which can run to tens of
+    // thousands of entries in a large table — to find the handful of keys a given rule's Results
+    // actually set. The declaration index is kept alongside each output so results can still be
+    // applied in exactly the original declaration order (see ApplyResults) even though they are
+    // now found by looking results up in this map rather than scanning Outputs. A benign race on
+    // first build (two threads each build an equivalent map) is fine: read-only once published.
+    private Dictionary<string, (DecisionOutput Output, int Index)>? _outputsByName;
+
+    private Dictionary<string, (DecisionOutput Output, int Index)> GetOutputsByName()
+    {
+        var cached = _outputsByName;
+        if (cached != null) return cached;
+
+        var built = new Dictionary<string, (DecisionOutput, int)>(Config!.Outputs.Count);
+        for (var i = 0; i < Config.Outputs.Count; i++)
+            built[Config.Outputs[i].Name] = (Config.Outputs[i], i); // last declaration wins on a duplicate name
+
+        _outputsByName = built;
+        return built;
+    }
+
+    /// <summary>
+    /// An output's own <see cref="DecisionOutput.Path"/> when declared, otherwise
+    /// <see cref="DecisionTableConfig{TNode}.OutputPathTemplate"/> with "{name}" substituted —
+    /// null when neither is available (no path exists to write this result to).
+    /// </summary>
+    private string? ResolveOutputPath(DecisionOutput output)
+    {
+        if (!string.IsNullOrEmpty(output.Path))
+            return output.Path;
+        return Config!.OutputPathTemplate?.Replace("{name}", output.Name);
+    }
+
     private void ApplyResults(
         Dictionary<string, IFunctionSupportedValue<TNode>> results,
         TNode targetNode,
         TNode dataContext,
         IExecutionContext<TNode> context)
     {
-        foreach (var output in Config!.Outputs)
-        {
-            if (!results.TryGetValue(output.Name, out var valueProvider))
-                continue;
+        var outputsByName = GetOutputsByName();
 
+        // Collect first, ordered by each output's declared position, so a rule's Results
+        // dictionary order (which nothing here controls) never changes what gets written where
+        // relative to another matched output — behaviorally identical to the previous
+        // "walk Outputs in order, skip what Results doesn't have" loop.
+        var toApply = new List<(int Index, string Path, IFunctionSupportedValue<TNode> Value)>(results.Count);
+        foreach (var (name, valueProvider) in results)
+        {
+            if (!outputsByName.TryGetValue(name, out var entry))
+                continue;
+            var path = ResolveOutputPath(entry.Output);
+            if (path == null)
+                continue;
+            toApply.Add((entry.Index, path, valueProvider));
+        }
+        toApply.Sort((a, b) => a.Index.CompareTo(b.Index));
+
+        foreach (var (_, outputPath, valueProvider) in toApply)
+        {
             // Evaluate before touching the document: a result that fails must leave the
             // document untouched at this path, not an ensured-but-empty container. The value
             // does not depend on `parent`, so one evaluation covers every parent a wildcard
@@ -281,9 +331,9 @@ public class DecisionTable<TNode> : CommandBase<TNode>
             if (!valueResult.Success || valueResult.Data.First == null)
                 continue;
 
-            var absolutePath = output.Path.StartsWith(context.ItemsFetcher.CurrentItemPathIndicator)
-                ? context.ItemsFetcher.ResolveRelativePath(output.Path, targetNode, dataContext)
-                : output.Path;
+            var absolutePath = outputPath.StartsWith(context.ItemsFetcher.CurrentItemPathIndicator)
+                ? context.ItemsFetcher.ResolveRelativePath(outputPath, targetNode, dataContext)
+                : outputPath;
 
             var (parentPath, leafName) = context.ItemsFetcher.SplitParentAndLeaf(absolutePath);
             context.ItemsFetcher.EnsurePath(absolutePath, dataContext, context.NodeAdapter);

@@ -493,6 +493,10 @@ public class CommandConverter<TNode> : IScriptParser<TNode>
             }
         }
 
+        if (element.TryGetProperty("outputPathTemplate", out var opt) &&
+            opt.ValueKind == JsonValueKind.String)
+            config.OutputPathTemplate = opt.GetString();
+
         return config;
     }
 
