@@ -197,6 +197,65 @@ public class DecisionTableJsonParseTests
         Assert.That(result.Data.SelectToken("$.items[1].code")?.Value<string>(), Is.EqualTo("beta"));
     }
 
+    // ── outputPathTemplate ──────────────────────────────────────────────────────
+
+    [Test]
+    public void CanParseOutputPathTemplate_FallsBackWhenPathOmitted()
+    {
+        const string script = @"[
+          {
+            ""command"": ""decisionTable"",
+            ""path"": ""$.items[*]"",
+            ""config"": {
+              ""inputs"":  [{ ""name"": ""code"", ""path"": ""@.code"" }],
+              ""outputs"": [{ ""name"": ""label"" }],
+              ""outputPathTemplate"": ""@._new.{name}"",
+              ""rules"": [
+                {
+                  ""conditions"": { ""code"": ""=A"" },
+                  ""results"":    { ""label"": ""Alpha"" }
+                }
+              ]
+            }
+          }
+        ]";
+
+        var data = JToken.Parse(@"{ ""items"": [ { ""code"": ""A"" } ] }");
+        var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.SelectToken("$.items[0]._new.label")?.Value<string>(), Is.EqualTo("Alpha"));
+    }
+
+    [Test]
+    public void OutputPathTemplate_DoesNotOverrideAnExplicitPath()
+    {
+        const string script = @"[
+          {
+            ""command"": ""decisionTable"",
+            ""path"": ""$"",
+            ""config"": {
+              ""inputs"":  [{ ""name"": ""code"", ""path"": ""@.code"" }],
+              ""outputs"": [{ ""name"": ""label"", ""path"": ""@.explicit.label"" }],
+              ""outputPathTemplate"": ""@._new.{name}"",
+              ""rules"": [
+                {
+                  ""conditions"": { ""code"": ""=A"" },
+                  ""results"":    { ""label"": ""Alpha"" }
+                }
+              ]
+            }
+          }
+        ]";
+
+        var data = JToken.Parse(@"{ ""code"": ""A"" }");
+        var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.SelectToken("$.explicit.label")?.Value<string>(), Is.EqualTo("Alpha"));
+        Assert.That(result.Data.SelectToken("$._new"), Is.Null);
+    }
+
     // ── Unknown command still recognized ──────────────────────────────────────
 
     [Test]

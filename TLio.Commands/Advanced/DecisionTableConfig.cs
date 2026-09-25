@@ -33,4 +33,13 @@ public class DecisionTableConfig<TNode>
     /// Defaults to firstMatch / priority when null.
     /// </summary>
     public DecisionTableExecutionStrategy? Strategy { get; set; }
+
+    /// <summary>
+    /// Optional fallback path for an <see cref="DecisionOutput"/> whose <see cref="DecisionOutput.Path"/>
+    /// is left empty: "{name}" is substituted with that output's <see cref="DecisionOutput.Name"/>,
+    /// e.g. "@._new.{name}". A table where every result lands at the same predictable place under its
+    /// own name can then declare its Outputs as bare names, instead of repeating "@._new." once per
+    /// entry — the declaration still names and orders every output; only the redundant path text goes.
+    /// </summary>
+    public string? OutputPathTemplate { get; set; }
 }
