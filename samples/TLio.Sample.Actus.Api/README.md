@@ -36,6 +36,10 @@ curl -s -X POST http://localhost:5299/actus/pam \
   -H "Content-Type: application/json" --data @SampleInput/pam-bullet-loan.json | python3 -m json.tool
 ```
 
+Or import `TLio-Actus-Demo.postman_collection.json` into Postman — it exercises both endpoints
+against all four bundled sample inputs (plain, envelope with no overrides, early termination,
+rate change), each request asserting its expected `events`/`summary` values.
+
 `GET /` lists both endpoints and every bundled sample file; `GET /samples/{name}` serves one
 directly. Both endpoints return `{ ...input, events, summary }` — the input document with an
 `events` array (one entry per cashflow, `{ date, type, payoff }`) and a `summary`
