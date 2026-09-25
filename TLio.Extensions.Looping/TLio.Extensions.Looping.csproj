@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>TLio looping extension commands: forEach, while. Format-agnostic via INodeAdapter.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>tlio scripting loop foreach while iteration</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
+    <ProjectReference Include="..\TLio.Commands\TLio.Commands.csproj" />
+  </ItemGroup>
+
+</Project>

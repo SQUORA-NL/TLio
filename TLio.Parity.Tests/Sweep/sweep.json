@@ -908,6 +908,11 @@
   },
   {
     "command": "put",
+    "path": "$.date.dayCountFraction",
+    "value": "=dayCountFraction($.dates[1],$.dates[0],'A360')"
+  },
+  {
+    "command": "put",
     "path": "$.check.between",
     "value": "=between($.people[0].score,'1','100')"
   },
@@ -955,5 +960,43 @@
     "command": "put",
     "path": "$.core.sortedBy",
     "value": "=sortby($.rows,'n','asc')"
+  },
+  {
+    "command": "add",
+    "path": "$.loop",
+    "value": {}
+  },
+  {
+    "command": "add",
+    "path": "$.loop.onlyOne[0]",
+    "value": {}
+  },
+  {
+    "command": "forEach",
+    "path": "$.loop.onlyOne",
+    "commands": [
+      {
+        "command": "add",
+        "path": "@.visited",
+        "value": true
+      }
+    ]
+  },
+  {
+    "command": "add",
+    "path": "$.loop.whileCounter",
+    "value": 0
+  },
+  {
+    "command": "while",
+    "condition": "=lessThan($.loop.whileCounter,3)",
+    "maxIterations": 10,
+    "commands": [
+      {
+        "command": "set",
+        "path": "$.loop.whileCounter",
+        "value": "=sum($.loop.whileCounter,1)"
+      }
+    ]
   }
 ]

@@ -39,7 +39,16 @@ public interface IItemsFetcher<TNode>
     /// at the root, or is written relative to the current node — so it holds for any language
     /// without naming one. A language where that is not the rule overrides it.
     ///
-    /// A lone indicator is not a useful path, so at least one more character is required.
+    /// A lone indicator is not a useful path, so at least one more character is required — this
+    /// matters more than it looks: this same method re-checks values that are *already
+    /// resolved* (an argument's computed result, not just script text someone typed), including
+    /// ones that were quoted literals. XML's current-item indicator is <c>.</c>, an ordinary
+    /// character in real data (a decimal point, a padding character), so accepting it bare here
+    /// would reinterpret a literal <c>'.'</c> passed to e.g. <c>padLeft(...,'.')</c> as "the
+    /// current node" — confirmed by <c>TLio.Parity.Tests</c>' sweep. Bare <c>@</c>/<c>$</c> as
+    /// "the current node"/"root" is real (see <see cref="ResolveRelativePath"/>), but only when
+    /// a script author writes it directly as a command's own <c>path</c> — that goes through
+    /// <see cref="ResolveRelativePath"/> directly and never touches this method.
     /// </summary>
     bool IsPathExpression(string text) =>
         text.Length > 1 &&

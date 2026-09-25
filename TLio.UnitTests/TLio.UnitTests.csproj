@@ -25,6 +25,7 @@
     <ProjectReference Include="..\TLio.Client\TLio.Client.csproj" />
     <ProjectReference Include="..\TLio.Json\TLio.Json.csproj" />
     <ProjectReference Include="..\TLio.Extensions.ETL\TLio.Extensions.ETL.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Looping\TLio.Extensions.Looping.csproj" />
 
   </ItemGroup>
 

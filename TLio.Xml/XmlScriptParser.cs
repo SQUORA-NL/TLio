@@ -202,6 +202,9 @@ public class XmlScriptParser<TNode> : IScriptParser<TNode>
         if (targetType == typeof(bool) || targetType == typeof(bool?))
             return bool.TryParse(raw, out var b) ? b : null;
 
+        if (targetType == typeof(int) || targetType == typeof(int?))
+            return int.TryParse(raw, out var i) ? i : null;
+
         if (targetType == typeof(IFunctionSupportedValue<TNode>))
             return _settingsConverter.ParseTextValue(raw, _parseWarnings.Add);
 

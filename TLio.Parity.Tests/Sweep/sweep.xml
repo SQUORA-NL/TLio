@@ -569,6 +569,9 @@
   <put path="/root/date/endOfMonth">
     <value>=endOfMonth(/root/dates/item[1])</value>
   </put>
+  <put path="/root/date/dayCountFraction">
+    <value>=dayCountFraction(/root/dates/item[2],/root/dates/item[1],'A360')</value>
+  </put>
   <put path="/root/check/between">
     <value>=between(/root/people/item[1]/score,'1','100')</value>
   </put>
@@ -599,4 +602,23 @@
   <put path="/root/core/sortedBy">
     <value>=sortby(/root/rows,'n','asc')</value>
   </put>
+  <!--
+    A single-element array: SlashPathItemsFetcher.GetPath does not disambiguate same-named
+    siblings (a known, pre-existing limitation — see CLAUDE.md), so bare "." only resolves
+    reliably here when there is exactly one candidate to begin with.
+  -->
+  <add path="/root/loop/onlyOne/item[1]"><value></value></add>
+  <forEach path="/root/loop/onlyOne">
+    <commands>
+      <add path="./visited"><value>true</value></add>
+    </commands>
+  </forEach>
+  <add path="/root/loop/whileCounter"><value>0</value></add>
+  <while condition="=lessThan(/root/loop/whileCounter,3)" maxIterations="10">
+    <commands>
+      <set path="/root/loop/whileCounter">
+        <value>=sum(/root/loop/whileCounter,1)</value>
+      </set>
+    </commands>
+  </while>
 </script>

@@ -23,6 +23,7 @@ namespace TLio.Client;
 /// Supported target property types:
 ///   string                         ← JSON string (direct)
 ///   bool                           ← JSON true/false
+///   int / int?                     ← JSON number
 ///   ArrayMergeMode                 ← JSON string (enum parse)
 ///   IFunctionSupportedValue&lt;TNode&gt; ← JSON string (via FunctionConverter) or literal (FixedValue)
 ///   TLioScript&lt;TNode&gt;              ← JSON array (recursive)
@@ -182,6 +183,13 @@ public class CommandConverter<TNode> : IScriptParser<TNode>
         {
             if (element.ValueKind == JsonValueKind.True) return true;
             if (element.ValueKind == JsonValueKind.False) return false;
+            return null;
+        }
+
+        if (targetType == typeof(int) || targetType == typeof(int?))
+        {
+            if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var i))
+                return i;
             return null;
         }
 

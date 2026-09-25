@@ -31,6 +31,30 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
 
     public override TLioExecutionResult<TNode> Execute(TNode dataContext, IExecutionContext<TNode> context)
     {
+        // A path beginning with @ (e.g. "@.status", or bare "@" for the item itself) addresses
+        // whatever forEach set as context.CurrentNode for this iteration. Resolved to an absolute
+        // path *before* anything below inspects Path's shape (array index? selector? recursive
+        // descent?) — none of that classification understands "@", only "$...". The original text
+        // is restored in `finally` so the next iteration (a fresh CurrentNode) re-resolves it
+        // afresh, rather than freezing this iteration's answer into the command's own config.
+        var originalPath = Path;
+        if (context.CurrentNode != null && Path != null &&
+            Path.StartsWith(context.ItemsFetcher.CurrentItemPathIndicator, StringComparison.Ordinal))
+        {
+            Path = context.ItemsFetcher.ResolveRelativePath(Path, context.CurrentNode, dataContext);
+        }
+        try
+        {
+            return ExecuteWithResolvedPath(dataContext, context);
+        }
+        finally
+        {
+            Path = originalPath;
+        }
+    }
+
+    private TLioExecutionResult<TNode> ExecuteWithResolvedPath(TNode dataContext, IExecutionContext<TNode> context)
+    {
         ResetSuccess();
         var validation = ValidateCommandInstance();
         if (!validation.IsValid)
@@ -100,7 +124,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
 
         foreach (var target in targets)
         {
-            var valueResult = Value!.GetValue(target, dataContext, context);
+            var valueResult = Value!.GetValue(context.CurrentNode ?? target, dataContext, context);
             if (!valueResult.Success)
             {
                 MarkFailed();
@@ -139,10 +163,10 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             var targets = context.ItemsFetcher.SelectNodes(Path!, dataContext);
             foreach (var target in targets)
             {
-                var valueResult = Value!.GetValue(target, dataContext, context);
+                var valueResult = Value!.GetValue(context.CurrentNode ?? target, dataContext, context);
                 if (!valueResult.Success) { MarkFailed(); continue; }
                 var computedValue = valueResult.Data.First ?? context.NodeAdapter.CreateNull();
-                context.NodeAdapter.Replace(target, computedValue);
+                ReplaceKeepingCurrentNodeInSync(target, computedValue, context);
             }
             return;
         }
@@ -163,7 +187,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
 
             foreach (var element in elements)
             {
-                var indexedValue = Value!.GetValue(element, dataContext, context);
+                var indexedValue = Value!.GetValue(context.CurrentNode ?? element, dataContext, context);
                 if (!indexedValue.Success)
                 {
                     MarkFailed();
@@ -195,7 +219,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
 
             foreach (var target in selected)
             {
-                var selectedValue = Value!.GetValue(target, dataContext, context);
+                var selectedValue = Value!.GetValue(context.CurrentNode ?? target, dataContext, context);
                 if (!selectedValue.Success)
                 {
                     MarkFailed();
@@ -247,7 +271,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
 
         foreach (var parent in parents)
         {
-            var valueResult = Value!.GetValue(parent, dataContext, context);
+            var valueResult = Value!.GetValue(context.CurrentNode ?? parent, dataContext, context);
             if (!valueResult.Success)
             {
                 MarkFailed();
@@ -329,7 +353,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
                 // is the one place an element can go into it, the same rule as a missing array.
                 if (adapter.IsNull(array) && index == 0 && adapter.GetParentNode(array) is not null)
                 {
-                    var upgradeValue = Value!.GetValue(array, dataContext, context);
+                    var upgradeValue = Value!.GetValue(context.CurrentNode ?? array, dataContext, context);
                     if (!upgradeValue.Success)
                     {
                         MarkFailed();
@@ -337,7 +361,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
                     }
                     var newArray = adapter.CreateArray();
                     adapter.AppendToArray(newArray, upgradeValue.Data.First ?? adapter.CreateNull());
-                    adapter.Replace(array, newArray);
+                    ReplaceKeepingCurrentNodeInSync(array, newArray, context);
                     return;
                 }
 
@@ -354,7 +378,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             }
         }
 
-        var valueResult = Value!.GetValue(array, dataContext, context);
+        var valueResult = Value!.GetValue(context.CurrentNode ?? array, dataContext, context);
         if (!valueResult.Success)
         {
             MarkFailed();
@@ -398,7 +422,27 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     /// at a position that exists. <c>Add</c> overrides it: something is already there.
     /// </summary>
     protected virtual void ApplyValueToNode(TNode target, TNode value, IExecutionContext<TNode> context)
-        => context.NodeAdapter.Replace(target, value);
+        => ReplaceKeepingCurrentNodeInSync(target, value, context);
+
+    /// <summary>
+    /// Replaces <paramref name="target"/> with <paramref name="value"/> — and, when
+    /// <paramref name="target"/> *is* <see cref="IExecutionContext{TNode}.CurrentNode"/> (a
+    /// <c>set path="@" value="..."</c> replacing the loop's own current element), repoints
+    /// <c>CurrentNode</c> at the replacement. <c>Replace</c> detaches the old node rather than
+    /// mutating it in place, so without this a second <c>@</c> read later in the same iteration
+    /// (a nested <c>while</c>, a later command in the same <c>forEach</c> body) would see the
+    /// stale pre-replace value — the one place <c>@</c> would otherwise behave differently from
+    /// every ordinary <c>$.</c> path, which is always re-resolved fresh against the (mutated)
+    /// document rather than held as a node reference.
+    /// </summary>
+    private static void ReplaceKeepingCurrentNodeInSync(TNode target, TNode value, IExecutionContext<TNode> context)
+    {
+        var wasCurrentNode = context.CurrentNode is not null &&
+                              EqualityComparer<TNode>.Default.Equals(target, context.CurrentNode);
+        context.NodeAdapter.Replace(target, value);
+        if (wasCurrentNode)
+            context.CurrentNode = value;
+    }
 
     /// <summary>
     /// Apply <paramref name="value"/> to <paramref name="propertyName"/> on
@@ -446,7 +490,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
 
         var obj = adapter.CreateObject();
         adapter.SetProperty(obj, propertyName, value);
-        adapter.Replace(targetNode, obj);
+        ReplaceKeepingCurrentNodeInSync(targetNode, obj, context);
         return true;
     }
 

@@ -5,6 +5,7 @@ using TLio.Client;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 using TLio.Extensions.ETL;
+using TLio.Extensions.Looping;
 using TLio.Extensions.Math;
 using TLio.Extensions.Text;
 using TLio.Extensions.TimeDate;
@@ -48,6 +49,7 @@ public static class FormatRunners
         options.FunctionsProvider.RegisterMath<TNode>();
         options.FunctionsProvider.RegisterTimeDate<TNode>();
         options.CommandsProvider.RegisterETL<TNode>();
+        options.CommandsProvider.RegisterLooping<TNode>();
         return options;
     }
 
