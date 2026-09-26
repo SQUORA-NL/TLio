@@ -24,20 +24,28 @@ dotnet add package TLio.Commands
 | `ifElse` | Conditional branching inside a script |
 | `decisionTable` | Table-driven branching |
 
-## Usage
+## Quick start
 
-Commands are registered for you by `ParseOptions<TNode>.CreateDefault()` in `TLio.Client`:
+Commands are registered for you by `ParseOptions<TNode>.CreateDefault()` in `TLio.Client` —
+add a format adapter (here, `TLio.Json`) and you can execute a script:
 
 ```csharp
-var options = ParseOptions<JToken>.CreateDefault();
-var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
-```
+using Newtonsoft.Json.Linq;
+using TLio.Client;
+using TLio.Json;
 
-```json
+var data   = JToken.Parse("""{ "a": "hello" }""");
+var script = """
 [
-  { "command": "copy",   "from": "$.a", "to": "$.b" },
+  { "command": "copy",   "fromPath": "$.a", "toPath": "$.b" },
   { "command": "remove", "path": "$.a" }
 ]
+""";
+
+var options = ParseOptions<JToken>.CreateDefault();
+var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result  = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+// result.Data → { "b": "hello" }
 ```
 
 ETL commands (`flatten`, `restore`, `resolve`, `tocsv`) live in `TLio.Extensions.ETL`.

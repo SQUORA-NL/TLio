@@ -4,6 +4,36 @@
 It is the successor to [JLio](https://jlio.online/) and extends the same command/function scripting
 model to JSON, XML, YAML, and any future structured data format.
 
+## Quick start
+
+```sh
+dotnet add package TLio.Client
+dotnet add package TLio.Json
+```
+
+```csharp
+using Newtonsoft.Json.Linq;
+using TLio.Client;
+using TLio.Json;
+
+var data   = JToken.Parse("""{ "name": "Acme", "tempId": 7 }""");
+var script = """
+[
+  { "command": "put",    "path": "$.status", "value": "active" },
+  { "command": "remove", "path": "$.tempId" }
+]
+""";
+
+var options = ParseOptions<JToken>.CreateDefault();
+var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result  = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+// result.Data → { "name": "Acme", "status": "active" }
+```
+
+The same script, unchanged, runs against XML (`TLio.Xml`) and YAML (`TLio.Yaml`) — swap the
+execution context, not the script. Each format adapter's README has this same quick start for
+its own `TNode`.
+
 ## Design principles
 
 - **Format neutrality** — commands and functions have zero dependency on any specific data library.

@@ -7,13 +7,27 @@ works against JSON, XML, and YAML through `IExecutionContext<TNode>`.
 dotnet add package TLio.Extensions.Math
 ```
 
-## Register the pack
+## Quick start
 
 ```csharp
+using Newtonsoft.Json.Linq;
+using TLio.Client;
 using TLio.Extensions.Math;
+using TLio.Json;
+
+var data   = JToken.Parse("""{ "amounts": [10, 25, 7] }""");
+var script = """
+[
+  { "command": "add", "path": "$.total", "value": "=sum($.amounts)" }
+]
+""";
 
 var options = ParseOptions<JToken>.CreateDefault();
 options.FunctionsProvider.RegisterMath<JToken>();
+
+var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+// result.Data["total"] → 42
 ```
 
 ## Functions
@@ -25,17 +39,6 @@ options.FunctionsProvider.RegisterMath<JToken>();
 
 **Conditional aggregation** — `sumif` · `sumifs` · `countif` · `countifs` · `averageif` ·
 `averageifs` · `minifs` · `maxifs`
-
-## Example
-
-```json
-[
-  { "command": "add", "path": "$.orderTotal",
-    "value": "=sum(=fetch($.lines[*].amount))" },
-  { "command": "add", "path": "$.largeOrders",
-    "value": "=countif($.orders[*].total, '>100')" }
-]
-```
 
 ## License
 

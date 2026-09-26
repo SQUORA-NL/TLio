@@ -7,16 +7,28 @@ Format-agnostic — all format-specific work is delegated through `IExecutionCon
 dotnet add package TLio.Functions
 ```
 
-## Using functions
+## Quick start
 
-Any command value that starts with `=` is evaluated as a function expression:
+Any command value that starts with `=` is evaluated as a function expression. Functions are
+registered for you by `ParseOptions<TNode>.CreateDefault()` in `TLio.Client`:
 
-```json
+```csharp
+using Newtonsoft.Json.Linq;
+using TLio.Client;
+using TLio.Json;
+
+var data   = JToken.Parse("""{ "source": { "name": "Acme" } }""");
+var script = """
 [
-  { "command": "add", "path": "$.id",      "value": "=newGuid()" },
-  { "command": "add", "path": "$.copyOf",  "value": "=fetch($.source.name)" },
-  { "command": "add", "path": "$.itsPath", "value": "=path($.source)" }
+  { "command": "add", "path": "$.id",     "value": "=newGuid()" },
+  { "command": "add", "path": "$.copyOf", "value": "=fetch($.source.name)" }
 ]
+""";
+
+var options = ParseOptions<JToken>.CreateDefault();
+var engine  = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result  = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+// result.Data → { "source": { "name": "Acme" }, "id": "<guid>", "copyOf": "Acme" }
 ```
 
 ## Built-in functions

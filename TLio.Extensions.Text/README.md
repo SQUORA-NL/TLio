@@ -7,16 +7,30 @@ against JSON, XML, and YAML through `IExecutionContext<TNode>`.
 dotnet add package TLio.Extensions.Text
 ```
 
-## Register the pack
+## Quick start
 
 ```csharp
+using Newtonsoft.Json.Linq;
+using TLio.Client;
 using TLio.Extensions.Text;
+using TLio.Json;
+
+var data   = JToken.Parse("""{ "first": "Ada", "last": "Lovelace" }""");
+var script = """
+[
+  { "command": "add", "path": "$.fullName", "value": "=concat($.first, ' ', $.last)" }
+]
+""";
 
 var options = ParseOptions<JToken>.CreateDefault();
 options.FunctionsProvider.RegisterText<JToken>();
+
+var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+// result.Data["fullName"] → "Ada Lovelace"
 ```
 
-`RegisterTextPack<TNode>()` is a JLio-compatible alias for the same call.
+`RegisterTextPack<TNode>()` is a JLio-compatible alias for `RegisterText<TNode>()`.
 
 ## Functions
 
@@ -25,16 +39,6 @@ options.FunctionsProvider.RegisterText<JToken>();
 `parse` · `padleft` · `padright` · `newguid` · `isempty` · `toString`
 
 camelCase aliases are also registered: `toLower`, `toUpper`, `trimStart`, `trimEnd`.
-
-## Example
-
-```json
-[
-  { "command": "add", "path": "$.fullName",
-    "value": "=concat(=fetch($.first), ' ', =fetch($.last))" },
-  { "command": "set", "path": "$.code", "value": "=toUpper(=fetch($.code))" }
-]
-```
 
 ## License
 
