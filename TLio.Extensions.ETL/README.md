@@ -7,13 +7,28 @@ them, resolve references, and emit CSV. Format-agnostic via `INodeAdapter<TNode>
 dotnet add package TLio.Extensions.ETL
 ```
 
-## Register the pack
+## Quick start
 
 ```csharp
+using Newtonsoft.Json.Linq;
+using TLio.Client;
 using TLio.Extensions.ETL;
+using TLio.Json;
+
+var data   = JToken.Parse("""{ "table": [ { "name": "Alice", "age": 30 }, { "name": "Bob", "age": 25 } ] }""");
+var script = """
+[
+  { "command": "tocsv", "path": "$.table" }
+]
+""";
 
 var options = ParseOptions<JToken>.CreateDefault();
 options.CommandsProvider.RegisterETL<JToken>();
+
+var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+// result.Data["table"] → "age,name" + "30,Alice" + "25,Bob", joined by Environment.NewLine
+// (tocsv writes the CSV string in place; columns are sorted alphabetically)
 ```
 
 ## Commands
@@ -26,15 +41,6 @@ options.CommandsProvider.RegisterETL<JToken>();
 | `tocsv` | Render an array of records as CSV |
 
 `flatten` and `restore` are a round-trip pair.
-
-## Example
-
-```json
-[
-  { "command": "flatten", "path": "$.customer" },
-  { "command": "tocsv",   "path": "$.orders" }
-]
-```
 
 ## License
 

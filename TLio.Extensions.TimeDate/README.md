@@ -7,13 +7,27 @@ against JSON, XML, and YAML through `IExecutionContext<TNode>`.
 dotnet add package TLio.Extensions.TimeDate
 ```
 
-## Register the pack
+## Quick start
 
 ```csharp
+using Newtonsoft.Json.Linq;
+using TLio.Client;
 using TLio.Extensions.TimeDate;
+using TLio.Json;
+
+var data   = JToken.Parse("""{ "d1": "2024-01-01", "d2": "2024-06-15" }""");
+var script = """
+[
+  { "command": "add", "path": "$.earliest", "value": "=mindate($.d1, $.d2)" }
+]
+""";
 
 var options = ParseOptions<JToken>.CreateDefault();
 options.FunctionsProvider.RegisterTimeDate<JToken>();
+
+var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
+// result.Data["earliest"] → "2024-01-01"
 ```
 
 ## Functions
@@ -25,17 +39,6 @@ options.FunctionsProvider.RegisterTimeDate<JToken>();
 | `mindate` | Earliest date in a set |
 | `maxdate` | Latest date in a set |
 | `avgdate` | Average of a set of dates |
-
-## Example
-
-```json
-[
-  { "command": "add", "path": "$.firstOrder",
-    "value": "=mindate(=fetch($.orders[*].placedOn))" },
-  { "command": "add", "path": "$.inQuarter",
-    "value": "=isdatebetween(=fetch($.placedOn), '2026-01-01', '2026-03-31')" }
-]
-```
 
 ## License
 
