@@ -33,27 +33,28 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     {
         // A path beginning with @ (e.g. "@.status", or bare "@" for the item itself) addresses
         // whatever forEach set as context.CurrentNode for this iteration. Resolved to an absolute
-        // path *before* anything below inspects Path's shape (array index? selector? recursive
-        // descent?) — none of that classification understands "@", only "$...". The original text
-        // is restored in `finally` so the next iteration (a fresh CurrentNode) re-resolves it
-        // afresh, rather than freezing this iteration's answer into the command's own config.
-        var originalPath = Path;
+        // path *before* anything below inspects the path's shape (array index? selector? recursive
+        // descent?) — none of that classification understands "@", only "$...".
+        //
+        // Resolved into a local, never written back to the Path property: a compiled script's
+        // commands are singletons shared across every forEach iteration *and* every concurrent
+        // execution of that compiled script (e.g. two overlapping requests against the same
+        // long-lived host). Path used to be immutable during Execute, so sharing it was safe;
+        // once "@" needed resolving per-iteration, writing the answer into Path — even
+        // temporarily, even restored in a finally — raced with any other thread executing this
+        // same command instance, each clobbering the other's resolved path mid-flight. All the
+        // methods below take that resolved path as a parameter instead of reading Path, so two
+        // concurrent calls to Execute never touch shared mutable state.
+        var resolvedPath = Path;
         if (context.CurrentNode != null && Path != null &&
             Path.StartsWith(context.ItemsFetcher.CurrentItemPathIndicator, StringComparison.Ordinal))
         {
-            Path = context.ItemsFetcher.ResolveRelativePath(Path, context.CurrentNode, dataContext);
+            resolvedPath = context.ItemsFetcher.ResolveRelativePath(Path, context.CurrentNode, dataContext);
         }
-        try
-        {
-            return ExecuteWithResolvedPath(dataContext, context);
-        }
-        finally
-        {
-            Path = originalPath;
-        }
+        return ExecuteWithResolvedPath(dataContext, context, resolvedPath);
     }
 
-    private TLioExecutionResult<TNode> ExecuteWithResolvedPath(TNode dataContext, IExecutionContext<TNode> context)
+    private TLioExecutionResult<TNode> ExecuteWithResolvedPath(TNode dataContext, IExecutionContext<TNode> context, string? path)
     {
         ResetSuccess();
         var validation = ValidateCommandInstance();
@@ -61,7 +62,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
         {
             validation.ValidationMessages.ForEach(m => context.LogWarning(CoreConstants.CommandExecution, m));
             context.TraceCollector?.Record(new TraceEntry(
-                CommandName, Path ?? "", TraceOutcome.Failure, 0,
+                CommandName, path ?? "", TraceOutcome.Failure, 0,
                 $"{CommandName}: validation failed — {string.Join("; ", validation.ValidationMessages)}."));
             return TLioExecutionResult<TNode>.Failed(dataContext);
         }
@@ -75,12 +76,12 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
         var logsBefore = collector is null ? 0 : context.GetLogEntries().Count;
 
         if (Property != null)
-            ExecuteNewSyntax(dataContext, context);
+            ExecuteNewSyntax(dataContext, context, path);
         else
-            ExecuteLegacySyntax(dataContext, context);
+            ExecuteLegacySyntax(dataContext, context, path);
 
         if (IsSuccessful)
-            context.LogInfo(CoreConstants.CommandExecution, $"{CommandName}: completed successfully on path '{Path}'");
+            context.LogInfo(CoreConstants.CommandExecution, $"{CommandName}: completed successfully on path '{path}'");
 
         if (collector is not null)
         {
@@ -96,15 +97,15 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
                 ? string.Join("; ", newLogs.Where(e => e.Level == LogLevel.Warning || e.Level == LogLevel.Error).Select(e => e.Message))
                 : "";
             collector.Record(new TraceEntry(
-                CommandName, Path ?? "", traceOutcome,
+                CommandName, path ?? "", traceOutcome,
                 traceOutcome == TraceOutcome.Success ? 1 : 0,
                 traceOutcome == TraceOutcome.NoOp
-                    ? $"{CommandName}: path '{Path}' matched 0 nodes — field does not exist at this location. " +
+                    ? $"{CommandName}: path '{path}' matched 0 nodes — field does not exist at this location. " +
                       $"Use 'set' to update an existing field or 'add' to create a new one. " +
                       $"Call tlio_analyze to see the exact paths that require changes."
                     : traceOutcome == TraceOutcome.Failure
-                    ? $"{CommandName}: failed at '{Path}'" + (string.IsNullOrEmpty(failureDetail) ? "." : $" — {failureDetail}.")
-                    : $"{CommandName}: successfully applied to '{Path}'."));
+                    ? $"{CommandName}: failed at '{path}'" + (string.IsNullOrEmpty(failureDetail) ? "." : $" — {failureDetail}.")
+                    : $"{CommandName}: successfully applied to '{path}'."));
         }
 
         return new TLioExecutionResult<TNode>(IsSuccessful, dataContext);
@@ -113,12 +114,12 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     // ── New syntax ────────────────────────────────────────────────────────────
     // path selects target objects; Property is the field name on each
 
-    private void ExecuteNewSyntax(TNode dataContext, IExecutionContext<TNode> context)
+    private void ExecuteNewSyntax(TNode dataContext, IExecutionContext<TNode> context, string? path)
     {
-        var targets = context.ItemsFetcher.SelectNodes(Path!, dataContext);
+        var targets = context.ItemsFetcher.SelectNodes(path!, dataContext);
         if (targets.Count == 0)
         {
-            context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes matched path '{Path}'");
+            context.LogWarning(CoreConstants.CommandExecution, $"{CommandName}: no nodes matched path '{path}'");
             return;
         }
 
@@ -136,31 +137,31 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     }
 
     // ── Legacy syntax ─────────────────────────────────────────────────────────
-    // property name is the leaf element of Path; parent is the target object
+    // property name is the leaf element of path; parent is the target object
 
-    private void ExecuteLegacySyntax(TNode dataContext, IExecutionContext<TNode> context)
+    private void ExecuteLegacySyntax(TNode dataContext, IExecutionContext<TNode> context, string? path)
     {
         // The root has no leaf to split off: SplitParentAndLeaf yields an empty name (XML "/")
         // or echoes the root indicator back (JSON "$"), and both are meaningless as property
         // names — treating them as one produced an invalid-XML-name crash or a literal "$"
         // property. The root is reachable through the 'property' field or a copy/move to root.
-        if (string.IsNullOrEmpty(Path) || Path == context.ItemsFetcher.RootPathIndicator)
+        if (string.IsNullOrEmpty(path) || path == context.ItemsFetcher.RootPathIndicator)
         {
             context.LogWarning(CoreConstants.CommandExecution,
-                $"{CommandName}: path '{Path}' targets the document root, which has no property name to " +
+                $"{CommandName}: path '{path}' targets the document root, which has no property name to " +
                 $"{CommandName} — name a child via the 'property' field, or use copy/move with " +
                 $"toPath '{context.ItemsFetcher.RootPathIndicator}' to replace the whole document");
             return;
         }
 
-        var (parentPath, propertyName) = context.ItemsFetcher.SplitParentAndLeaf(Path!);
+        var (parentPath, propertyName) = context.ItemsFetcher.SplitParentAndLeaf(path!);
 
         // When the leaf is reached directly via recursive descent (e.g. "$..myArray"),
         // select the leaf nodes by the full path and replace each one in-place.
         // Mirrors JLio's PropertyChangeCommand.AddToObjectItems IsSearchingForObjectsByName branch.
-        if (context.ItemsFetcher.IsLeafRecursiveDescentSearch(Path!))
+        if (context.ItemsFetcher.IsLeafRecursiveDescentSearch(path!))
         {
-            var targets = context.ItemsFetcher.SelectNodes(Path!, dataContext);
+            var targets = context.ItemsFetcher.SelectNodes(path!, dataContext);
             foreach (var target in targets)
             {
                 var valueResult = Value!.GetValue(context.CurrentNode ?? target, dataContext, context);
@@ -176,12 +177,12 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
         // reported it as not found, and put created a property literally named "items[1]"
         // alongside the array it was meant to edit. The element is what the path names, so
         // select it and write to it directly.
-        if (context.ItemsFetcher.IsLeafArrayIndex(Path!))
+        if (context.ItemsFetcher.IsLeafArrayIndex(path!))
         {
-            var elements = context.ItemsFetcher.SelectNodes(Path!, dataContext);
+            var elements = context.ItemsFetcher.SelectNodes(path!, dataContext);
             if (elements.Count == 0)
             {
-                ApplyValueToMissingIndex(dataContext, context);
+                ApplyValueToMissingIndex(dataContext, context, path!);
                 return;
             }
 
@@ -205,15 +206,15 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
         // collection itself: put then took the array branch of UpsertProperty and replaced every
         // sibling with the one value, so writing one entity emptied the other three out of the
         // document. Address the matches, the same way a subscript and a recursive descent do.
-        if (context.ItemsFetcher.IsLeafNodeSelector(Path!))
+        if (context.ItemsFetcher.IsLeafNodeSelector(path!))
         {
-            var selected = context.ItemsFetcher.SelectNodes(Path!, dataContext);
+            var selected = context.ItemsFetcher.SelectNodes(path!, dataContext);
             if (selected.Count == 0)
             {
                 // A selector describes no single structure, so there is nothing to scaffold —
                 // this is a no-op for add and put as much as for set.
                 context.LogWarning(CoreConstants.CommandExecution,
-                    $"{CommandName}: no nodes matched path '{Path}' — a selector cannot be created");
+                    $"{CommandName}: no nodes matched path '{path}' — a selector cannot be created");
                 return;
             }
 
@@ -245,7 +246,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
                 // Set never invents structure: a path that does not exist is a no-op.
                 // Warn and continue so the rest of the script still runs.
                 context.LogWarning(CoreConstants.CommandExecution,
-                    $"{CommandName}: no nodes matched path '{Path}' — nothing changed");
+                    $"{CommandName}: no nodes matched path '{path}' — nothing changed");
                 return;
             }
 
@@ -253,7 +254,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             // absent — Add.ApplyValueToTarget will then create it via SetProperty.
             // Put uses the full path so EnsurePath also creates the leaf placeholder,
             // which UpsertProperty can find and Replace() with the actual value.
-            var ensurePath = EnsureFullPathForLeaf ? Path! : resolvedParentPath;
+            var ensurePath = EnsureFullPathForLeaf ? path! : resolvedParentPath;
             context.ItemsFetcher.EnsurePath(ensurePath, dataContext, context.NodeAdapter);
             parents = context.ItemsFetcher.SelectNodes(resolvedParentPath, dataContext);
 
@@ -264,7 +265,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
                 // command used to fall through the loop below with nothing to iterate and report
                 // success, so a script that changed nothing looked like it had worked.
                 context.LogWarning(CoreConstants.CommandExecution,
-                    $"{CommandName}: no nodes matched path '{Path}' — the path could not be created");
+                    $"{CommandName}: no nodes matched path '{path}' — the path could not be created");
                 return;
             }
         }
@@ -313,15 +314,15 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     /// Any position further out is refused rather than quietly appended — the element would end
     /// up at an index the path did not name. Set never builds anything, so it always warns.
     /// </summary>
-    protected virtual void ApplyValueToMissingIndex(TNode dataContext, IExecutionContext<TNode> context)
+    protected virtual void ApplyValueToMissingIndex(TNode dataContext, IExecutionContext<TNode> context, string path)
     {
         if (!CreatesMissingPath)
         {
-            WarnNoIndex(context, "the array has no element at that position");
+            WarnNoIndex(context, path, "the array has no element at that position");
             return;
         }
 
-        if (!context.ItemsFetcher.TrySplitArrayIndex(Path!, out var arrayPath, out var index))
+        if (!context.ItemsFetcher.TrySplitArrayIndex(path, out var arrayPath, out var index))
             return;
 
         var adapter = context.NodeAdapter;
@@ -331,14 +332,14 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
         {
             if (index != 0)
             {
-                WarnNoIndex(context, $"'{arrayPath}' does not exist, so the only position that can be added is 0");
+                WarnNoIndex(context, path, $"'{arrayPath}' does not exist, so the only position that can be added is 0");
                 return;
             }
 
             array = CreateArrayAt(arrayPath, dataContext, context);
             if (array is null)
             {
-                WarnNoIndex(context, $"'{arrayPath}' does not exist and could not be created");
+                WarnNoIndex(context, path, $"'{arrayPath}' does not exist and could not be created");
                 return;
             }
         }
@@ -365,14 +366,14 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
                     return;
                 }
 
-                WarnNoIndex(context, $"'{arrayPath}' is not an array");
+                WarnNoIndex(context, path, $"'{arrayPath}' is not an array");
                 return;
             }
 
             var length = adapter.GetArrayLength(array);
             if (index != length)
             {
-                WarnNoIndex(context,
+                WarnNoIndex(context, path,
                     $"'{arrayPath}' holds {length} element(s), so the next position that can be added is {length}");
                 return;
             }
@@ -410,9 +411,9 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     /// Reported as "no nodes matched" so the trace records a no-op, the same outcome every
     /// other path that finds nothing produces.
     /// </summary>
-    private void WarnNoIndex(IExecutionContext<TNode> context, string detail)
+    private void WarnNoIndex(IExecutionContext<TNode> context, string path, string detail)
         => context.LogWarning(CoreConstants.CommandExecution,
-            $"{CommandName}: no nodes matched path '{Path}' — {detail}");
+            $"{CommandName}: no nodes matched path '{path}' — {detail}");
 
     /// <summary>
     /// Apply <paramref name="value"/> to a node the path addressed directly — an array element

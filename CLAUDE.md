@@ -242,6 +242,29 @@ JSON or YAML they are ordinary `@name` properties. Converting is how a script ed
   node rather than mutating it, so without this a second `@` read later in the same iteration
   would see the pre-replace value.
 
+  **Bug found and fixed after the initial merge:** the first cut of `@` resolution had
+  `PropertyChangeCommand.Execute` temporarily overwrite its own `Path` property with the
+  resolved absolute path, then restore it in a `finally`. `Path` looked like ordinary per-call
+  state, but the command instance is a node in the *compiled* script tree — a singleton shared
+  across every `forEach` iteration *and* every concurrent execution of that compiled script
+  (e.g. two overlapping HTTP requests against one long-lived host, exactly `TLio.Sample.Actus.Api`'s
+  shape: one `CompiledScript<JToken>` built once at startup, `Execute`d per request). Before `@`
+  needed resolving, `Path` was immutable during `Execute`, so sharing it was safe; the moment it
+  became write-then-restore, two concurrent requests hitting the same `set path="@"` command
+  raced on it — one request's resolved index could get clobbered by another's before it was
+  read, corrupting array writes and reads under load (`$.schedule[1]` silently unwritten while
+  `$.schedule[2]` received someone else's value; a `@` read returning "$", the root indicator,
+  because the resolved path had been reset out from under it). Reproduced by firing concurrent
+  requests at the running sample API; never reproduced single-threaded, which is why the initial
+  single-request testing missed it. Fixed by never writing back to `Path`: `Execute` resolves
+  into a local and threads it as a parameter through `ExecuteWithResolvedPath` /
+  `ExecuteNewSyntax` / `ExecuteLegacySyntax` / `ApplyValueToMissingIndex` / `WarnNoIndex`, all of
+  which read the parameter instead of `this.Path`. `Path` itself is now genuinely read-only for
+  the lifetime of the compiled command. General lesson for any future command: a compiled
+  script's commands are shared, concurrently-executed singletons — request-scoped state belongs
+  on `IExecutionContext<TNode>` (already true of `CurrentNode`), never on a mutable property of
+  the command itself, even "temporarily."
+
   An early, broader version of this went through `IItemsFetcher.IsPathExpression` (relaxing it
   to accept a *bare* `@`/`$`, so `=fetch(@)` could read "the whole current item" as a value) and
   had to be reverted: that method also gates `ResolveArg`/`Fetch`'s *runtime* re-check of an
