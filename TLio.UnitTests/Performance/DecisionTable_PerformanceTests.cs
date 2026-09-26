@@ -21,7 +21,13 @@ namespace TLio.UnitTests.Performance;
 [TestFixture]
 public class DecisionTable_PerformanceTests
 {
+    // Conservative thresholds, sized for CI (shared/noisy runners can run several times slower
+    // than a developer machine — e.g. this file's outputPathTemplate case measures ~230 ms
+    // locally but has been observed at 900-1300 ms on GitHub Actions). Each is set well above the
+    // worst CI timing seen, while staying far below what the old O(declared-outputs) behavior
+    // these tests guard against would take (tens of seconds at this scale).
     private const int MaxElapsedMs = 500;
+    private const int MaxElapsedMsAtScale = 3_000;
     private const int WarmupIterations = 3;
 
     private IExecutionContext<JToken> _context = null!;
@@ -129,14 +135,14 @@ public class DecisionTable_PerformanceTests
         TestContext.WriteLine(
             $"{declaredOutputs:N0} declared outputs (all outputPathTemplate), " +
             $"{matchedResultsPerRule} matched/rule, {targetNodes} target nodes: " +
-            $"{sw.ElapsedMilliseconds} ms (threshold: {MaxElapsedMs} ms)");
+            $"{sw.ElapsedMilliseconds} ms (threshold: {MaxElapsedMsAtScale} ms)");
 
         Assert.That(result.Success, Is.True);
         for (var i = 0; i < matchedResultsPerRule; i++)
             Assert.That(data.SelectToken($"$.items[{targetNodes - 1}]._new.field{i}")?.Value<string>(),
                 Is.EqualTo($"value{i}"), $"field{i} on the last target node");
-        Assert.That(sw.ElapsedMilliseconds, Is.LessThanOrEqualTo(MaxElapsedMs),
+        Assert.That(sw.ElapsedMilliseconds, Is.LessThanOrEqualTo(MaxElapsedMsAtScale),
             $"{targetNodes} target nodes took {sw.ElapsedMilliseconds} ms, exceeding the " +
-            $"{MaxElapsedMs} ms threshold.");
+            $"{MaxElapsedMsAtScale} ms threshold.");
     }
 }
