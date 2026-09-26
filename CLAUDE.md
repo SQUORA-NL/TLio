@@ -21,6 +21,7 @@ Auto-generated from all feature plans. Last updated: 2026-09-18 (updated by setP
 - In-memory `ConcurrentDictionary<string, ScriptRegistryEntry>` — ephemeral, process-scoped (018-api-script-slug-cache)
 - C# / .NET 10 + `ModelContextProtocol` (Anthropic MCP SDK, stdio server), `System.Threading.RateLimiting` (in-box .NET), `TLio.Json`, `TLio.Json.SystemText`, `TLio.Xml`, `TLio.Yaml`, `TLio.Client`, `TLio.Commands`, `TLio.Functions`, `TLio.Extensions.*` (019-mcp-tlio-server)
 - N/A — stateless, in-memory execution per request; configuration from `appsettings.json` / environment variables (019-mcp-tlio-server)
+- C# / .NET 10 + `TLio.Core`, `TLio.Commands` (`TLio.Extensions.Looping`: `forEach`/`while`); `TLio.Extensions.TimeDate` (`dayCountFraction`); ASP.NET Core Minimal API sample (`samples/TLio.Sample.Actus.Api`) (feature/actus-pam-contract)
 
 - C# / .NET 10 + Newtonsoft.Json, System.Text.Json, JsonPath.Net (json-everything), NUnit (002-migration-from-jlio)
 - TLio.Xml: XmlNodeAdapter + SlashPathItemsFetcher (existing) + NativeXPathItemsFetcher (003, planned)
@@ -43,6 +44,7 @@ TLio.Json.SystemText.Tests/ ← System.Text.Json adapter fixture tests
 TLio.Functions.Tests/       ← Built-in function tests + extension-pack fixture tests (Math, Text, TimeDate, ETL, TextPack)
 TLio.Extensions.Text/      ← Optional text function pack: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim (008), regexReplace, regexExtract, right (023)
 TLio.Functions/Collections/ ← distinct, sort, sortBy, last — built in, registered by ParseOptions (023)
+TLio.Extensions.Looping/   ← forEach, while — the loop primitives, opt-in via RegisterLooping (feature/actus-pam-contract)
 TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtures
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
 TLio.Mcp/                   ← MCP stdio server (tlio_list_commands, tlio_describe, tlio_execute, tlio_analyze, 019)
@@ -59,6 +61,9 @@ samples/
   TLio.Sample.Api/          ← Minimal API sample (JSON/XML/YAML endpoints, 005)
   TLio.Sample.Cli/          ← CLI sample (file-in / transformed-out, 005)
   TLio.Sample.DockerPlugin/ ← Docker API with NuPlane hot-loading of .nupkg plugins (012)
+  TLio.Sample.AfdApi/       ← SIVI AFD 1.0/Short/2.0 conversion demo, bundled from TLIO-Afd
+  TLio.Sample.Actus.Api/    ← ACTUS PAM contract demo — pam-simple + pam-envelope scripts,
+                              built on forEach/while (feature/actus-pam-contract)
 specs/
 ```
 
@@ -220,6 +225,78 @@ One asymmetry to know: TLio's XML adapter ignores attributes by design, but afte
 JSON or YAML they are ordinary `@name` properties. Converting is how a script edits an attribute.
 
 ## Recent Changes
+- feature/actus-pam-contract: `TLio.Extensions.Looping` — `forEach`/`while`, the iteration
+  primitive TLio previously had no equivalent of (`TLioScript<TNode>` is a strictly linear
+  list; `decisionTable`/`resolve` loop internally but don't expose iteration to a script
+  author). Both use the existing nested-`TLioScript` pattern `ifElse` already established. The
+  current element is `IExecutionContext.CurrentNode` (new — the one core addition this needed:
+  a settable `TNode? CurrentNode` on `IExecutionContext<TNode>`, null outside any loop, fully
+  additive), which `forEach` sets around each iteration (nested loops nest for free via the C#
+  call stack) and which `PropertyChangeCommand` (`set`/`add`/`put`) now consults: a `path`
+  beginning with `@` (or bare `@` for the whole element) resolves against it before the usual
+  array-index/selector classification runs, and every `Value.GetValue(...)` call site prefers
+  `context.CurrentNode` over its own resolved target — so `@`/`@.field` works both as a path and
+  inside a value, even when the value is read while writing somewhere else entirely (a running
+  total elsewhere in the document). `ReplaceKeepingCurrentNodeInSync` (in `PropertyChangeCommand`)
+  keeps `CurrentNode` from going stale after `set path="@" value=...`: `Replace` detaches the old
+  node rather than mutating it, so without this a second `@` read later in the same iteration
+  would see the pre-replace value.
+
+  **Bug found and fixed after the initial merge:** the first cut of `@` resolution had
+  `PropertyChangeCommand.Execute` temporarily overwrite its own `Path` property with the
+  resolved absolute path, then restore it in a `finally`. `Path` looked like ordinary per-call
+  state, but the command instance is a node in the *compiled* script tree — a singleton shared
+  across every `forEach` iteration *and* every concurrent execution of that compiled script
+  (e.g. two overlapping HTTP requests against one long-lived host, exactly `TLio.Sample.Actus.Api`'s
+  shape: one `CompiledScript<JToken>` built once at startup, `Execute`d per request). Before `@`
+  needed resolving, `Path` was immutable during `Execute`, so sharing it was safe; the moment it
+  became write-then-restore, two concurrent requests hitting the same `set path="@"` command
+  raced on it — one request's resolved index could get clobbered by another's before it was
+  read, corrupting array writes and reads under load (`$.schedule[1]` silently unwritten while
+  `$.schedule[2]` received someone else's value; a `@` read returning "$", the root indicator,
+  because the resolved path had been reset out from under it). Reproduced by firing concurrent
+  requests at the running sample API; never reproduced single-threaded, which is why the initial
+  single-request testing missed it. Fixed by never writing back to `Path`: `Execute` resolves
+  into a local and threads it as a parameter through `ExecuteWithResolvedPath` /
+  `ExecuteNewSyntax` / `ExecuteLegacySyntax` / `ApplyValueToMissingIndex` / `WarnNoIndex`, all of
+  which read the parameter instead of `this.Path`. `Path` itself is now genuinely read-only for
+  the lifetime of the compiled command. General lesson for any future command: a compiled
+  script's commands are shared, concurrently-executed singletons — request-scoped state belongs
+  on `IExecutionContext<TNode>` (already true of `CurrentNode`), never on a mutable property of
+  the command itself, even "temporarily."
+
+  An early, broader version of this went through `IItemsFetcher.IsPathExpression` (relaxing it
+  to accept a *bare* `@`/`$`, so `=fetch(@)` could read "the whole current item" as a value) and
+  had to be reverted: that method also gates `ResolveArg`/`Fetch`'s *runtime* re-check of an
+  already-resolved value, with no way to tell a script-typed path from a quoted literal that
+  happens to match — XML's current-item token is `.`, an ordinary character in real data, and
+  the sweep caught `padLeft(...,'.')` being reinterpreted as "the current node." Net effect:
+  `@`/`.` bare work as a command's own `path` (goes through `ResolveRelativePath` directly, never
+  touches `IsPathExpression`), but not as a bare value — read a field (`@.field`) instead, or for
+  a scalar element use `=fetch(=scriptpath())` (`scriptpath()` bare returns the current element's
+  own path as a *computed* string, not typed text, so re-resolving it is unambiguous).
+
+  No `appendTo` — `add` only ever appends at a literal "next free" index, which a loop body can't
+  compute for itself, and an earlier version that special-cased this in `forEach`/`while` was
+  rejected as too restrictive. The idiom instead: `forEach` transforms elements in place via
+  `set path="@"`; growing a list during a loop builds a delimited string (`concat`) and
+  `split()`s it once afterward — ordinary script, nothing loop-specific.
+
+  Demonstrated end-to-end by `samples/TLio.Sample.Actus.Api`, an ACTUS PAM (Principal at
+  Maturity) contract calculator: `while` walks the interest-payment cycle to build the schedule
+  (mirroring the ACTUS reference implementation's own schedule loop), `forEach` folds each
+  date's day-count fraction and payoff against running state. Also added: `dayCountFraction`
+  (A360/A365/30E360) to `TLio.Extensions.TimeDate`.
+
+  Two XML-adapter gotchas surfaced along the way, worth knowing for any future command that
+  creates/attaches a fresh node then keeps using the local reference, or that iterates a
+  multi-element array: `XmlNodeAdapter.SetProperty`'s `Rename` returns a *new* `XElement`
+  whenever the source's name or attachment state doesn't already match (re-fetch via
+  `GetProperty` after attaching, don't keep the pre-attach reference), and
+  `SlashPathItemsFetcher.GetPath` does not disambiguate same-named siblings (returns
+  `/root/tags/item` for either element of a two-item array, so a bare `@`/`.` `path` resolving
+  through it is only reliable for a single-element array) — both pre-existing limitations, the
+  second not fixed by this change (the sweep works around it, see `Sweep/sweep.xml`).
 - setProperties command + scriptpath find mode: `setProperties` runs any value function against
   a *selection* of nodes under one or more matched objects — the only way to write through an
   object-key wildcard (`$.obj.*`) or a multi-key union (`$.obj['a','b']`), since `set`/`add`/`put`

@@ -10,7 +10,7 @@ namespace TLio.Extensions.TimeDate;
 /// </code>
 ///
 /// Registers: datecompare, isdatebetween, mindate, maxdate, avgdate, datediff, dateadd,
-/// datepart, formatdate, parsedate, startofmonth, endofmonth.
+/// datepart, formatdate, parsedate, startofmonth, endofmonth, daycountfraction.
 ///
 /// Ported from JLio.Extensions.TimeDate.RegisterTimeDatePack.RegisterTimeDate().
 /// </summary>
@@ -31,6 +31,7 @@ public static class RegisterTimeDatePack
         registrar.Register("parsedate",     () => new ParseDateFunction<TNode>());
         registrar.Register("startofmonth",  () => new StartOfMonth<TNode>());
         registrar.Register("endofmonth",    () => new EndOfMonth<TNode>());
+        registrar.Register("daycountfraction", () => new DayCountFraction<TNode>());
         return registrar;
     }
 }
