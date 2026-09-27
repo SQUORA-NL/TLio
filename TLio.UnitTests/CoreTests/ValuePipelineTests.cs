@@ -96,14 +96,22 @@ public class ValuePipelineTests
     }
 
     [Test]
-    public void FixedValue_ReturnsSameReferenceOnEachCall()
+    public void FixedValue_ReturnsAnIndependentCloneOnEachCall()
     {
+        // Not the same reference: a compiled script's FixedValue is shared by every command that
+        // evaluates it (every forEach/while iteration, and every concurrent execution of the
+        // compiled script). Handing the same node back each time meant whichever splice
+        // (SetProperty/Replace/...) happened first attached it to that document; Newtonsoft (or
+        // any adapter with "a node has one parent") reparents the same instance out of one
+        // document into the next, corrupting whichever caller was using it. Each call must return
+        // its own clone.
         var data = JToken.Parse("{}");
         var node = new JValue(99);
         var fv = new FixedValue<JToken>(node);
         var r1 = fv.GetValue(data, data, _context);
         var r2 = fv.GetValue(data, data, _context);
-        Assert.That(ReferenceEquals(r1.Data.First, r2.Data.First), Is.True);
+        Assert.That(ReferenceEquals(r1.Data.First, r2.Data.First), Is.False);
+        Assert.That(JToken.DeepEquals(r1.Data.First, r2.Data.First), Is.True);
     }
 
     // ── PathValue ──────────────────────────────────────────────────────────────

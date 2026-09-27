@@ -95,4 +95,14 @@ public class While<TNode> : CommandBase<TNode>
             result.AddError($"{CommandName}: MaxIterations must be a positive integer.");
         return result;
     }
+
+    // Commands is a nested TLioScript, not read-only configuration: its commands carry their own
+    // per-execution state and must not be shared across concurrent executions of the compiled
+    // script (see CommandBase<TNode>.Clone()).
+    public override ICommand<TNode> Clone()
+    {
+        var clone = (While<TNode>)base.Clone();
+        clone.Commands = Commands?.Clone();
+        return clone;
+    }
 }

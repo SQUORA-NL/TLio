@@ -1,3 +1,4 @@
+using System.Globalization;
 using Newtonsoft.Json.Linq;
 using TLio.Core.Contracts;
 
@@ -111,18 +112,46 @@ public class JsonNodeAdapter : INodeAdapter<JToken>
     /// <summary>
     /// Coerce a JToken to double?. Handles all numeric JValue types and numeric strings.
     /// Returns null if the node is null, not a JValue, or cannot be converted.
+    ///
+    /// Numeric and string values are handled without exceptions — <c>=equals()</c>/comparison
+    /// functions call this on both operands to try a numeric comparison first, so every
+    /// non-numeric comparison a script makes (dates, ids, empty-string checks — the overwhelming
+    /// majority in a typical script) used to hit the try/catch below and throw. Cheap on one
+    /// thread, but .NET's exception path takes internal runtime locks (formatting the
+    /// exception's own message pulls a resource string under a lock) that do not scale across
+    /// threads: profiling the ACTUS PAM portfolio benchmark
+    /// (TLio.UnitTests/Performance/ActusPam_BenchmarkTests.cs) under concurrent load showed
+    /// threads repeatedly contending on <c>Monitor.Enter_Slowpath</c> reached through exactly
+    /// this exception, capping parallel throughput at a fraction of the available cores
+    /// regardless of core count or GC mode. Matches
+    /// <c>TLio.Json.SystemText.SystemTextJsonNodeAdapter.TryGetDouble</c>, which never had this
+    /// problem — it was already exception-free.
     /// </summary>
     public double? TryGetDouble(JToken node)
     {
         if (node is not JValue v) return null;
-        if (v.Type == JTokenType.Null) return null;
-        try
+        switch (v.Type)
         {
-            return v.Value<double?>();
-        }
-        catch
-        {
-            return null;
+            case JTokenType.Null:
+                return null;
+            case JTokenType.Integer:
+            case JTokenType.Float:
+                return v.Value<double?>();
+            case JTokenType.String:
+                // NumberStyles.Float | AllowThousands, not Float alone: this is double.Parse's
+                // own default style, and it is load-bearing — a string like "3,5" is documented,
+                // deliberate, pinned behavior (DecimalSeparatorTests) as thirty-five, comma read
+                // as a thousands separator under the invariant culture, not a decimal point.
+                return double.TryParse((string?)v.Value, NumberStyles.Float | NumberStyles.AllowThousands,
+                    CultureInfo.InvariantCulture, out var parsed)
+                    ? parsed
+                    : null;
+            default:
+                // Rare types (Boolean, Date, Guid, TimeSpan, Bytes, ...): preserve Newtonsoft's
+                // own conversion behavior rather than reimplementing every case — none of them
+                // are exercised anywhere near as often as the string/numeric hot path above.
+                try { return v.Value<double?>(); }
+                catch { return null; }
         }
     }
 

@@ -30,8 +30,17 @@ public class FixedValue<TNode> : IFunctionSupportedValue<TNode>
         _scriptText = scriptText;
     }
 
+    // Deep-cloned on every call, never handed out by reference: _value is the one literal a
+    // parsed script holds for this expression, shared by every command that evaluates it — every
+    // forEach/while iteration, and (via CompiledScript's per-execution command cloning) every
+    // concurrent execution of the compiled script. Handing out the same node lets a container
+    // (JObject/JArray) that later splices it in reparent it — Newtonsoft (and any adapter with the
+    // same "a node has one parent" model) detaches a node from wherever it already lived the
+    // moment something else inserts it, so two callers using the literal at the same time corrupt
+    // each other's document. Mirrors ExpandingFixedValue, which clones its template for the same
+    // reason.
     public FunctionResult<TNode> GetValue(TNode currentNode, TNode dataContext, IExecutionContext<TNode> context) =>
-        FunctionResult<TNode>.Successful(_value);
+        FunctionResult<TNode>.Successful(context.NodeAdapter.DeepClone(_value));
 
     /// <summary>
     /// The node this value returns, for a writer that has to render the value rather than

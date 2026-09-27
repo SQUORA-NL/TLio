@@ -46,7 +46,13 @@ public abstract class CommandBase<TNode> : ICommand<TNode>
     protected void ResetSuccess() => _executionFailed = false;
     protected bool IsSuccessful => !_executionFailed;
 
-    // _executionFailed is a bool (value type) so each clone gets its own independent flag.
-    // Configuration properties set at parse time are reference-copied but read-only during execution.
-    public ICommand<TNode> Clone() => (ICommand<TNode>)MemberwiseClone();
+    // _executionFailed is a bool (value type) so MemberwiseClone gives each clone its own
+    // independent flag — but only for the command being cloned itself. A command that holds a
+    // *nested* TLioScript<TNode> (While.Commands, ForEach.Commands, IfElse.IfScript/ElseScript)
+    // must override Clone() to also clone that nested script (TLioScript<TNode>.Clone()) rather
+    // than let this base implementation copy the reference: otherwise every "independent" clone
+    // still shares the same nested command instances, and those instances' own _executionFailed
+    // (and any other per-execution state, e.g. DecisionTable's cached output index) races across
+    // concurrent executions of the compiled script. See TLioScript<TNode>.Clone().
+    public virtual ICommand<TNode> Clone() => (ICommand<TNode>)MemberwiseClone();
 }

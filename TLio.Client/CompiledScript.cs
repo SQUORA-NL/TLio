@@ -34,16 +34,12 @@ public sealed class CompiledScript<TNode>
     public IReadOnlyList<string> ParseWarnings => _template.ParseWarnings;
 
     /// <summary>
-    /// Returns a new <see cref="TLioScript{TNode}"/> with every command independently cloned.
-    /// Each returned instance has its own execution state and must not be shared across threads.
+    /// Returns a new <see cref="TLioScript{TNode}"/> with every command independently cloned —
+    /// including, recursively, any nested script a command holds of its own (while/forEach's
+    /// body, an ifElse branch): see <see cref="TLioScript{TNode}.Clone"/>. Each returned instance
+    /// has its own execution state and must not be shared across threads.
     /// </summary>
-    public TLioScript<TNode> CreateExecutable()
-    {
-        var script = new TLioScript<TNode>();
-        script.AddRange(_template.Select(cmd => cmd.Clone()));
-        script.ParseWarnings.AddRange(_template.ParseWarnings);
-        return script;
-    }
+    public TLioScript<TNode> CreateExecutable() => _template.Clone();
 
     /// <summary>
     /// Convenience: creates an executable instance and runs it against <paramref name="data"/>.

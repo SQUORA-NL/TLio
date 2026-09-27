@@ -163,8 +163,12 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
     // from. That is checking a purely structural fact — this container's current shape — never
     // memoising a value that an unrelated write elsewhere in the document could make stale.
 
-    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<JsonArray, ArrayIndexCache> ArrayIndexCaches = new();
-    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<JsonObject, ObjectKeyCache> ObjectKeyCaches = new();
+    // Instance-scoped, not static — see the identical fix and full rationale in
+    // TLio.Json's JsonPathItemsFetcher.IndexCaches: a fresh fetcher is created per execution, so
+    // an instance field already lives exactly as long as one execution needs it to, and never
+    // shares a ConditionalWeakTable's internal write lock across concurrent executions.
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<JsonArray, ArrayIndexCache> ArrayIndexCaches = new();
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<JsonObject, ObjectKeyCache> ObjectKeyCaches = new();
 
     private sealed class ArrayIndexCache
     {
@@ -178,7 +182,7 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
         public Dictionary<JsonNode, string>? Map;
     }
 
-    private static int IndexOfCached(JsonArray array, JsonNode child)
+    private int IndexOfCached(JsonArray array, JsonNode child)
     {
         if (!ArrayIndexCaches.TryGetValue(array, out var cache))
         {
@@ -204,7 +208,7 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
         return index;
     }
 
-    private static string? KeyOfCached(JsonObject obj, JsonNode child)
+    private string? KeyOfCached(JsonObject obj, JsonNode child)
     {
         if (!ObjectKeyCaches.TryGetValue(obj, out var cache))
         {
@@ -232,7 +236,7 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
     /// not happen for a node that is genuinely still attached — falls back to <c>node.GetPath()</c>
     /// for that node entirely, so a shape this does not handle is slower, never wrong.
     /// </summary>
-    private static string FastPath(JsonNode node)
+    private string FastPath(JsonNode node)
     {
         var segments = new List<(bool IsIndex, string Text)>();
         var current = node;

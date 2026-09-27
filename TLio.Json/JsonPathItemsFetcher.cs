@@ -68,7 +68,18 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
     // but a future one that does would need to invalidate this cache explicitly (see
     // InvalidateIndexCache below) rather than mutate an array's element order silently.
 
-    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<JArray, ArrayIndexCache> IndexCaches = new();
+    // Instance-scoped, not static: a fresh JsonPathItemsFetcher is created per execution
+    // (JsonExecutionContext.CreateDefault()), so an instance field already lives exactly as long
+    // as one execution needs it to. It used to be `static readonly` — one table shared by every
+    // JsonPathItemsFetcher in the process — which cost nothing single-threaded but became a
+    // hard scalability ceiling under concurrent load: every contract's array is a distinct JArray,
+    // so every contract's first touch is a cache miss requiring ConditionalWeakTable.Add, and
+    // ConditionalWeakTable serializes all writes under one internal lock. Fourteen threads each
+    // doing one Add per contract against the same process-wide table meant most of a "parallel"
+    // run was actually serialized on this cache: measured at ~650% CPU (of 1400% available) on a
+    // 14-core run before this fix, versus full utilization after — the ACTUS PAM portfolio
+    // benchmark (TLio.UnitTests/Performance/ActusPam_BenchmarkTests.cs) is what surfaced it.
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<JArray, ArrayIndexCache> IndexCaches = new();
 
     private sealed class ArrayIndexCache
     {
@@ -82,9 +93,9 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
     /// nothing needs it today (see the remarks on GetPath) — here so that guarantee has a place
     /// to be enforced from if it ever stops holding.
     /// </summary>
-    internal static void InvalidateIndexCache(JArray array) => IndexCaches.Remove(array);
+    internal void InvalidateIndexCache(JArray array) => IndexCaches.Remove(array);
 
-    private static int IndexOfCached(JArray array, JToken child)
+    private int IndexOfCached(JArray array, JToken child)
     {
         if (!IndexCaches.TryGetValue(array, out var cache))
         {
@@ -114,7 +125,7 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
     /// handled — a plain JSON document never has anything else) falls back to <c>node.Path</c>
     /// itself, so a shape this misses is slower, never wrong.
     /// </summary>
-    private static string FastPath(JToken node)
+    private string FastPath(JToken node)
     {
         var segments = new List<(bool IsIndex, string Text)>();
         var current = node;

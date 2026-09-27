@@ -122,4 +122,14 @@ public class ForEach<TNode> : CommandBase<TNode>
             result.AddError($"{CommandName}: Path property is required.");
         return result;
     }
+
+    // Commands is a nested TLioScript, not read-only configuration: its commands carry their own
+    // per-execution state and must not be shared across concurrent executions of the compiled
+    // script (see CommandBase<TNode>.Clone()).
+    public override ICommand<TNode> Clone()
+    {
+        var clone = (ForEach<TNode>)base.Clone();
+        clone.Commands = Commands?.Clone();
+        return clone;
+    }
 }
