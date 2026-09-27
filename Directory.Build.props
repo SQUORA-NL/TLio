@@ -12,14 +12,14 @@
     <!-- Ship an XML documentation file with every library: without it the /// comments never
          leave this repository and consumers of the NuGet packages get no IntelliSense text at
          all, only bare signatures. The .xml is packed next to the .dll automatically.
-         Test and sample projects are skipped — nothing consumes their documentation.
+         Test projects are skipped — nothing consumes their documentation.
          (This has to live in .props: the SDK derives DocumentationFile from it before a
          Directory.Build.targets would be imported.)
 
          CS1591 (missing comment on a public member) is suppressed: undocumented members still
          get signature IntelliSense, and the alternative is 4000+ warnings. Malformed comments
          (CS1570/CS1573) are deliberately NOT suppressed — those break IntelliSense. -->
-    <GenerateDocumentationFile Condition="!$(MSBuildProjectName.EndsWith('Tests')) And !$(MSBuildProjectName.StartsWith('TLio.Sample'))">true</GenerateDocumentationFile>
+    <GenerateDocumentationFile Condition="!$(MSBuildProjectName.EndsWith('Tests'))">true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
@@ -37,9 +37,9 @@
     on both sides. NuPlane expresses that as `SharedAssembly(name, publicKeyToken, major)` and
     validates that the token is 16 hex characters, i.e. it will not share an unsigned assembly.
     Without a strong name there is no way to say "this one is mine" — see
-    samples/TLio.Sample.DockerPlugin/Program.cs.
+    samples/TLio.Sample.DockerPlugin/Program.cs in the TLio-Samples repository.
 
-    Signing everything, tests and samples included, keeps `InternalsVisibleTo` working: a signed
+    Signing everything, tests included, keeps `InternalsVisibleTo` working: a signed
     assembly may only grant access to another signed assembly, and the attribute has to name the
     grantee's full public key.
   -->
@@ -92,7 +92,7 @@
     <MinVerAutoIncrement>minor</MinVerAutoIncrement>
     <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>
 
-    <!-- No git repository to read (the Docker sample build copies sources only): MinVer would
+    <!-- No git repository to read (a source archive, a build that copies sources only): MinVer would
          warn MINVER0001 and stamp 0.0.0-alpha.0, which reads like a real release. Skip it and
          say plainly what the build was. -->
     <MinVerSkip Condition="'$(MinVerSkip)' == '' And !Exists('$(MSBuildThisFileDirectory).git')">true</MinVerSkip>

@@ -15,7 +15,7 @@ namespace TLio.UnitTests.Performance;
 /// *declared* output count, paid again for every target node. It is now an outputs-by-name
 /// lookup driven by Results itself — cost proportional to the *matched* result count. These
 /// tests build tables shaped like the generated SIVI AFD conversion scripts in
-/// samples/TLio.Sample.AfdApi (tens of thousands of declared outputs, a handful set per rule) to
+/// TLio-Samples' samples/TLio.Sample.AfdApi (tens of thousands of declared outputs, a handful set per rule) to
 /// prove that shape stays fast regardless of how large the declared surface grows.
 /// </summary>
 [TestFixture]

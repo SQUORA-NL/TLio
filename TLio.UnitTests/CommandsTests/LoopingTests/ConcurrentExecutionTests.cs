@@ -9,7 +9,7 @@ namespace TLio.UnitTests.CommandsTests.LoopingTests;
 /// <summary>
 /// A compiled script is a singleton: one host builds it once (<see cref="ScriptEngine{TNode}.Compile"/>)
 /// and executes it per request against a fresh document and a fresh <see cref="TLio.Core.Contracts.IExecutionContext{TNode}"/>
-/// — exactly how <c>samples/TLio.Sample.Actus.Api</c> hosts <c>pam-envelope.json</c>. That means every
+/// — exactly how <c>TLio.Sample.Actus.Api</c> (TLio-Samples) hosts <c>pam-envelope.json</c>. That means every
 /// command instance inside it, including each <c>set path="@"</c> nested in a <c>forEach</c>, is shared
 /// across concurrent executions. A prior bug resolved "@" by temporarily overwriting the command's own
 /// <c>Path</c> property and restoring it in a <c>finally</c> — safe single-threaded, but two concurrent

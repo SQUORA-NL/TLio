@@ -77,7 +77,7 @@ Input: `{ "start": "2025-01-01", "end": "2027-01-01" }`
 Output includes: `"schedule": ["2025-01-01", "2026-01-01", "2027-01-01"]`
 
 Verified by: `TLio.UnitTests/CommandsTests/LoopingTests/WhileTests.cs`; the full idiom above is
-exercised end-to-end by `samples/TLio.Sample.Actus.Api/Scripts/pam-simple.json`.
+exercised end-to-end by [`TLio.Sample.Actus.Api/Scripts/pam-simple.json`](https://github.com/SQUORA-NL/TLio-Samples/blob/main/samples/TLio.Sample.Actus.Api/Scripts/pam-simple.json) in TLio-Samples.
 
 ## When to use
 

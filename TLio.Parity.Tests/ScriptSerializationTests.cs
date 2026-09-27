@@ -1,5 +1,4 @@
 using System.Xml.Linq;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TLio.Client;
@@ -27,6 +26,11 @@ namespace TLio.Parity.Tests;
 /// <para>
 /// The round trip here is parse → serialize → parse → execute, held against executing the
 /// original: the same document out, or the settings did not survive.
+/// </para>
+/// <para>
+/// The same trip over every worked example in <c>docs/samples</c> — the largest scripts people
+/// copy — runs in the TLio-Samples repository, which moved there with the samples and runs it
+/// against the published packages.
 /// </para>
 /// </remarks>
 [TestFixture]
@@ -150,124 +154,6 @@ public class ScriptSerializationTests
         return TLioConvert.Serialize(parser.ParseScript(
             "- command: add\n  path: $.order.total\n  value: \"=concat('EUR ', $.order.net)\"\n"), adapter);
     }
-
-    // ── Every sample, through the same trip ──────────────────────────────────
-
-    /// <summary>
-    /// The samples in <c>docs/samples</c> are the largest scripts in the repository and the ones
-    /// people copy: decision tables, resolves, nested settings, all three notations. Each is
-    /// parsed, written back out as JSON, parsed again and run — and has to produce the output
-    /// committed next to it.
-    /// </summary>
-    /// <remarks>
-    /// Samples that cross a format boundary are skipped: <c>convert</c> needs
-    /// MultiFormatScriptRunner, which lives in a package this project deliberately does not
-    /// reference. They are covered by TLio.FormatConverter.Tests.
-    /// </remarks>
-    [TestCaseSource(nameof(SampleDirectories))]
-    public void ASampleSurvivesParseSerializeParse(string directory)
-    {
-        var scriptPath = Directory.EnumerateFiles(directory, "script.*").Single();
-        var inputPath  = Directory.EnumerateFiles(directory, "input.*").Single();
-        var outputPath = Directory.EnumerateFiles(directory, "output.*").Single();
-
-        var (actual, expected, success, log) = Path.GetExtension(inputPath) switch
-        {
-            ".xml"  => RunXmlSample(scriptPath, inputPath, outputPath),
-            ".yaml" => RunYamlSample(scriptPath, inputPath, outputPath),
-            _       => RunJsonSample(scriptPath, inputPath, outputPath),
-        };
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(success, Is.True, $"the round-tripped sample did not run: {log}");
-            Assert.That(actual, Is.EqualTo(expected));
-        });
-    }
-
-    private static IEnumerable<TestCaseData> SampleDirectories()
-    {
-        var samples = Path.Combine(RepositoryRoot, "docs", "samples");
-
-        foreach (var directory in Directory.EnumerateDirectories(samples, "*", SearchOption.AllDirectories).Order())
-        {
-            if (!Directory.EnumerateFiles(directory, "script.*").Any()) continue;
-            if (!Directory.EnumerateFiles(directory, "input.*").Any()) continue;
-            if (!Directory.EnumerateFiles(directory, "output.*").Any()) continue;
-
-            var script = File.ReadAllText(Directory.EnumerateFiles(directory, "script.*").Single());
-            if (CrossesAFormatBoundary(script)) continue;
-
-            yield return new TestCaseData(directory)
-                .SetName($"ASampleSurvivesParseSerializeParse({Path.GetRelativePath(samples, directory)})");
-        }
-    }
-
-    private static bool CrossesAFormatBoundary(string script) =>
-        script.Contains("\"command\": \"convert\"") ||
-        script.Contains("command: convert") ||
-        script.Contains("<convert ");
-
-    private static string RepositoryRoot
-    {
-        get
-        {
-            var dir = new DirectoryInfo(TestContext.CurrentContext.TestDirectory);
-            while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "docs", "samples")))
-                dir = dir.Parent;
-
-            return dir?.FullName ?? throw new DirectoryNotFoundException("docs/samples is not above the test directory.");
-        }
-    }
-
-    private static (string Actual, string Expected, bool Success, string Log) RunJsonSample(
-        string scriptPath, string inputPath, string outputPath)
-    {
-        var script   = RoundTrip(File.ReadAllText(scriptPath), Adapter, Parse);
-        var outcome  = Execute(script, File.ReadAllText(inputPath));
-
-        return (outcome.Data.ToString(), JToken.Parse(File.ReadAllText(outputPath)).ToString(), outcome.Success, "");
-    }
-
-    private static (string Actual, string Expected, bool Success, string Log) RunXmlSample(
-        string scriptPath, string inputPath, string outputPath)
-    {
-        var options = FormatRunners.Options<XElement>();
-        var adapter = new XmlNodeAdapter();
-        var parser  = new XmlScriptParser<XElement>(options.CommandsProvider, options.FunctionsProvider, adapter);
-        var engine  = new ScriptEngine<XElement>(options.CommandsProvider, options.FunctionsProvider);
-        var context = XmlExecutionContext.CreateWithNativeXPath();
-
-        var json   = TLioConvert.Serialize(parser.ParseScript(File.ReadAllText(scriptPath)), adapter);
-        var result = engine.Parse(json, adapter).Execute(adapter.Parse(File.ReadAllText(inputPath)), context);
-
-        return (result.Data.ToString(),
-                XDocument.Parse(File.ReadAllText(outputPath)).Root!.ToString(),
-                result.Success,
-                string.Join("; ", context.GetLogEntries().Where(e => e.Level >= LogLevel.Warning).Select(e => e.Message)));
-    }
-
-    private static (string Actual, string Expected, bool Success, string Log) RunYamlSample(
-        string scriptPath, string inputPath, string outputPath)
-    {
-        var options = FormatRunners.Options<YamlNode>();
-        var context = YamlExecutionContext.CreateDefault();
-        var adapter = context.NodeAdapter;
-        var parser  = new YamlScriptParser<YamlNode>(options.CommandsProvider, options.FunctionsProvider, adapter);
-        var engine  = new ScriptEngine<YamlNode>(options.CommandsProvider, options.FunctionsProvider);
-
-        var json   = TLioConvert.Serialize(parser.ParseScript(File.ReadAllText(scriptPath)), adapter);
-        var result = engine.Parse(json, adapter).Execute(adapter.Parse(File.ReadAllText(inputPath)), context);
-
-        return (adapter.Serialize(result.Data, false).Trim(),
-                File.ReadAllText(outputPath).Trim(),
-                result.Success,
-                string.Join("; ", context.GetLogEntries().Where(e => e.Level >= LogLevel.Warning).Select(e => e.Message)));
-    }
-
-    private static string RoundTrip(
-        string script, INodeAdapter<JToken> adapter, Func<string, Core.Models.TLioScript<JToken>> parse) =>
-        TLioConvert.Serialize(parse(script), adapter);
 
     // ── helpers ──────────────────────────────────────────────────────────────
 

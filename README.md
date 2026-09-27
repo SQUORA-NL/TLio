@@ -132,7 +132,7 @@ paid-licence and Newtonsoft-bound.
 |---|---|
 | `TLio.Mcp` | MCP stdio server: `tlio_execute`, `tlio_analyze`, `tlio_list_commands`, `tlio_list_functions`, `tlio_describe`, `tlio_guide` |
 
-### Tests & samples
+### Tests
 
 | Project | Purpose |
 |---|---|
@@ -144,20 +144,26 @@ paid-licence and Newtonsoft-bound.
 | `TLio.Yaml.Tests` | YAML adapter tests |
 | `TLio.FormatConverter.Tests` | Format conversion tests — adapters, round trips, mid-script `convert` |
 | `TLio.Mcp.Tests` | MCP server tests, including two-iteration agent workflows |
-| `samples/TLio.Sample.Api` | Minimal API sample (JSON/XML/YAML endpoints, slug script cache) |
-| `samples/TLio.Sample.Api.IntegrationTests` | End-to-end API tests |
-| `samples/TLio.Sample.Cli` | CLI sample (file-in / transformed-out) |
-| `samples/TLio.Sample.DockerPlugin` | Docker API with NuPlane hot-loading of `.nupkg` plugins |
-| `samples/TLio.Sample.AfdApi` | SIVI AFD 1.0 / AFD Short / AFD 2.0 conversion demo API |
 
-### Running the samples
+## Samples
 
-```sh
-cd samples/TLio.Sample.Api && dotnet run
-cd samples/TLio.Sample.Cli && dotnet run -- --input <file> --script <file> --output <file>
-cd samples/TLio.Sample.AfdApi && dotnet run
-cd samples/TLio.Sample.DockerPlugin && docker compose up
-```
+Runnable samples and worked examples live in their own repository,
+[TLio-Samples](https://github.com/SQUORA-NL/TLio-Samples). They consume TLio exactly as you would — as packages from
+nuget.org, always the newest published version — so each one can be copied into your own
+solution as it is:
+
+| Sample | What it shows |
+|---|---|
+| `TLio.Sample.Cli` | File in, transformed file out |
+| `TLio.Sample.Api` | Minimal API: JSON/XML/YAML endpoints, slug script cache |
+| `TLio.Sample.AfdApi` | SIVI AFD 1.0 / AFD Short / AFD 2.0 conversion API |
+| `TLio.Sample.Actus.Api` | ACTUS PAM contract calculator on `forEach` / `while` |
+| `TLio.Sample.DockerPlugin` | Docker API with NuPlane hot-loading of `.nupkg` plugins |
+| `TLio.Sample.AzureDemo` | HTTP-triggered Azure Function and its stage demo |
+| `docs/samples` | Ten end-to-end scenarios — input, script and committed output |
+| `docs/showcase` | One script per format executing every registered command |
+
+This repository holds the library, its packages and its reference documentation (`docs/ai-ref`).
 
 ## Commands
 
