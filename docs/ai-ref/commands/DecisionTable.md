@@ -207,7 +207,7 @@ is found, not the order results are written in.
 `outputPathTemplate` (above) is a companion size optimization for the same shape of table: once
 `outputs` no longer needs to repeat `path` on every entry, a table with a uniform output surface
 can shrink its declaration size substantially. Applying both to the SIVI AFD conversion scripts
-in `samples/TLio.Sample.AfdApi` cut their combined size from 22.0MB to 19.35MB and their combined
+in [`TLio.Sample.AfdApi`](https://github.com/SQUORA-NL/TLio-Samples/tree/main/samples/TLio.Sample.AfdApi) (TLio-Samples) cut their combined size from 22.0MB to 19.35MB and their combined
 decision-table rule count from 11,659 to 4,869, with byte-for-byte identical conversion output
 verified across every bundled sample fixture.
 

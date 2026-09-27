@@ -85,7 +85,7 @@ Three numbers come out of one tag, and they are not the same number:
 | `AssemblyVersion` | `0.0.0.0` | major releases only |
 
 `AssemblyVersion` is major-only, and that is load-bearing rather than incidental.
-`samples/TLio.Sample.DockerPlugin` hot-loads extension packs as `.nupkg` files dropped into
+[`TLio.Sample.DockerPlugin`](https://github.com/SQUORA-NL/TLio-Samples/tree/main/samples/TLio.Sample.DockerPlugin) (in TLio-Samples) hot-loads extension packs as `.nupkg` files dropped into
 `/plugins`, and the CLR binds those packs against the host's `TLio.Core` **by AssemblyVersion**.
 Widen it to major.minor and a pack built against `0.9.0.0` stops loading into a `0.10.0` host —
 every plugin in the wild breaks on every minor release:
@@ -98,10 +98,8 @@ warn: PluginLoader — Could not inspect assembly 'TLio.Extensions.Math':
 So: **do not derive `AssemblyVersion` from the minor.** Consumers still see exactly which build
 they have — that is what the package version and `FileVersion` are for.
 
-The same constraint is why the Docker sample takes a `TLIO_VERSION` build arg. Its build context
-has no `.git`, so MinVer falls back to `0.0.0-nogit`; that happens to match any `0.x` plugin
-today because the major agrees, but once TLio reaches `1.0.0` the image has to be built with the
-real version or the packs stop binding.
+The Docker sample restores TLio from nuget.org, so its host carries the real package version;
+only the major has to agree with the packs dropped into `/plugins`.
 
 ## Rules the pipeline enforces
 

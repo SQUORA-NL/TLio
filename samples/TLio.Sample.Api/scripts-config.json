@@ -1,6 +1,0 @@
-[
-  {
-    "slug": "echo",
-    "script": "[{\"command\":\"set\",\"path\":\"$.processed\",\"value\":true}]"
-  }
-]

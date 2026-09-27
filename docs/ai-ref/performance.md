@@ -40,7 +40,7 @@ Parsing script text happens on every `ScriptEngine<TNode>.Execute(string scriptT
 and on every `MultiFormatScriptRunner.Run(...)` call. For a small script this is noise; for a
 script of any real size it dominates.
 
-**Measured before/after** (`samples/TLio.Sample.AfdApi/README.md` — "Speed"): each of the three
+**Measured before/after** ([`TLio.Sample.AfdApi/README.md`](https://github.com/SQUORA-NL/TLio-Samples/blob/main/samples/TLio.Sample.AfdApi/README.md) in TLio-Samples — "Speed"): each of the three
 AFD conversion scripts is several MB. Parsing one on every request cost ~220ms per conversion for
 `afdshort-to-afd2`, ~130ms of which was pure parse time. Compiling once at startup and sending a
 real warm-up request through each direction before accepting traffic (so the JIT has already

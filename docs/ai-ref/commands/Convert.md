@@ -91,7 +91,7 @@ asserted against exactly this script and this result).
 
 `convert` mid-script means `MultiFormatScriptRunner` parses every section's script text on every
 call — for a script of any size, that parse is the dominant cost. The AfdApi sample
-(`samples/TLio.Sample.AfdApi/`) measured this directly: before compilation, converting
+([`TLio.Sample.AfdApi`](https://github.com/SQUORA-NL/TLio-Samples/tree/main/samples/TLio.Sample.AfdApi) in TLio-Samples) measured this directly: before compilation, converting
 `afdshort-to-afd2`'s multi-MB script cost around 220ms per request, roughly 130ms of which was
 pure parse time. `ConversionRegistry.cs` now calls `MultiFormatScriptRunner.Compile` once at
 startup, producing a `CompiledMultiFormatScript` that `Run()` re-executes against new documents

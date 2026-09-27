@@ -57,15 +57,17 @@ TLio.FormatConverter/       ← Format conversion (017, 022, 024). One assembly,
   Commands/                   convert, convertValue, MultiFormatScriptRunner,
                               ScriptEngineSectionExecutor
 TLio.FormatConverter.Tests/  ← adapters, round trips, mid-script convert, canonical shape
-samples/
-  TLio.Sample.Api/          ← Minimal API sample (JSON/XML/YAML endpoints, 005)
-  TLio.Sample.Cli/          ← CLI sample (file-in / transformed-out, 005)
-  TLio.Sample.DockerPlugin/ ← Docker API with NuPlane hot-loading of .nupkg plugins (012)
-  TLio.Sample.AfdApi/       ← SIVI AFD 1.0/Short/2.0 conversion demo, bundled from TLIO-Afd
-  TLio.Sample.Actus.Api/    ← ACTUS PAM contract demo — pam-simple + pam-envelope scripts,
-                              built on forEach/while (feature/actus-pam-contract)
+docs/                       ← reference docs (ai-ref/), behaviour decisions, versioning
 specs/
 ```
+
+Samples are **not** in this repository. The sample applications, `docs/samples`,
+`docs/showcase` and the Azure demo live in
+[TLio-Samples](https://github.com/SQUORA-NL/TLio-Samples), which references TLio only as NuGet
+packages (floating to the newest 1.x, previews included) and runs nightly against whatever was
+published last. A change here reaches the samples by being published — every push to `main`
+publishes a preview — never by a project reference. When a change legitimately moves a
+committed sample output, update it there after the preview is out.
 
 ## XML Path Formats (TLio.Xml)
 
@@ -146,7 +148,7 @@ Anything that builds this repo in CI needs `fetch-depth: 0`; a shallow checkout 
 MinVer falls back to `0.0.0-alpha.0`.
 
 `AssemblyVersion` stays major-only (`0.9.0` → `0.0.0.0`) and must not be widened to
-major.minor. `TLio.Sample.DockerPlugin` hot-loads extension packs at runtime and the CLR binds
+major.minor. `TLio.Sample.DockerPlugin` (TLio-Samples) hot-loads extension packs at runtime and the CLR binds
 them by AssemblyVersion — moving it on every minor breaks every plugin already in the wild.
 `Directory.Build.targets` says so at the point of temptation.
 
@@ -225,6 +227,11 @@ One asymmetry to know: TLio's XML adapter ignores attributes by design, but afte
 JSON or YAML they are ordinary `@name` properties. Converting is how a script edits an attribute.
 
 ## Recent Changes
+- split-samples: samples, `docs/samples`, `docs/showcase` and `demo/` moved to the TLio-Samples
+  repository and now build against the TLio NuGet packages. Gone from here with them: the
+  solution's sample projects, `global.json` / `Directory.Solution.targets` (Azure Functions SDK,
+  AzureDemo only), `.dockerignore`, CI's Docker image job, and the `docs/samples` round trip in
+  `TLio.Parity.Tests/ScriptSerializationTests` (now `tests/TLio.Samples.Tests` there).
 - feature/actus-pam-contract: `TLio.Extensions.Looping` — `forEach`/`while`, the iteration
   primitive TLio previously had no equivalent of (`TLioScript<TNode>` is a strictly linear
   list; `decisionTable`/`resolve` loop internally but don't expose iteration to a script

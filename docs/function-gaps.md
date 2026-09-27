@@ -6,8 +6,8 @@
 > `TLio.Parity.Tests`. The two rating samples were rewritten onto them and produce
 > **byte-identical output** — the functions changed the writing, not the rating.
 
-Read from the two shipped rating samples (`docs/samples/car-insurance-nl/native` and
-`.../sivi-afd`, 570 and 552 lines) and the showcase corpus. Every entry below was justified by
+Read from the two shipped rating samples ([`docs/samples/car-insurance-nl/native`](https://github.com/SQUORA-NL/TLio-Samples/tree/main/docs/samples/car-insurance-nl) and
+`.../sivi-afd`, 570 and 552 lines, now in TLio-Samples) and the showcase corpus. Every entry below was justified by
 an expression that existed in those files, or by a hole with no workaround at all.
 
 The goal was **not** to remove nesting — nesting is how the language composes. The goal was to
