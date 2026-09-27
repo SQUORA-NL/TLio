@@ -78,4 +78,15 @@ public class IfElse<TNode> : CommandBase<TNode>
             result.AddError($"{CommandName}: Condition is required.");
         return result;
     }
+
+    // IfScript/ElseScript are nested TLioScripts, not read-only configuration: their commands
+    // carry their own per-execution state and must not be shared across concurrent executions of
+    // the compiled script (see CommandBase<TNode>.Clone()).
+    public override ICommand<TNode> Clone()
+    {
+        var clone = (IfElse<TNode>)base.Clone();
+        clone.IfScript = IfScript?.Clone();
+        clone.ElseScript = ElseScript?.Clone();
+        return clone;
+    }
 }

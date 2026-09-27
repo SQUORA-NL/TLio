@@ -31,6 +31,22 @@ public class TLioScript<TNode> : List<ICommand<TNode>>
         return result;
     }
 
+    /// <summary>
+    /// Deep clone: every command cloned via its own <see cref="ICommand{TNode}.Clone"/> — which,
+    /// for a command holding a nested <see cref="TLioScript{TNode}"/> of its own (a while/forEach
+    /// body, an ifElse branch), recurses into cloning that nested script too. A nested script is
+    /// "configuration" only in the sense that a script author never sees it change; its leaf
+    /// commands still carry the same per-execution mutable state as any top-level command, so it
+    /// must be cloned exactly like one — never shared across two independent executions.
+    /// </summary>
+    public TLioScript<TNode> Clone()
+    {
+        var clone = new TLioScript<TNode>();
+        clone.AddRange(this.Select(c => c.Clone()));
+        clone.ParseWarnings.AddRange(ParseWarnings);
+        return clone;
+    }
+
     public bool Validate() => this.All(c => c.ValidateCommandInstance().IsValid);
 
     public List<ValidationResult> GetValidationResults() =>

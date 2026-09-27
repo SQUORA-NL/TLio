@@ -249,8 +249,11 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     // ── Cloning & replacement ─────────────────────────────────────────────────
 
     // A placeholder clones to itself: it is immutable, detached, and any write converts it to
-    // plain null, so sharing the instance is safe and keeps its null identity.
-    public JsonNode DeepClone(JsonNode node) => NullSlots.IsPlaceholder(node) ? node : node.DeepClone();
+    // plain null, so sharing the instance is safe and keeps its null identity. Plain C# null
+    // (JSON null with no remembered slot, e.g. a FixedValue literal parsed from a bare "null" in
+    // script text) needs no cloning either — there is no object to duplicate or reparent.
+    public JsonNode DeepClone(JsonNode node) =>
+        node == null || NullSlots.IsPlaceholder(node) ? node! : node.DeepClone();
 
     /// <summary>
     /// Replace <paramref name="target"/> in-place with <paramref name="replacement"/>.
