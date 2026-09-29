@@ -57,6 +57,9 @@ TLio.FormatConverter/       ← Format conversion (017, 022, 024). One assembly,
   Commands/                   convert, convertValue, MultiFormatScriptRunner,
                               ScriptEngineSectionExecutor
 TLio.FormatConverter.Tests/  ← adapters, round trips, mid-script convert, canonical shape
+TLio.Benchmarks/            ← BenchmarkDotNet console app: statistically-rigorous throughput,
+                              allocation, and core-utilization benchmarks. Not a test project —
+                              `dotnet test` never touches it, `dotnet run` does.
 docs/                       ← reference docs (ai-ref/), behaviour decisions, versioning
 specs/
 ```
@@ -126,6 +129,42 @@ Known, deliberate divergences are section E of `docs/behaviour-decisions.md`.
 dotnet build
 dotnet test
 ```
+
+## Performance testing (concurrency, leakage, load, memory)
+
+Three different concerns, three different places — none of them run in CI by default except the
+one that's cheap enough to:
+
+- **Data-leakage / thread-safety regression checks** — `ConcurrentExecutionTests`
+  (`TLio.UnitTests/CommandsTests/LoopingTests/`) and `CompiledScript_ConcurrencyTests`
+  (`TLio.Json.SystemText.Tests/CompiledScriptTests/`) force real concurrency (`Parallel.For`) over
+  a shared `CompiledScript<TNode>` and assert no cross-execution corruption. `[Explicit]` — CI
+  runners can behave differently under forced concurrency than a developer machine, so these are
+  run manually, not gated on every push:
+  `dotnet test TLio.UnitTests -c Release --filter "FullyQualifiedName~ConcurrentExecutionTests"`.
+- **Memory-growth regression check** — `Looping_MemoryLeakTests`
+  (`TLio.UnitTests/Performance/`) runs a shared compiled script thousands of times in batches,
+  forces a full GC after each, and asserts the managed heap doesn't scale with execution count.
+  Not `[Explicit]` — cheap and deterministic enough to run in CI every time.
+- **Load/throughput benchmarks** — `Looping_PortfolioBenchmarkTests`
+  (`TLio.UnitTests/Performance/`), Stopwatch-based, `[Explicit]`, up to 100k documents,
+  sequential and parallel. Single-sample numbers: useful for a quick order-of-magnitude read, not
+  for judging small deltas or diagnosing *why* a number is what it is.
+- **Statistically-rigorous benchmarks with root-cause diagnostics** — `TLio.Benchmarks`
+  (BenchmarkDotNet). Same portfolio workload as `Looping_PortfolioBenchmarkTests`, but multiple
+  iterations with warmup (Mean/Error/StdDev instead of one sample), `[MemoryDiagnoser]`, and a
+  hand-rolled measurement of `Monitor.LockContentionCount` and CPU-time/wall-time ("effective
+  cores used") around each parallel benchmark — BenchmarkDotNet's own `[ThreadingDiagnoser]`
+  refuses to run against `net10.0` on the BenchmarkDotNet version this project pins, so lock
+  contention is measured by hand instead. Also runs a synthetic, lock-free control workload
+  (comparable per-item work, zero TLio, zero shared state) alongside the real one: its own
+  parallel speedup is *this machine's actual achievable ceiling* — the number to judge TLio's
+  parallel speedup against, not a theoretical `Environment.ProcessorCount`x (on a 14-core Apple M4
+  Pro, that ceiling is ~6x, not ~14x, because P-cores and E-cores aren't equal; TLio lands around
+  80% of it, with zero measured lock contention). `<ServerGarbageCollection>true</ServerGarbageCollection>`
+  is set in the `.csproj` rather than left to `DOTNET_gcServer` — BenchmarkDotNet launches each
+  job as its own child process, which doesn't reliably inherit an env var from the launching
+  shell. Run: `dotnet run -c Release --project TLio.Benchmarks -- --filter '*'`.
 
 ## Versioning
 

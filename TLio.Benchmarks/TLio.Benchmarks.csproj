@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!-- Baked into runtimeconfig.json rather than left to DOTNET_gcServer, because BenchmarkDotNet
+         launches each job as its own child process and an env var set in the launching shell is
+         not guaranteed to reach it. Matters specifically for the parallel benchmarks: this
+         workload allocates a full JSON document tree per document, and Workstation GC gives every
+         thread one shared heap instead of one per core — see PortfolioThroughputBenchmarks'
+         remarks for what that does to measured core utilization. -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+    <ProjectReference Include="..\TLio.Client\TLio.Client.csproj" />
+    <ProjectReference Include="..\TLio.Json\TLio.Json.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Looping\TLio.Extensions.Looping.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Math\TLio.Extensions.Math.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Text\TLio.Extensions.Text.csproj" />
+  </ItemGroup>
+
+</Project>

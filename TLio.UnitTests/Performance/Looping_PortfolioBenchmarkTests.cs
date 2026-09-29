@@ -24,9 +24,11 @@ namespace TLio.UnitTests.Performance;
 /// exercises. Anyone benchmarking the real ACTUS PAM sample should do that in TLio-Samples
 /// against its own script, not here.
 ///
-/// This is a benchmark, not a regression gate — [Explicit] because a 100k/1M-document run takes
-/// real wall-clock minutes and has no "fast enough" pass/fail line, unlike the threshold-based
-/// tests in <c>Looping_PerformanceTests.cs</c>. Run manually to get numbers for this machine:
+/// This is a benchmark, not a regression gate — [Explicit] because a 100k-document run takes real
+/// wall-clock time and has no "fast enough" pass/fail line, unlike the threshold-based tests in
+/// <c>Looping_PerformanceTests.cs</c>. Capped at 100k documents (not 1M) to keep a manual run
+/// short enough to actually run; drop a <c>[TestCase(1_000_000)]</c> back in locally for a longer
+/// throughput read. Run manually to get numbers for this machine:
 ///
 ///   DOTNET_gcServer=1 dotnet test TLio.UnitTests -c Release --filter "FullyQualifiedName~Looping_PortfolioBenchmarkTests"
 ///
@@ -162,7 +164,6 @@ public class Looping_PortfolioBenchmarkTests
     [TestCase(100)]
     [TestCase(10_000)]
     [TestCase(100_000)]
-    [TestCase(1_000_000)]
     public void Portfolio_Throughput(int documentCount)
     {
         var adapter = JsonExecutionContext.CreateDefault().NodeAdapter;
@@ -200,7 +201,6 @@ public class Looping_PortfolioBenchmarkTests
     [TestCase(100)]
     [TestCase(10_000)]
     [TestCase(100_000)]
-    [TestCase(1_000_000)]
     public void Portfolio_Throughput_Parallel(int documentCount)
     {
         var adapter = JsonExecutionContext.CreateDefault().NodeAdapter;

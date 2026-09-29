@@ -15,8 +15,17 @@ namespace TLio.UnitTests.CommandsTests.LoopingTests;
 /// <c>Path</c> property and restoring it in a <c>finally</c> — safe single-threaded, but two concurrent
 /// executions racing on that shared field corrupted each other's array writes under load. It never showed
 /// up in single-threaded tests, only under real concurrency, which is what this fixture forces.
+///
+/// [Explicit] - a data-leakage/thread-safety regression check, not a routine CI gate: it forces
+/// real concurrency (<c>Parallel.For</c>) to surface cross-execution corruption, which is exactly
+/// the kind of test that can behave differently (fewer cores, different scheduling) on a shared
+/// CI runner than on a developer machine. Run manually after touching anything a compiled
+/// script's commands share across executions:
+///
+///   dotnet test TLio.UnitTests -c Release --filter "FullyQualifiedName~ConcurrentExecutionTests"
 /// </summary>
 [TestFixture]
+[Explicit("Concurrency/data-leakage regression check - not run in CI by default; run manually after touching shared compiled-script state.")]
 public class ConcurrentExecutionTests
 {
     [Test]
