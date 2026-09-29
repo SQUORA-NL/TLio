@@ -136,8 +136,8 @@ public sealed class XmlAdapterTests
     public void ToIM_MalformedXml_ThrowsFormatParseException()
     {
         var ex = Assert.Throws<FormatParseException>(() => _adapter.ToIM("<broken>", ConversionSettings.Empty));
-        Assert.That(ex.FormatId, Is.EqualTo("xml"));
-        Assert.That(ex.Operation, Is.EqualTo("ToIM"));
+        Assert.That(ex!.FormatId, Is.EqualTo("xml"));
+        Assert.That(ex!.Operation, Is.EqualTo("ToIM"));
     }
 
     private static string NormaliseXml(string xml)

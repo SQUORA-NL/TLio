@@ -34,7 +34,7 @@ namespace TLio.Xml;
 /// unfilled container that a property can still be written into. That last answer is what
 /// makes <c>add /order/address/city</c> create the city instead of losing it: the
 /// <c>&lt;address/&gt;</c> that the path construction just created is a container, not a
-/// primitive. <see cref="GetNodeKind"/> resolves the tie for the type predicates by asking
+/// primitive. <c>GetNodeKind</c> resolves the tie for the type predicates by asking
 /// <see cref="IsNull"/> first, so <c>=isNull()</c> still reports an empty element as null.</para>
 /// </summary>
 public class XmlNodeAdapter : INodeAdapter<XElement>

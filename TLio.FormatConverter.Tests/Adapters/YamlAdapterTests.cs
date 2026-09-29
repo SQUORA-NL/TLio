@@ -165,8 +165,8 @@ public sealed class YamlAdapterTests
     public void ToIM_MalformedYaml_ThrowsFormatParseException()
     {
         var ex = Assert.Throws<FormatParseException>(() => _adapter.ToIM("key: [unclosed", ConversionSettings.Empty));
-        Assert.That(ex.FormatId, Is.EqualTo("yaml"));
-        Assert.That(ex.Operation, Is.EqualTo("ToIM"));
+        Assert.That(ex!.FormatId, Is.EqualTo("yaml"));
+        Assert.That(ex!.Operation, Is.EqualTo("ToIM"));
     }
 
     [Test]

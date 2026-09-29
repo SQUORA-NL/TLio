@@ -90,8 +90,8 @@ public sealed class JsonAdapterTests
     public void ToIM_MalformedJson_ThrowsFormatParseException()
     {
         var ex = Assert.Throws<FormatParseException>(() => _adapter.ToIM("{bad json", ConversionSettings.Empty));
-        Assert.That(ex.FormatId, Is.EqualTo("json"));
-        Assert.That(ex.Operation, Is.EqualTo("ToIM"));
+        Assert.That(ex!.FormatId, Is.EqualTo("json"));
+        Assert.That(ex!.Operation, Is.EqualTo("ToIM"));
     }
 
     [Test]

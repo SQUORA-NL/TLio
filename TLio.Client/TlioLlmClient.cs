@@ -143,9 +143,10 @@ public sealed class TlioLlmClient : IDisposable
             await response.Content
                 .ReadAsStreamAsync(cancellationToken)
                 .ConfigureAwait(false));
-        while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested)
         {
             var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            if (line is null) break; // end of stream
             if (string.IsNullOrWhiteSpace(line)) continue;
 
             var chunk = JsonSerializer.Deserialize<OllamaResponse>(line, _json);

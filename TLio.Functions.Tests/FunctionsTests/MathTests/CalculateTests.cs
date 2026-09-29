@@ -379,7 +379,7 @@ public class CalculateTests
 
         Assert.That(LastSuccess, Is.True, "the evaluator does not consider this an error");
         Assert.That(result!.Value<string>(), Is.EqualTo("Infinity"));
-        Assert.That(result.Type, Is.EqualTo(JTokenType.Float));
+        Assert.That(result!.Type, Is.EqualTo(JTokenType.Float));
     }
 
     [Test]

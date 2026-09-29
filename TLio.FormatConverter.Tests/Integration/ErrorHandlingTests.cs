@@ -29,8 +29,8 @@ public sealed class ErrorHandlingTests
     {
         var ex = Assert.Throws<FormatParseException>(
             () => _converter.ToIM("json", "{invalid}", ConversionSettings.Empty));
-        Assert.That(ex.FormatId, Is.EqualTo("json"));
-        Assert.That(ex.Operation, Is.EqualTo("ToIM"));
+        Assert.That(ex!.FormatId, Is.EqualTo("json"));
+        Assert.That(ex!.Operation, Is.EqualTo("ToIM"));
     }
 
     [Test]
@@ -38,8 +38,8 @@ public sealed class ErrorHandlingTests
     {
         var ex = Assert.Throws<FormatParseException>(
             () => _converter.ToIM("xml", "<unclosed", ConversionSettings.Empty));
-        Assert.That(ex.FormatId, Is.EqualTo("xml"));
-        Assert.That(ex.Operation, Is.EqualTo("ToIM"));
+        Assert.That(ex!.FormatId, Is.EqualTo("xml"));
+        Assert.That(ex!.Operation, Is.EqualTo("ToIM"));
     }
 
     [Test]
@@ -47,8 +47,8 @@ public sealed class ErrorHandlingTests
     {
         var ex = Assert.Throws<FormatParseException>(
             () => _converter.ToIM("yaml", "key: [unclosed", ConversionSettings.Empty));
-        Assert.That(ex.FormatId, Is.EqualTo("yaml"));
-        Assert.That(ex.Operation, Is.EqualTo("ToIM"));
+        Assert.That(ex!.FormatId, Is.EqualTo("yaml"));
+        Assert.That(ex!.Operation, Is.EqualTo("ToIM"));
     }
 
     [Test]
@@ -56,9 +56,9 @@ public sealed class ErrorHandlingTests
     {
         var ex = Assert.Throws<FormatParseException>(
             () => _converter.ToIM("json", "!!!invalid!!!", ConversionSettings.Empty));
-        Assert.That(ex.FormatId, Is.EqualTo("json"));
-        Assert.That(ex.Operation, Is.EqualTo("ToIM"));
-        Assert.That(ex.Message, Does.Contain("json"));
+        Assert.That(ex!.FormatId, Is.EqualTo("json"));
+        Assert.That(ex!.Operation, Is.EqualTo("ToIM"));
+        Assert.That(ex!.Message, Does.Contain("json"));
     }
 
     [Test]
@@ -66,8 +66,8 @@ public sealed class ErrorHandlingTests
     {
         var ex = Assert.Throws<FormatNotRegisteredException>(
             () => _converter.ToIM("csv", "", ConversionSettings.Empty));
-        Assert.That(ex.RegisteredIds, Is.Not.Empty);
-        Assert.That(ex.RegisteredIds, Contains.Item("json"));
+        Assert.That(ex!.RegisteredIds, Is.Not.Empty);
+        Assert.That(ex!.RegisteredIds, Contains.Item("json"));
     }
 
     [Test]
