@@ -24,6 +24,9 @@ TestResults/
 *.coveragexml
 .msCoverageSourceRootsMapping*
 
+# BenchmarkDotNet run output (TLio.Benchmarks)
+BenchmarkDotNet.Artifacts/
+
 # OS
 .DS_Store
 Thumbs.db

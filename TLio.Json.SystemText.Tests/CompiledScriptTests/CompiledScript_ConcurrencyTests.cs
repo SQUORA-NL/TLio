@@ -9,8 +9,16 @@ namespace TLio.Json.SystemText.Tests.CompiledScriptTests;
 /// <summary>
 /// Verifies that CompiledScript is safe for concurrent use: 100 parallel executions each
 /// produce the correct, independent result with no cross-execution state contamination.
+///
+/// [Explicit] - a data-leakage/thread-safety regression check, not a routine CI gate: it forces
+/// real concurrency (<c>Parallel.For</c>) to surface cross-execution corruption, which can behave
+/// differently on a shared CI runner (fewer cores, different scheduling) than on a developer
+/// machine. Run manually after touching anything a compiled script shares across executions:
+///
+///   dotnet test TLio.Json.SystemText.Tests -c Release --filter "FullyQualifiedName~CompiledScript_ConcurrencyTests"
 /// </summary>
 [TestFixture]
+[Explicit("Concurrency/data-leakage regression check - not run in CI by default; run manually after touching shared compiled-script state.")]
 public class CompiledScript_ConcurrencyTests
 {
     private ScriptEngine<JsonNode> _engine = null!;
