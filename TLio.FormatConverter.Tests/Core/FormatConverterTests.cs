@@ -19,7 +19,7 @@ public sealed class FormatConverterTests
     {
         var ex = Assert.Throws<FormatNotRegisteredException>(
             () => _converter.ToIM("unknown", "{}", ConversionSettings.Empty));
-        Assert.That(ex.FormatId, Is.EqualTo("unknown"));
+        Assert.That(ex!.FormatId, Is.EqualTo("unknown"));
     }
 
     [Test]
@@ -28,7 +28,7 @@ public sealed class FormatConverterTests
         var im = new ScalarNode(ScalarType.Null, null);
         var ex = Assert.Throws<FormatNotRegisteredException>(
             () => _converter.FromIM("unknown", im, ConversionSettings.Empty));
-        Assert.That(ex.FormatId, Is.EqualTo("unknown"));
+        Assert.That(ex!.FormatId, Is.EqualTo("unknown"));
     }
 
     [Test]
@@ -92,7 +92,7 @@ public sealed class FormatConverterTests
 
         var ex = Assert.Throws<FormatNotRegisteredException>(
             () => _converter.ToIM("yaml", "", ConversionSettings.Empty));
-        Assert.That(ex.RegisteredIds, Is.EquivalentTo(new[] { "json", "xml" }));
+        Assert.That(ex!.RegisteredIds, Is.EquivalentTo(new[] { "json", "xml" }));
     }
 
     // ── helper ───────────────────────────────────────────────────────────────

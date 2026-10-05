@@ -150,7 +150,7 @@ against the document — the same cost as any other path lookup in the engine, p
 every evaluation (per matched node, if the containing command targets a wildcard). Path
 selection itself is the more expensive step for the System.Text.Json adapter than for
 Newtonsoft, per the engine-wide path-selection cost noted in
-`EXECUTION_CONCURRENCY_INVESTIGATION.md` (§6) — prefer the Newtonsoft (`TLio.Json`) adapter
+[concurrency-investigation.md](../concurrency-investigation.md) (§6) — prefer the Newtonsoft (`TLio.Json`) adapter
 when `fetch` runs inside a hot loop over many nodes, or batch reads with a single `copy`
 instead of one `fetch` per field where the source data allows it.
 

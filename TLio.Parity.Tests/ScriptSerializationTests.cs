@@ -36,6 +36,9 @@ namespace TLio.Parity.Tests;
 [TestFixture]
 public class ScriptSerializationTests
 {
+    // The fixtures below are looked up by name (ScriptText) so a TestCase can carry a field name
+    // rather than a multi-line literal; the compiler cannot see that read.
+#pragma warning disable CS0414
     private static readonly string DecisionTableScript = """
     [
       { "command": "decisionTable", "path": "$",
@@ -76,6 +79,8 @@ public class ScriptSerializationTests
       "tariffs": [ { "code": "A1", "rate": 12 }, { "code": "B2", "rate": 30 } ]
     }
     """;
+
+#pragma warning restore CS0414
 
     [TestCase("decisionTable\":{", nameof(DecisionTableScript))]
     [TestCase("resolveSettings\":[", nameof(ResolveScript))]

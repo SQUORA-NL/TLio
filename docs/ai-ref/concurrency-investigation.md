@@ -1,5 +1,12 @@
 # TLio Execution Investigation: Thread Safety, Performance, and Data Leakage
 
+> **Historical analysis (2026-04-22).** This is the audit that started the concurrency work; it is
+> kept for its file-by-file reasoning. Several findings have since been acted on — most visibly
+> the `@`-path race in `PropertyChangeCommand` (fixed by never mutating a compiled command; see
+> `docs/history.md`) and parse-once compiled scripts. The regression checks that now guard them
+> are `ConcurrentExecutionTests` / `CompiledScript_ConcurrencyTests` (run on every release PR) and
+> `Looping_MemoryLeakTests` (every CI run). Current guidance: [performance.md](performance.md).
+
 Date: 2026-04-22  
 Scope: `TLio.Core`, `TLio.Client`, `TLio.Commands`, `TLio.Functions`, `TLio.Json`, `TLio.Json.SystemText`, `TLio.Xml`, `TLio.Yaml`, and sample runtime usage.
 

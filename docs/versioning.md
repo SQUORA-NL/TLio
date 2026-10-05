@@ -28,6 +28,13 @@ carry the same number; the pipeline fails if they ever don't.
 
 ## Steering the next release
 
+### Before you cut it: the release PR
+
+Open the release as a pull request from a branch named `release/<version>` (e.g.
+`release/1.5.0`). Opening it triggers CI's `release-gate` job, which runs the `[Explicit]`
+concurrency and data-leakage checks that are too machine-dependent to run on every push. Merge
+only when it is green, then run the Release workflow below.
+
 ### Cutting a release — patch, minor or major
 
 Run the **Release** workflow (Actions → Release → *Run workflow*) and pick the bump. It reads

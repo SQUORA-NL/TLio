@@ -7,10 +7,18 @@ on:
   pull_request:
     branches:
       - main
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # macOS and Windows as well as Linux: path handling, line endings and (with the locale
+    # variable below) number/date formatting are where platform bugs have surfaced before.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,15 +34,69 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      # The codebase builds with zero warnings; keep it that way.
       - name: Build
-        run: dotnet build --no-restore -c Release
+        run: dotnet build --no-restore -c Release -warnaserror
 
       - name: Test
-        run: dotnet test --no-build -c Release --logger "trx" --results-directory ./test-results
+        run: >
+          dotnet test --no-build -c Release
+          --logger "trx" --results-directory ./test-results
+          --collect:"XPlat Code Coverage"
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-${{ matrix.os }}
           path: ./test-results
+
+  # A non-English decimal separator / date order has broken a fixture before (#54).
+  test-locale:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 'false'
+      LC_ALL: nl_NL.UTF-8
+      LANG: nl_NL.UTF-8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install the nl_NL locale
+        run: sudo locale-gen nl_NL.UTF-8 && sudo update-locale
+      - name: Build and test under nl-NL
+        run: |
+          dotnet build -c Release -warnaserror
+          dotnet test --no-build -c Release --filter "FullyQualifiedName~Parity"
+
+  # The concurrency / data-leakage checks are [Explicit]: forced concurrency is too
+  # machine-dependent to gate every push. They do gate a release, so they run when a pull
+  # request is opened from a `release/*` branch (and can be run by hand from the Actions tab).
+  release-gate:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build
+        run: dotnet build -c Release -warnaserror
+      - name: Concurrency and data-leakage regression checks
+        run: >
+          dotnet test --no-build -c Release
+          --filter "FullyQualifiedName~ConcurrentExecutionTests|FullyQualifiedName~CompiledScript_ConcurrencyTests"
+          --logger "trx" --results-directory ./release-gate-results
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-results
+          path: ./release-gate-results

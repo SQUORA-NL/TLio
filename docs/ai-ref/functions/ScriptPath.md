@@ -117,7 +117,7 @@ var result = engine.Execute(
 
 The default (path-string) shape does one `GetPath`/`SelectNodes` lookup — the same
 per-selection cost as any other path resolution in the engine (see `fetch`'s Performance
-note and `EXECUTION_CONCURRENCY_INVESTIGATION.md` §6 for the adapter-dependent cost of that
+note and [concurrency-investigation.md](../concurrency-investigation.md) §6 for the adapter-dependent cost of that
 lookup, worse on the System.Text.Json adapter than on Newtonsoft).
 
 Find mode (`recursive: true`) is the one genuinely expensive shape here: `CollectChildren`

@@ -6,8 +6,9 @@
     <LangVersion>latest</LangVersion>
     <Deterministic>true</Deterministic>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <WarningsAsErrors />
-    <WarningsNotAsErrors>CS8600;CS8602;CS8604;CS8618</WarningsNotAsErrors>
+    <!-- Every nullable-reference-type warning is an error: a possible null dereference is a bug
+         report waiting for a consumer, and the codebase is clean, so it stays that way. -->
+    <WarningsAsErrors>$(WarningsAsErrors);nullable</WarningsAsErrors>
 
     <!-- Ship an XML documentation file with every library: without it the /// comments never
          leave this repository and consumers of the NuGet packages get no IntelliSense text at
@@ -101,6 +102,13 @@
 
   <ItemGroup>
     <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+
+  <!-- Coverage: every test project can produce a Cobertura report with
+       the XPlat Code Coverage collector (see ci.yml). CI uploads it; nothing gates on it. -->
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' And $(MSBuildProjectName.EndsWith('Tests'))">
+    <PackageReference Include="coverlet.collector" Version="6.0.4" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

@@ -23,7 +23,7 @@ namespace TLio.Commands;
 ///     relative path ("@.address.city"), resolved the same way <c>scriptpath(@.child)</c>
 ///     already does, so a name can reach a nested sub-item, not just a direct child;
 ///   • a set of live nodes — what <c>=scriptpath(*, kinds, recursive)</c> returns (see
-///     <see cref="TLio.Functions.ScriptPath{TNode}"/>): each node is the write target directly,
+///     <c>TLio.Functions.ScriptPath&lt;TNode&gt;</c>): each node is the write target directly,
 ///     no further name lookup.
 /// Omitted or empty means every direct property of the object.
 ///

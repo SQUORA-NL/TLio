@@ -401,7 +401,7 @@ public class Resolve<TNode> : CommandBase<TNode>
 
     /// <summary>
     /// Read <c>"value": "@.field"</c> off the matched reference entry with the adapter, the same
-    /// way <see cref="KeysMatch"/> reads <c>keyPath</c> and <see cref="SetValueAtPath"/> writes
+    /// way <c>KeysMatch</c> reads <c>keyPath</c> and <see cref="SetValueAtPath"/> writes
     /// <c>targetPath</c>.
     ///
     /// It cannot go through the path language, because the matched entry is not something a path

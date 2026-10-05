@@ -52,6 +52,10 @@ public class SweepTests
             "=path() is the same function under its other registered name.",
     };
 
+    // Windows writes \r\n (the sweep's csv output); the recorded files hold \n. The document is
+    // JSON text, so the newline shows up both as real characters and as the escaped text \\r\\n.
+    private static string Lf(string text) => text.Replace("\r\n", "\n").Replace("\\r\\n", "\\n");
+
     /// <summary>
     /// The sweep as written for a format — not a translation of another format's script.
     ///
@@ -92,9 +96,9 @@ public class SweepTests
     public void TheSweepProducesTheRecordedDocument(string format)
     {
         var run = SweepRunner.Run(format, Script(format));
-        var expected = File.ReadAllText(ExpectedPath(format)).Trim();
+        var expected = Lf(File.ReadAllText(ExpectedPath(format)).Trim());
 
-        Assert.That(run.Document, Is.EqualTo(expected),
+        Assert.That(Lf(run.Document), Is.EqualTo(expected),
             $"{format} sweep result changed. If the change is intended, regenerate "
             + $"Sweep/expected.{format.ToLowerInvariant()}.json.");
     }
@@ -109,7 +113,7 @@ public class SweepTests
         // arrive without it: the settings were dropped by the writer without a word, and what
         // came back was a command with a name and a path and nothing to do.
         var run = SweepRunner.RunSerialized(format, Script(format));
-        var expected = File.ReadAllText(ExpectedPath(format)).Trim();
+        var expected = Lf(File.ReadAllText(ExpectedPath(format)).Trim());
 
         Assert.Multiple(() =>
         {
@@ -117,7 +121,7 @@ public class SweepTests
                 $"{format}: the serialized sweep did not run.\n  {string.Join("\n  ", run.Warnings)}");
             Assert.That(run.NotApplied, Is.Empty,
                 $"{format}: a command lost something on the way through TLioConvert.Serialize.\n{run.Report()}");
-            Assert.That(run.Document, Is.EqualTo(expected),
+            Assert.That(Lf(run.Document), Is.EqualTo(expected),
                 $"{format}: serializing and re-reading the sweep changed what it produces.");
         });
     }

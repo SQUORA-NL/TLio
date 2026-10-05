@@ -22,7 +22,7 @@ public class YamlPathShapeTests
 
     /// <summary>Serialised without YamlDotNet's trailing "..." document-end marker.</summary>
     private string Serialize(YamlNode node) =>
-        _context.NodeAdapter.Serialize(node).Replace("...", "").Trim();
+        _context.NodeAdapter.Serialize(node).Replace("...", "").Replace("\r\n", "\n").Trim();
 
     // ── Recursive descent ─────────────────────────────────────────────────────
 

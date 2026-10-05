@@ -97,7 +97,7 @@ across thousands of rows in a script is recompiled from its text every single ca
 patterns and row counts this overhead is negligible next to the rest of the pipeline, but in a
 tight, high-volume loop with a complex pattern, this is the one to watch: there is currently no
 way from script authoring alone to avoid the recompilation, since the function is stateless by
-design (see `EXECUTION_CONCURRENCY_INVESTIGATION.md` on why functions avoid instance-level mutable
+design (see [concurrency-investigation.md](../concurrency-investigation.md) on why functions avoid instance-level mutable
 state).
 
 ## When to use

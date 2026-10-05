@@ -28,8 +28,8 @@ public class CompiledScript_PerformanceTests
         var fixture = FixtureTheoryLoader.LoadRaw("PerformanceScript").FirstOrDefault()
             ?? throw new InvalidOperationException("PerformanceScript fixture not found.");
 
-        _inputJson  = (string)fixture.Arguments[0];
-        _scriptJson = (string)fixture.Arguments[1];
+        _inputJson  = (string)fixture.Arguments[0]!;
+        _scriptJson = (string)fixture.Arguments[1]!;
 
         var options = ParseOptions<JsonNode>.CreateDefault();
         _engine   = new ScriptEngine<JsonNode>(options.CommandsProvider, options.FunctionsProvider);
