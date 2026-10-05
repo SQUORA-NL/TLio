@@ -60,6 +60,9 @@ public class SweepTests
     /// XPath. Two files, because there are two path languages here — the third format happens
     /// to share one.
     /// </summary>
+    // Windows serializers write \r\n (e.g. the sweep's csv output); the recorded files hold \n.
+    private static string Lf(string text) => text.Replace("\r\n", "\n");
+
     private static string Script(string format) => File.ReadAllText(ScriptPath(format));
 
     private static string ScriptPath(string format) => Path.Combine(
@@ -92,9 +95,9 @@ public class SweepTests
     public void TheSweepProducesTheRecordedDocument(string format)
     {
         var run = SweepRunner.Run(format, Script(format));
-        var expected = File.ReadAllText(ExpectedPath(format)).Trim();
+        var expected = Lf(File.ReadAllText(ExpectedPath(format)).Trim());
 
-        Assert.That(run.Document, Is.EqualTo(expected),
+        Assert.That(Lf(run.Document), Is.EqualTo(expected),
             $"{format} sweep result changed. If the change is intended, regenerate "
             + $"Sweep/expected.{format.ToLowerInvariant()}.json.");
     }
@@ -109,7 +112,7 @@ public class SweepTests
         // arrive without it: the settings were dropped by the writer without a word, and what
         // came back was a command with a name and a path and nothing to do.
         var run = SweepRunner.RunSerialized(format, Script(format));
-        var expected = File.ReadAllText(ExpectedPath(format)).Trim();
+        var expected = Lf(File.ReadAllText(ExpectedPath(format)).Trim());
 
         Assert.Multiple(() =>
         {
@@ -117,7 +120,7 @@ public class SweepTests
                 $"{format}: the serialized sweep did not run.\n  {string.Join("\n  ", run.Warnings)}");
             Assert.That(run.NotApplied, Is.Empty,
                 $"{format}: a command lost something on the way through TLioConvert.Serialize.\n{run.Report()}");
-            Assert.That(run.Document, Is.EqualTo(expected),
+            Assert.That(Lf(run.Document), Is.EqualTo(expected),
                 $"{format}: serializing and re-reading the sweep changed what it produces.");
         });
     }
