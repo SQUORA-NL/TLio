@@ -52,6 +52,10 @@ public class SweepTests
             "=path() is the same function under its other registered name.",
     };
 
+    // Windows writes \r\n (the sweep's csv output); the recorded files hold \n. The document is
+    // JSON text, so the newline shows up both as real characters and as the escaped text \\r\\n.
+    private static string Lf(string text) => text.Replace("\r\n", "\n").Replace("\\r\\n", "\\n");
+
     /// <summary>
     /// The sweep as written for a format — not a translation of another format's script.
     ///
@@ -60,9 +64,6 @@ public class SweepTests
     /// XPath. Two files, because there are two path languages here — the third format happens
     /// to share one.
     /// </summary>
-    // Windows serializers write \r\n (e.g. the sweep's csv output); the recorded files hold \n.
-    private static string Lf(string text) => text.Replace("\r\n", "\n");
-
     private static string Script(string format) => File.ReadAllText(ScriptPath(format));
 
     private static string ScriptPath(string format) => Path.Combine(
