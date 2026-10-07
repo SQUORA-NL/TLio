@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    End-to-end parity between the two JSON adapters. Every (input, script, result) fixture the other
+    test projects keep for TLio.Json is run through BOTH TLio.Json (Newtonsoft) and
+    TLio.Json.SystemText (System.Text.Json + TLio.JsonPath), and the output documents must be equal.
+    The fixtures are linked, not copied: a fixture added anywhere is picked up here automatically.
+  -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="4.6.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\TLio.UnitTests\Fixtures\**\*.json" Link="E2e\UnitTests\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\TLio.Functions.Tests\Fixtures\**\*.json" Link="E2e\Functions\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\TLio.Json.SystemText.Tests\Fixtures\**\*.json" Link="E2e\SystemText\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\TLio.Parity.Tests\Sweep\sweep.json" Link="E2e\Sweep\sweep.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
+    <ProjectReference Include="..\TLio.Commands\TLio.Commands.csproj" />
+    <ProjectReference Include="..\TLio.Functions\TLio.Functions.csproj" />
+    <ProjectReference Include="..\TLio.Client\TLio.Client.csproj" />
+    <ProjectReference Include="..\TLio.Json\TLio.Json.csproj" />
+    <ProjectReference Include="..\TLio.Json.SystemText\TLio.Json.SystemText.csproj" />
+    <ProjectReference Include="..\TLio.JsonPath\TLio.JsonPath.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.ETL\TLio.Extensions.ETL.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Looping\TLio.Extensions.Looping.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Math\TLio.Extensions.Math.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Text\TLio.Extensions.Text.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.TimeDate\TLio.Extensions.TimeDate.csproj" />
+  </ItemGroup>
+
+</Project>

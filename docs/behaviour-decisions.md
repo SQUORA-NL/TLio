@@ -470,3 +470,12 @@ into a document, and routes the position-dependent mutations (`Replace`, `Remove
 The same alignment pass caught `Replace` moving a replaced property to the end of the object —
 remove-then-re-add, where Newtonsoft's `JToken.Replace` keeps the position. The object is now
 rebuilt in place, the way `RenameNode` already did.
+
+### System.Text.Json paths were not Newtonsoft's paths, and failed silently
+
+`TLio.Json.SystemText` evaluated paths with JsonCons while claiming Newtonsoft-identical behaviour, so one
+script could select different nodes depending on the adapter; it also swallowed every path error (an invalid
+path selected nothing) and returned the first of several matches from `SelectNode`. Paths are now evaluated by
+`TLio.JsonPath` in Newtonsoft's dialect by default — verified against Newtonsoft.Json — errors propagate as
+`JsonPathException`, and `SelectNode` follows `SelectToken`. RFC 9535 is an opt-in dialect. See
+`TLio.JsonPath/README.md` for the divergence table and `docs/adr/0001-tlio-owned-jsonpath-engine.md`.

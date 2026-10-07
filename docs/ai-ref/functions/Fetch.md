@@ -147,11 +147,10 @@ var options = ParseOptions<JToken>.CreateDefault();
 
 `fetch` resolves its path argument, then runs a full `SelectRelative`/path-selection call
 against the document — the same cost as any other path lookup in the engine, paid again on
-every evaluation (per matched node, if the containing command targets a wildcard). Path
-selection itself is the more expensive step for the System.Text.Json adapter than for
-Newtonsoft, per the engine-wide path-selection cost noted in
-[concurrency-investigation.md](../concurrency-investigation.md) (§6) — prefer the Newtonsoft (`TLio.Json`) adapter
-when `fetch` runs inside a hot loop over many nodes, or batch reads with a single `copy`
+every evaluation (per matched node, if the containing command targets a wildcard). On
+the System.Text.Json adapter the lookup runs directly on the node tree (no serialization per
+selection), so it costs about what it does on Newtonsoft. In a hot loop over many nodes,
+batch reads with a single `copy`
 instead of one `fetch` per field where the source data allows it.
 
 ## Common mistakes

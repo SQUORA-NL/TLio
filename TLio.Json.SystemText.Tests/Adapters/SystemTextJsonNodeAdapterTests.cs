@@ -12,6 +12,28 @@ public class SystemTextJsonNodeAdapterTests
     [SetUp]
     public void SetUp() => _adapter = new SystemTextJsonNodeAdapter();
 
+    [TestCase("nl-NL")]
+    [TestCase("de-DE")]
+    [TestCase("fr-FR")]
+    [TestCase("en-US")]
+    public void TryGetDouble_ReadsNumericStringsWithTheInvariantCulture(string culture)
+    {
+        // The Newtonsoft adapter parses with the invariant culture; so must this one, or "2.5" is 25 where '.' groups thousands.
+        var previous = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(culture);
+            Assert.That(_adapter.TryGetDouble(JsonValue.Create("2.5")!), Is.EqualTo(2.5));
+            Assert.That(_adapter.TryGetDouble(JsonValue.Create("1,000.5")!), Is.EqualTo(1000.5), "comma groups thousands (documented, pinned behaviour)");
+            Assert.That(_adapter.TryGetDouble(JsonValue.Create("3,5")!), Is.EqualTo(35), "…and is not a decimal separator");
+            Assert.That(_adapter.TryGetDouble(JsonValue.Create("abc")!), Is.Null);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = previous;
+        }
+    }
+
     // ── Type queries ──────────────────────────────────────────────────────────
 
     [Test]

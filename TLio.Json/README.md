@@ -47,8 +47,8 @@ $.orders[?(@.total > 100)]
 | | `TLio.Json` | `TLio.Json.SystemText` |
 |---|---|---|
 | Node type | `JToken` | `System.Text.Json.Nodes.JsonNode` |
-| Dependency | Newtonsoft.Json | in-box + `JsonCons.JsonPath` |
-| JSONPath | Goessner, incl. script expressions | RFC 9535 strict, no script expressions |
+| Dependency | Newtonsoft.Json | in-box + `TLio.JsonPath` (no third-party dependencies) |
+| JSONPath | Newtonsoft's dialect (incl. `=~`, `===`) | the same Newtonsoft dialect by default — verified node-for-node against Newtonsoft; RFC 9535 and a superset are opt-in |
 
 Transformation behaviour is otherwise identical.
 

@@ -1,73 +1,102 @@
 using System.Text.Json.Nodes;
 using NUnit.Framework;
 using TLio.Json.SystemText;
+using TLio.JsonPath;
 
 namespace TLio.Json.SystemText.Tests.SystemTextJsonPathItemsFetcherTests;
 
 /// <summary>
-/// Verifies that the fetcher does not call JsonDocument.Parse more than once when the same
-/// unmodified node is passed to consecutive SelectNodes calls (SC-003).
-/// Uses the internal ParseCount counter added for test observability.
+/// The fetcher evaluates paths directly on the document's own nodes. These tests pin the properties
+/// that follow from that — the properties the previous design (serialize to a string, parse a
+/// JsonDocument, select on the copy, navigate back) had to build a cache to approximate:
+/// selection never works from a stale snapshot, and it hands back the live nodes.
 /// </summary>
 [TestFixture]
 public class FetcherOptimizationTests
 {
     [Test]
-    public void ConsecutiveSelectionsOnUnchangedNode_ParseDocumentOnce()
+    public void SelectedNodesAreTheLiveNodesOfTheDocument()
     {
         var fetcher = new SystemTextJsonPathItemsFetcher();
-        var node    = JsonNode.Parse("""{"a":1,"b":2,"c":3}""")!;
+        var root    = JsonNode.Parse("""{"a":{"b":[1,2,3]}}""")!;
 
-        for (var i = 0; i < 20; i++)
-            fetcher.SelectNodes("$.a", node);
+        var selected = fetcher.SelectNodes("$.a.b", root).Single();
 
-        Assert.That(fetcher.ParseCount, Is.EqualTo(1),
-            "JsonDocument.Parse should be called exactly once for 20 consecutive selections on an unchanged node.");
+        Assert.That(selected, Is.SameAs(root["a"]!["b"]), "no copy: the very node of the document");
+        Assert.That(selected.Parent, Is.SameAs(root["a"]), "parent references are intact");
     }
 
     [Test]
-    public void SelectionAfterMutation_RebuildsCachedDocument()
+    public void SelectionAfterMutationSeesTheMutationImmediately()
     {
         var fetcher = new SystemTextJsonPathItemsFetcher();
         var root    = JsonNode.Parse("""{"items":[1,2,3]}""")!;
 
-        fetcher.SelectNodes("$.items", root);
-        Assert.That(fetcher.ParseCount, Is.EqualTo(1), "First selection should parse once.");
+        Assert.That(fetcher.SelectNodes("$.items[*]", root), Has.Count.EqualTo(3));
 
-        // Simulate a mutation: add an element
         root.AsObject()["items"]!.AsArray().Add(4);
+        root.AsObject()["extra"] = 1;
 
-        fetcher.SelectNodes("$.items", root);
-        Assert.That(fetcher.ParseCount, Is.EqualTo(2),
-            "Mutation changes serialized content → cache miss → second parse required.");
+        Assert.That(fetcher.SelectNodes("$.items[*]", root), Has.Count.EqualTo(4));
+        Assert.That(fetcher.SelectNodes("$.extra", root), Has.Count.EqualTo(1));
     }
 
     [Test]
-    public void SelectionWithDifferentRoot_ParsesForEachUniqueContent()
+    public void SelectionNeverSerializesTheDocument()
     {
+        // A node that cannot be serialized would have failed the old snapshot design; the engine only reads.
         var fetcher = new SystemTextJsonPathItemsFetcher();
-        var nodeA   = JsonNode.Parse("""{"x":1}""")!;
-        var nodeB   = JsonNode.Parse("""{"x":2}""")!;
+        var root    = new JsonObject { ["deep"] = Nest(2000) };
 
-        fetcher.SelectNodes("$.x", nodeA);
-        fetcher.SelectNodes("$.x", nodeA);  // same content → reuse
-        fetcher.SelectNodes("$.x", nodeB);  // different content → rebuild
+        // Nesting beyond JsonSerializerOptions.MaxDepth (64) cannot be written out, but can be walked.
+        Assert.DoesNotThrow(() => fetcher.SelectNodes("$.deep.a", root));
+        Assert.That(fetcher.SelectNodes("$.deep.a", root), Has.Count.EqualTo(1));
+    }
 
-        Assert.That(fetcher.ParseCount, Is.EqualTo(2),
-            "Two distinct node contents should result in exactly two parses.");
+    private static JsonNode Nest(int depth)
+    {
+        JsonNode node = new JsonObject { ["a"] = 1 };
+        for (var i = 0; i < depth; i++) node = new JsonObject { ["a"] = node };
+        return node;
     }
 
     [Test]
-    public void SelectNodeSingleResult_AlsoUsesCache()
+    public void SelectNodeAndSelectNodesAgree()
     {
         var fetcher = new SystemTextJsonPathItemsFetcher();
         var node    = JsonNode.Parse("""{"val":"hello"}""")!;
 
-        fetcher.SelectNode("$.val", node);
-        fetcher.SelectNode("$.val", node);
-        fetcher.SelectNodes("$.val", node);
+        Assert.That(fetcher.SelectNode("$.val", node), Is.SameAs(fetcher.SelectNodes("$.val", node).Single()));
+    }
 
-        Assert.That(fetcher.ParseCount, Is.EqualTo(1),
-            "SelectNode and SelectNodes should share the same document cache.");
+    [Test]
+    public void ParsedQueriesAreSharedBetweenFetchers()
+    {
+        // A fetcher is created per execution; the engine (and its parsed-query cache) is shared per dialect.
+        Assert.That(new SystemTextJsonPathItemsFetcher().Engine, Is.SameAs(new SystemTextJsonPathItemsFetcher().Engine));
+        Assert.That(new SystemTextJsonPathItemsFetcher().Engine.Options.Dialect, Is.EqualTo(JsonPathDialect.Newtonsoft));
+    }
+
+    [Test]
+    public void TheDialectIsAnAdapterOption()
+    {
+        var doc = JsonNode.Parse("""{"a":[1,2,3]}""")!;
+
+        // Newtonsoft's dialect does not know RFC 9535's bare filter or negative index…
+        Assert.Throws<JsonPathException>(() => new SystemTextJsonPathItemsFetcher().SelectNodes("$.a[?@ > 1]", doc));
+
+        // …the opt-in dialects do.
+        Assert.That(new SystemTextJsonPathItemsFetcher(JsonPathDialect.Rfc9535).SelectNodes("$.a[?@ > 1]", doc), Has.Count.EqualTo(2));
+        Assert.That(new SystemTextJsonPathItemsFetcher(JsonPathDialect.Extended).SelectNodes("$.a[-1]", doc).Single().GetValue<int>(), Is.EqualTo(3));
+    }
+
+    [Test]
+    public void ANullValuedMemberIsStillSelectable()
+    {
+        var fetcher = new SystemTextJsonPathItemsFetcher();
+        var root    = JsonNode.Parse("""{"gone":null,"here":1}""")!;
+
+        Assert.That(fetcher.SelectNodes("$.gone", root), Has.Count.EqualTo(1), "present with a null value is not absent");
+        Assert.That(fetcher.SelectNodes("$.nope", root), Is.Empty);
     }
 }

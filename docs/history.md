@@ -3,6 +3,17 @@
 Moved out of `CLAUDE.md`, which keeps only what an editor needs on every task.
 Newest first.
 
+- jsonpath-in-system-text-json: **`TLio.JsonPath`**, a standalone JSONPath engine for `JsonNode` (no TLio,
+  Newtonsoft or JsonCons dependency), replaces JsonCons in `TLio.Json.SystemText`. Three dialects:
+  `Newtonsoft` (default; a transcription of Newtonsoft.Json 13.0.4's `JPath`/filters/`JValue.Compare`,
+  including its date recognition), `Rfc9535` (full standard + I-Regexp; 706/706 on the pinned compliance
+  suite) and `Extended`. The adapter now selects on the live node tree instead of serialize → parse →
+  select → navigate. Behaviour changes for System.Text.Json users: Newtonsoft is the default dialect,
+  invalid paths throw instead of selecting nothing, `SelectNode` on several matches throws.
+  Proof: `TLio.JsonPath.Tests` (differential against Newtonsoft, a 1.8M-comparison soak, divergence table),
+  `TLio.Json.AdapterParity.Tests` (every fixture through both adapters). The parity tests also found and
+  fixed `SystemTextJsonNodeAdapter.TryGetDouble` parsing numeric strings with the current culture (`"2.5"` was 25
+  under nl-NL). Design record: `docs/adr/0001-tlio-owned-jsonpath-engine.md`.
 - split-samples: samples, `docs/samples`, `docs/showcase` and `demo/` moved to the TLio-Samples
   repository and now build against the TLio NuGet packages. Gone from here with them: the
   solution's sample projects, `global.json` / `Directory.Solution.targets` (Azure Functions SDK,
