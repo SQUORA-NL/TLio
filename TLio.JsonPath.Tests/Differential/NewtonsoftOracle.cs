@@ -102,7 +102,7 @@ public static class NewtonsoftOracle
             if (parent is JProperty prop)
             {
                 var sb = new StringBuilder();
-                Loc.AppendNormalizedName(sb, prop.Name);
+                NormalizedPaths.AppendName(sb, prop.Name);
                 parts.Add(sb.ToString());
                 current = prop.Parent!;
             }

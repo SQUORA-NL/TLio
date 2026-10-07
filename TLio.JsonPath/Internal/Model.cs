@@ -164,54 +164,19 @@ internal readonly struct Prim
     public BigInteger Big => (BigInteger)O;
 }
 
-/// <summary>
-/// Where a node was found: an immutable chain from the root, so recording a location costs one
-/// small allocation per visited node and the (relatively expensive) normalized-path string is
-/// built only for nodes the caller actually asks about.
-/// </summary>
-internal sealed class Loc
+/// <summary>RFC 9535 §2.7 normalized-path text.</summary>
+internal static class NormalizedPaths
 {
-    public static readonly Loc Root = new(null, null, -1, null);
-
-    public readonly Loc Up;
-    public readonly string Name;
-    public readonly int Index;
-    /// <summary>The container this location is a slot of (the node's parent), untyped so the chain is not generic.</summary>
-    public readonly object Container;
-
-    public Loc(Loc up, string name, int index, object container)
+    public static string Name(string name)
     {
-        Up = up;
-        Name = name;
-        Index = index;
-        Container = container;
-    }
-
-    public static Loc Member(Loc up, string name, object container) => new(up, name, -1, container);
-
-    public static Loc Element(Loc up, int index, object container) => new(up, null, index, container);
-
-    /// <summary>The RFC 9535 §2.7 normalized path, e.g. <c>$['store']['book'][0]</c>.</summary>
-    public string ToNormalizedPath()
-    {
-        if (Up == null) return "$";
-        var depth = 0;
-        for (var l = this; l.Up != null; l = l.Up) depth++;
-        var parts = new Loc[depth];
-        var i = depth;
-        for (var l = this; l.Up != null; l = l.Up) parts[--i] = l;
-
-        var sb = new System.Text.StringBuilder("$");
-        foreach (var p in parts)
-        {
-            if (p.Name != null) AppendNormalizedName(sb, p.Name);
-            else sb.Append('[').Append(p.Index.ToString(CultureInfo.InvariantCulture)).Append(']');
-        }
-
+        var sb = new System.Text.StringBuilder(name.Length + 4);
+        AppendName(sb, name);
         return sb.ToString();
     }
 
-    internal static void AppendNormalizedName(System.Text.StringBuilder sb, string name)
+    public static string Index(int index) => "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+
+    internal static void AppendName(System.Text.StringBuilder sb, string name)
     {
         sb.Append("['");
         foreach (var c in name)

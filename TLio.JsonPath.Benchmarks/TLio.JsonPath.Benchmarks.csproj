@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Throughput and allocation of the TLio.JsonPath engine against the two things it replaces or
+    mirrors: Newtonsoft.Json's SelectTokens, and the JsonCons-based strategy TLio.Json.SystemText
+    used before (serialize the JsonNode tree, parse it as a JsonDocument, select on the copy,
+    navigate back to the live nodes). JsonCons and Newtonsoft are benchmark-only dependencies; the
+    production packages reference neither.
+
+    Not a test project: `dotnet test` never touches it. Run it with
+      dotnet run -c Release (project TLio.JsonPath.Benchmarks), passing the BenchmarkDotNet filter after the project arguments
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="JsonCons.JsonPath" Version="1.1.0" />
+    <ProjectReference Include="..\TLio.JsonPath\TLio.JsonPath.csproj" />
+  </ItemGroup>
+
+</Project>

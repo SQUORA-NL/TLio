@@ -13,8 +13,8 @@ and why), see [performance.md](performance.md).
 
 | Format | Adapter project | Execution context factory | Path style | When to use | When NOT to use |
 |--------|----------------|--------------------------|------------|-------------|-----------------|
-| JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` | Default JSON choice; scripts with filter or script expressions `()`, Goessner JSONPath features | When strict RFC 9535 compliance is required |
-| JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` (RFC 9535) | RFC 9535 strict compliance; Newtonsoft excluded from dependencies | When scripts use script expressions `()` — not supported |
+| JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` (Newtonsoft's dialect) | Default JSON choice | When Newtonsoft.Json must not be a dependency |
+| JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` — Newtonsoft's dialect by default, RFC 9535 opt-in | Newtonsoft excluded from dependencies; same paths and results as `TLio.Json` | When you need `JToken` |
 | XML — slash paths | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths()` | `/order/customer` | Simple hierarchical XML with no predicates | When XPath predicates, `//` recursive descent, or positional indexing is needed |
 | XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `//child`, `/order/item[@id='1']` | Full XPath 1.0: predicates, axes, recursive descent | When simple slash paths are sufficient — prefer slash-path for simplicity |
 | YAML | `TLio.Yaml` | `YamlExecutionContext.CreateDefault()` | Dot-notation `$.a.b` | YAML source documents; multi-doc YAML (`---`) parsed as array root | When you need array-index path syntax identical to JSON filter expressions |
@@ -23,22 +23,26 @@ and why), see [performance.md](performance.md).
 part of every path — `/order/customer`, never `/customer`. XPath indexing is **1-based**
 (`item[1]` = first item, not `item[0]`).
 
-### JSONPath: Newtonsoft vs System.Text.Json
+### JSONPath: dialects
 
-| Feature | Newtonsoft (`TLio.Json`) | System.Text.Json (`TLio.Json.SystemText`) |
-|---------|--------------------------|------------------------------------------|
-| Spec basis | Goessner (informal) | RFC 9535 |
-| Root `$` | ✅ | ✅ |
-| Child `$.name` | ✅ | ✅ |
-| Nested `$.a.b.c` | ✅ | ✅ |
-| Array index `$.a[0]` | ✅ | ✅ |
-| Wildcard `$.a[*]` | ✅ | ✅ |
-| Recursive descent `$..name` | ✅ | ✅ |
-| Slice `$.a[0:2]` | ✅ | ✅ |
-| Filter `$.a[?(@.x > 1)]` | ✅ | ✅ |
-| Script expressions `$.a[(@.length-1)]` | ✅ | ❌ |
-| Negative index `$.a[-1]` | ✅ | ✅ |
-| Union `$.a[0,2]` | ✅ | ✅ |
+`TLio.Json` reads paths in Newtonsoft's JSONPath dialect. `TLio.Json.SystemText` evaluates paths with the
+`TLio.JsonPath` engine, whose default dialect reproduces Newtonsoft's exactly (nodes, order, errors —
+verified against Newtonsoft.Json 13.0.4 by differential tests). Pass a dialect to
+`SystemTextJsonExecutionContext.CreateDefault(...)` to read RFC 9535 instead.
+
+| Feature | Newtonsoft dialect (`TLio.Json`; `TLio.Json.SystemText` default) | `Rfc9535` | `Extended` |
+|---------|------------------------------------|-----------|------------|
+| Root / child / nested / index / slice / union / wildcard / `..` | ✅ | ✅ | ✅ |
+| Filter `$.a[?(@.x > 1)]` | ✅ (parentheses required) | ✅ | ✅ |
+| Filter `$.a[?@.x > 1]` (no parentheses) | ❌ syntax error | ✅ | ✅ |
+| `=~ /re/flags`, `===`, `!==`, `<>` | ✅ | ❌ | ✅ |
+| `match()`, `search()`, `length()`, `count()`, `value()` | ❌ | ✅ | ✅ |
+| Script expressions `$.a[(@.length-1)]` | ❌ (not supported by any adapter) | ❌ | ❌ |
+| Negative index `$.a[-1]` | ❌ throws (use a slice `$.a[-1:]`) | ✅ | ✅ |
+| Filter over an object's members | selects nothing | ✅ | selects nothing |
+| `$..*` includes the root | ✅ | ❌ | ✅ |
+
+Full tables: `TLio.JsonPath/README.md`.
 
 ---
 
@@ -406,13 +410,12 @@ the entire object as the output — wrong.
 
 ### JSON — Newtonsoft
 
-> JSON adapter using Newtonsoft.Json with Goessner JSONPath.
+> JSON adapter using Newtonsoft.Json and its JSONPath dialect.
 
 **When to use**: default choice for JSON; scripts that use filter expressions `?()`,
-script expressions `()`, recursive descent `$..`, or maximum JSONPath compatibility.
+recursive descent `$..`, `=~` regexes, or typed dates.
 
-**When NOT to use**: when strict RFC 9535 compliance is required or Newtonsoft.Json
-must not be added as a dependency.
+**When NOT to use**: when Newtonsoft.Json must not be added as a dependency.
 
 **Node type**: `JToken`
 
@@ -445,13 +448,14 @@ var result  = engine.Execute(scriptJson, data, JsonExecutionContext.CreateDefaul
 
 ### JSON — System.Text.Json
 
-> JSON adapter using System.Text.Json with RFC 9535-compliant JSONPath.
+> JSON adapter using System.Text.Json with the `TLio.JsonPath` engine. Newtonsoft's JSONPath dialect by default;
+> RFC 9535 (`JsonPathDialect.Rfc9535`) or a superset of both (`Extended`) on request.
 
-**When to use**: strict RFC 9535 path compliance is required; Newtonsoft.Json is excluded
-from your dependency constraints; System.Text.Json performance characteristics are needed.
+**When to use**: Newtonsoft.Json is excluded from your dependency constraints; you want
+System.Text.Json nodes; or you want RFC 9535 paths (pass the dialect).
 
-**When NOT to use**: when scripts use script expressions `()` — they are not supported.
-Also avoid when you need Goessner-specific behaviours.
+**When NOT to use**: when you need `JToken`. Behaviour otherwise matches `TLio.Json`, except that
+Newtonsoft parses date-looking strings into typed dates at load time, which the JsonNode document does not.
 
 **Node type**: `JsonNode`
 
@@ -464,8 +468,7 @@ var engine  = new ScriptEngine<JsonNode>(options.CommandsProvider, options.Funct
 var result  = engine.Execute(scriptJson, data, SystemTextJsonExecutionContext.CreateDefault());
 ```
 
-**Path syntax**: identical to JSON (Newtonsoft) except script expressions `()` are not
-supported.
+**Path syntax**: identical to JSON (Newtonsoft) by default; see *JSONPath: dialects* above.
 
 ---
 

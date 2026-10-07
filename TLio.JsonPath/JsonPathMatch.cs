@@ -12,12 +12,15 @@ namespace TLio.JsonPath;
 /// </summary>
 public readonly struct JsonPathMatch
 {
-    private readonly Loc? _loc;
+    private readonly PathResolver? _resolver;
 
-    internal JsonPathMatch(JsonNode? node, Loc? loc, bool isPropertyToken = false)
+    internal JsonPathMatch(JsonNode? node, JsonNode? parent, string? name, int index, PathResolver? resolver, bool isPropertyToken = false)
     {
         Node = node;
-        _loc = loc;
+        Parent = parent;
+        Name = name;
+        Index = index;
+        _resolver = resolver;
         IsPropertyToken = isPropertyToken;
     }
 
@@ -25,19 +28,23 @@ public readonly struct JsonPathMatch
     public JsonNode? Node { get; }
 
     /// <summary>The object or array that contains the node; null for the root.</summary>
-    public JsonNode? Parent => _loc?.Container as JsonNode;
+    public JsonNode? Parent { get; }
 
     /// <summary>The property name when the node is an object member, otherwise null.</summary>
-    public string? Name => _loc?.Name;
+    public string? Name { get; }
 
     /// <summary>The position when the node is an array element, otherwise -1.</summary>
-    public int Index => _loc is { Name: null, Up: not null } ? _loc.Index : -1;
+    public int Index { get; }
 
     /// <summary>True for the document root (<c>$</c>).</summary>
-    public bool IsRoot => _loc is { Up: null };
+    public bool IsRoot => Name == null && Index < 0;
 
-    /// <summary>The RFC 9535 §2.7 normalized path of the node, e.g. <c>$['store']['book'][0]</c>.</summary>
-    public string NormalizedPath => _loc?.ToNormalizedPath() ?? "$";
+    /// <summary>
+    /// The RFC 9535 §2.7 normalized path of the node, e.g. <c>$['store']['book'][0]</c>. Computed on first use,
+    /// by a single walk of the document shared by every match of the same selection; the document should not
+    /// be modified between selecting and asking.
+    /// </summary>
+    public string NormalizedPath => IsRoot || _resolver == null ? "$" : _resolver.PathOf(Parent!, Name, Index);
 
     /// <summary>
     /// Newtonsoft dialect only. Newtonsoft's filter on an <em>object</em> walks its <c>JProperty</c> wrappers, so

@@ -15,15 +15,18 @@ using TLio.JsonPath.Internal.Rfc;
 
 namespace TLio.JsonPath.Internal.Newtonsoft;
 
-/// <summary>A JToken: a document node, where it was found, and whether it is being seen as its owning JProperty.</summary>
-internal readonly struct NToken<TNode>(TNode node, Loc loc, bool isProperty, string propertyName)
+/// <summary>
+/// A JToken: a document node, the last step that led to it (container, member name or array index — see
+/// <see cref="Hit{TNode}"/>), and whether it is being seen as its owning JProperty. For a property token
+/// <see cref="Name"/> is the JProperty's name.
+/// </summary>
+internal readonly struct NToken<TNode>(TNode node, TNode parent, string name, int index, bool isProperty)
 {
     public readonly TNode Node = node;
-    public readonly Loc Loc = loc;
+    public readonly TNode Parent = parent;
+    public readonly string Name = name;
+    public readonly int Index = index;
     public readonly bool IsProperty = isProperty;
-
-    /// <summary>The JProperty's name when <see cref="IsProperty"/>; carried here because nested query paths run without location tracking.</summary>
-    public readonly string PropertyName = propertyName;
 }
 
 /// <summary>One side of a comparison: a literal from the query, or a token selected by a path.</summary>
@@ -111,20 +114,17 @@ internal sealed class NewtonsoftEvaluator<TNode, TModel> where TModel : struct, 
     }
 
     private static NToken<TNode> MemberToken(in NToken<TNode> parent, string name, TNode value, bool asProperty) =>
-        new(value, parent.Loc == null ? null : Loc.Member(parent.Loc, name, parent.Node), asProperty, asProperty ? name : null);
+        new(value, parent.Node, name, -1, asProperty);
 
     private static NToken<TNode> ElementToken(in NToken<TNode> parent, int index, TNode value) =>
-        new(value, parent.Loc == null ? null : Loc.Element(parent.Loc, index, parent.Node), false, null);
-
-    /// <summary>The same token without a location: sub-queries inside a filter only need values, not where they are.</summary>
-    private static NToken<TNode> Untracked(in NToken<TNode> t) => t.Loc == null ? t : new NToken<TNode>(t.Node, null, t.IsProperty, t.PropertyName);
+        new(value, parent.Node, null, index, false);
 
     /// <summary><c>foreach (JToken v in t)</c>: an object's JProperty wrappers, an array's elements, a JProperty's value, nothing for a JValue.</summary>
     private IEnumerable<NToken<TNode>> Children(NToken<TNode> t)
     {
         if (t.IsProperty)
         {
-            yield return new NToken<TNode>(t.Node, t.Loc, false, null);
+            yield return new NToken<TNode>(t.Node, t.Parent, t.Name, t.Index, false);
             yield break;
         }
 
@@ -147,35 +147,126 @@ internal sealed class NewtonsoftEvaluator<TNode, TModel> where TModel : struct, 
         }
     }
 
-    /// <summary>JContainer.Descendants(): pre-order, children before siblings, JProperty wrappers included.</summary>
+    private struct Frame(TNode node, bool isObject, int count)
+    {
+        public readonly TNode Node = node;
+        public readonly bool IsObject = isObject;
+        public readonly int Count = count;
+        public int Next;
+    }
+
+    private void CheckDepth(int framesBelow)
+    {
+        if (framesBelow > _settings.MaxDepth)
+            throw new JsonPathException($"document is nested deeper than the configured limit of {_settings.MaxDepth}", JsonPathErrorKind.Limit);
+    }
+
+    /// <summary>
+    /// JContainer.Descendants(): pre-order, a node before its children and children before siblings, with the JProperty
+    /// wrapper of every object member included (it comes immediately before the member's value). A plain explicit stack
+    /// of frames, one per container entered — no enumerator per container, no token for anything that is not yielded.
+    /// </summary>
     private IEnumerable<NToken<TNode>> Descendants(NToken<TNode> start)
     {
-        var stack = new Stack<(IEnumerator<NToken<TNode>> Children, int Depth)>();
-        stack.Push((Children(start).GetEnumerator(), 1));
-        try
+        var baseDepth = 0;
+        var node = start.Node;
+        if (start.IsProperty)
         {
-            while (stack.Count > 0)
+            // The only child of a JProperty is its value.
+            yield return new NToken<TNode>(start.Node, start.Parent, start.Name, start.Index, false);
+            baseDepth = 1;
+        }
+
+        var kind = _m.KindOf(node);
+        if (kind is not (NodeKind.Object or NodeKind.Array)) yield break;
+
+        var stack = new List<Frame> { new(node, kind == NodeKind.Object, _m.Count(node)) };
+        while (stack.Count > 0)
+        {
+            var top = stack.Count - 1;
+            var f = stack[top];
+            if (f.Next >= f.Count)
             {
-                var (e, depth) = stack.Peek();
-                if (!e.MoveNext())
-                {
-                    stack.Pop().Children.Dispose();
-                    continue;
-                }
+                stack.RemoveAt(top);
+                continue;
+            }
 
-                var token = e.Current;
-                yield return token;
+            var i = f.Next++;
+            stack[top] = f;
 
-                // Depth counts containers entered. A JProperty wrapper and its value are one level, not two.
-                var nextDepth = token.IsProperty ? depth : depth + 1;
-                if (nextDepth > _settings.MaxDepth && (token.IsProperty || _m.KindOf(token.Node) is NodeKind.Object or NodeKind.Array))
-                    throw new JsonPathException($"document is nested deeper than the configured limit of {_settings.MaxDepth}", JsonPathErrorKind.Limit);
-                stack.Push((Children(token).GetEnumerator(), nextDepth));
+            TNode child;
+            if (f.IsObject)
+            {
+                _m.MemberAt(f.Node, i, out var key, out child);
+                yield return new NToken<TNode>(child, f.Node, key, -1, true); // the JProperty
+                yield return new NToken<TNode>(child, f.Node, key, -1, false); // its value
+            }
+            else
+            {
+                child = _m.ElementAt(f.Node, i);
+                yield return new NToken<TNode>(child, f.Node, null, i, false);
+            }
+
+            var ck = _m.KindOf(child);
+            if (ck is NodeKind.Object or NodeKind.Array)
+            {
+                CheckDepth(stack.Count + baseDepth + 1);
+                stack.Add(new Frame(child, ck == NodeKind.Object, _m.Count(child)));
             }
         }
-        finally
+    }
+
+    /// <summary>
+    /// The descendants a ScanFilter / ScanMultipleFilter looks at — without ever materialising the JProperty
+    /// wrappers. With <paramref name="name"/> or <paramref name="names"/> it yields the *value* of each member of that
+    /// name (what the original yields when it meets the matching JProperty); with neither it yields every value
+    /// and element (what the original yields for each non-JProperty descendant). Same order as <see cref="Descendants"/>.
+    /// </summary>
+    private IEnumerable<NToken<TNode>> ScanValues(NToken<TNode> c, string name, List<string> names)
+    {
+        var kind = _m.KindOf(c.Node);
+        if (kind is not (NodeKind.Object or NodeKind.Array)) yield break;
+
+        var stack = new List<Frame> { new(c.Node, kind == NodeKind.Object, _m.Count(c.Node)) };
+        while (stack.Count > 0)
         {
-            while (stack.Count > 0) stack.Pop().Children.Dispose();
+            var top = stack.Count - 1;
+            var f = stack[top];
+            if (f.Next >= f.Count)
+            {
+                stack.RemoveAt(top);
+                continue;
+            }
+
+            var i = f.Next++;
+            stack[top] = f;
+
+            TNode child;
+            if (f.IsObject)
+            {
+                _m.MemberAt(f.Node, i, out var key, out child);
+                if (names != null)
+                {
+                    foreach (var n in names)
+                        if (key == n) yield return new NToken<TNode>(child, f.Node, key, -1, false);
+                }
+                else if (name == null || key == name)
+                {
+                    yield return new NToken<TNode>(child, f.Node, key, -1, false);
+                }
+            }
+            else
+            {
+                child = _m.ElementAt(f.Node, i);
+                if (names == null && name == null) yield return new NToken<TNode>(child, f.Node, null, i, false);
+            }
+
+            var ck = _m.KindOf(child);
+            if (ck is NodeKind.Object or NodeKind.Array)
+            {
+                CheckDepth(stack.Count + 1);
+                stack.Add(new Frame(child, ck == NodeKind.Object, _m.Count(child)));
+            }
         }
     }
 
@@ -239,12 +330,19 @@ internal sealed class NewtonsoftEvaluator<TNode, TModel> where TModel : struct, 
         {
             if (name == null) yield return c;
 
+            if (!c.IsProperty)
+            {
+                foreach (var d in ScanValues(c, name, null)) yield return d;
+                continue;
+            }
+
+            // A JProperty as the node to scan (reachable only through a preceding query filter): walk it the long way.
             foreach (var d in Descendants(c))
             {
                 if (d.IsProperty)
                 {
-                    if (d.PropertyName == name)
-                        yield return new NToken<TNode>(d.Node, d.Loc, false, null);
+                    if (d.Name == name)
+                        yield return new NToken<TNode>(d.Node, d.Parent, d.Name, d.Index, false);
                 }
                 else if (name == null)
                 {
@@ -258,11 +356,17 @@ internal sealed class NewtonsoftEvaluator<TNode, TModel> where TModel : struct, 
     {
         foreach (var c in current)
         {
+            if (!c.IsProperty)
+            {
+                foreach (var d in ScanValues(c, null, names)) yield return d;
+                continue;
+            }
+
             foreach (var d in Descendants(c))
             {
                 if (!d.IsProperty) continue;
                 foreach (var name in names)
-                    if (d.PropertyName == name) yield return new NToken<TNode>(d.Node, d.Loc, false, null);
+                    if (d.Name == name) yield return new NToken<TNode>(d.Node, d.Parent, d.Name, d.Index, false);
             }
         }
     }
@@ -449,7 +553,7 @@ internal sealed class NewtonsoftEvaluator<TNode, TModel> where TModel : struct, 
     private IEnumerable<NOperand<TNode>> GetResult(NToken<TNode> root, NToken<TNode> t, object o)
     {
         if (o is Prim p) return new[] { new NOperand<TNode>(p) };
-        if (o is List<NFilter> filters) return Wrap(Evaluate(filters, Untracked(root), Untracked(t), errorWhenNoMatch: false));
+        if (o is List<NFilter> filters) return Wrap(Evaluate(filters, root, t, errorWhenNoMatch: false));
         return Array.Empty<NOperand<TNode>>();
     }
 
@@ -458,8 +562,93 @@ internal sealed class NewtonsoftEvaluator<TNode, TModel> where TModel : struct, 
         foreach (var token in tokens) yield return new NOperand<TNode>(token);
     }
 
+    /// <summary>Follows a simple path (see <see cref="NSimplePath"/>) or returns a literal; false for "no node".</summary>
+    private bool TryFollowSimple(object side, NToken<TNode> root, NToken<TNode> t, out NOperand<TNode> operand)
+    {
+        if (side is Prim p)
+        {
+            operand = new NOperand<TNode>(p);
+            return true;
+        }
+
+        var filters = (List<NFilter>)side;
+        var current = t;
+        for (var i = 0; i < filters.Count; i++)
+        {
+            switch (filters[i])
+            {
+                case NRootFilter:
+                    current = root;
+                    break;
+                case NFieldFilter f:
+                    if (!IsObject(current) || !_m.TryGetMember(current.Node, f.Name, out var member))
+                    {
+                        operand = default;
+                        return false;
+                    }
+
+                    current = MemberToken(current, f.Name, member, false);
+                    break;
+                case NArrayIndexFilter a:
+                    if (!IsArray(current) || a.Index!.Value >= _m.Count(current.Node))
+                    {
+                        operand = default;
+                        return false;
+                    }
+
+                    current = ElementToken(current, a.Index.Value, _m.ElementAt(current.Node, a.Index.Value));
+                    break;
+            }
+        }
+
+        operand = new NOperand<TNode>(current);
+        return true;
+    }
+
+    /// <summary>Follows a query made only of names and non-negative indexes (see <see cref="NSimplePath"/>) from the root.</summary>
+    public bool TryFollowPlain(List<NFilter> filters, NToken<TNode> root, out NToken<TNode> result)
+    {
+        var current = root;
+        for (var i = 0; i < filters.Count; i++)
+        {
+            switch (filters[i])
+            {
+                case NFieldFilter f:
+                    if (!IsObject(current) || !_m.TryGetMember(current.Node, f.Name, out var member))
+                    {
+                        result = default;
+                        return false;
+                    }
+
+                    current = MemberToken(current, f.Name, member, false);
+                    break;
+                case NArrayIndexFilter a:
+                    if (!IsArray(current) || a.Index!.Value >= _m.Count(current.Node))
+                    {
+                        result = default;
+                        return false;
+                    }
+
+                    current = ElementToken(current, a.Index.Value, _m.ElementAt(current.Node, a.Index.Value));
+                    break;
+            }
+        }
+
+        result = current;
+        return true;
+    }
+
     private bool IsBooleanMatch(NBooleanExpression b, NToken<TNode> root, NToken<TNode> t)
     {
+        // Both sides are literals or plain paths to at most one node: no iterator has to stay lazy and nothing can throw,
+        // so the lazy machinery below would only add allocation. Same answer — a comparison needs both sides present.
+        if (b.LeftIsSimple && b.RightIsSimple)
+        {
+            var hasLeft = TryFollowSimple(b.Left, root, t, out var l);
+            if (b.Operator == NOp.Exists) return hasLeft;
+            return hasLeft && TryFollowSimple(b.Right, root, t, out var r) && MatchTokens(b.Operator, l, r);
+        }
+
         if (b.Operator == NOp.Exists)
         {
             using var any = GetResult(root, t, b.Left).GetEnumerator();

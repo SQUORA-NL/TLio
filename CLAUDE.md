@@ -7,7 +7,7 @@ Auto-generated from all feature plans. Last updated: 2026-09-29
 - C# / .NET 10; YAML (GitHub Actions workflows) + MSBuild SDK, GitHub Actions, NuGet.org API (011-nuget-packaging)
 - C# / .NET 10 + NuPlane 0.0.1 (NuGet hot-loading) + CShells 0.0.14 (modular host) + Docker (012-docker-plugin-api)
 - Filesystem only (`/plugins` volume mount); no database (012-docker-plugin-api)
-- C# / .NET 10 + `System.Text.Json` (in-box), `JsonCons.JsonPath` 1.1.0 (existing in TLio.Json.SystemText), NUnit (tests) (013-parse-once-stj-optimize)
+- C# / .NET 10 + `System.Text.Json` (in-box), `TLio.JsonPath` (own engine, no third-party deps), NUnit (tests) (013-parse-once-stj-optimize, superseded by feature/jsonpath-in-system-text-json)
 - C# / .NET 10 + Docker, MSBuild SDK, `Directory.Build.props` (global MSBuild properties) (main)
 - C# / .NET 10 + NUnit 4.x, Newtonsoft.Json (TLio.Json.Tests), System.Text.Json (TLio.Json.SystemText.Tests), YamlDotNet (TLio.Yaml.Tests), System.Xml (TLio.Xml.Tests) (015-expand-test-coverage)
 - N/A — test fixtures are file-based (input/script/result triplets) or programmatically generated (015-expand-test-coverage)
@@ -34,11 +34,15 @@ TLio.Functions/
 TLio.Client/
 TLio.Json/
 TLio.Json.SystemText/
+TLio.JsonPath/              ← standalone JSONPath engine for JsonNode (no TLio/Newtonsoft deps): Newtonsoft, Rfc9535, Extended dialects
 TLio.Xml/           ← XmlNodeAdapter, SlashPathItemsFetcher, NativeXPathItemsFetcher (003)
 TLio.Yaml/          ← YamlNodeAdapter, YamlPathItemsFetcher
 TLio.UnitTests/             ← Core / Commands / Engine tests only (no functions, no JSON adapter)
 TLio.Json.Tests/            ← JSON (Newtonsoft) adapter tests (JsonNodeAdapter, JsonPathItemsFetcher)
 TLio.Json.SystemText.Tests/ ← System.Text.Json adapter fixture tests
+TLio.JsonPath.Tests/        ← RFC 9535 compliance suite (pinned), Newtonsoft differential oracle tests, divergence table, API/limits
+TLio.Json.AdapterParity.Tests/ ← every fixture + the sweep through BOTH JSON adapters; outputs must be identical
+TLio.JsonPath.Benchmarks/   ← BenchmarkDotNet: engine vs Newtonsoft vs the old JsonCons strategy
 TLio.Functions.Tests/       ← Built-in function tests + extension-pack fixture tests (Math, Text, TimeDate, ETL, TextPack)
 TLio.Extensions.Text/      ← Optional text function pack: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim (008), regexReplace, regexExtract, right (023)
 TLio.Functions/Collections/ ← distinct, sort, sortBy, last — built in, registered by ParseOptions (023)
@@ -268,6 +272,10 @@ JSON or YAML they are ordinary `@name` properties. Converting is how a script ed
 
 The full log, including the design notes behind each entry (the `@` resolution and its
 concurrency bug, `setProperties`, the format converter), is in `docs/history.md`. Highlights:
+
+- jsonpath-in-system-text-json: `TLio.JsonPath` — an own JSONPath engine on `JsonNode` replacing JsonCons.
+  Default dialect is Newtonsoft's, held to Newtonsoft.Json 13.0.4 by differential tests; RFC 9535 passes the
+  pinned compliance suite. See `docs/adr/0001-tlio-owned-jsonpath-engine.md`.
 
 - Repo hygiene + CI: nullable warnings are errors, `-warnaserror` in CI, macOS/Windows/nl-NL
   runs, coverage collection, and the `[Explicit]` concurrency checks gate every `release/*` PR.

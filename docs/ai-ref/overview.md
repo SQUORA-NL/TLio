@@ -30,8 +30,8 @@ script (JSON array)  +  document (JSON / XML / YAML)  +  execution context
 
 | Format | Adapter project | Execution context factory | Path style | When to use |
 |--------|----------------|--------------------------|------------|-------------|
-| JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` | Default JSON choice; Goessner JSONPath; filter and script expressions |
-| JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` (RFC 9535) | RFC 9535 strict; Newtonsoft excluded; no script expressions `()` |
+| JSON (Newtonsoft) | `TLio.Json` | `JsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` (Newtonsoft's dialect) | Default JSON choice |
+| JSON (System.Text) | `TLio.Json.SystemText` | `SystemTextJsonExecutionContext.CreateDefault()` | JSONPath `$.a.b` (the same Newtonsoft dialect by default; `CreateDefault(JsonPathDialect.Rfc9535)` or `.Extended` opt in to RFC 9535) | Newtonsoft excluded from dependencies; identical behaviour to `TLio.Json` |
 | XML — slash paths | `TLio.Xml` | `XmlExecutionContext.CreateWithSlashPaths()` | `/order/customer` | Simple hierarchies; no predicates needed |
 | XML — XPath | `TLio.Xml` | `XmlExecutionContext.CreateWithNativeXPath()` | `/order/customer`, `//child`, `/order/item[@id='1']` | Predicates, recursive descent, axes; indexing is 1-based |
 | YAML | `TLio.Yaml` | `YamlExecutionContext.CreateDefault()` | Dot-notation `$.a.b` | YAML source documents; multi-doc `---` parsed as array root |

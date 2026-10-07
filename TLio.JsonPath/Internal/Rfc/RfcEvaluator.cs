@@ -4,11 +4,32 @@ using System.Text.RegularExpressions;
 
 namespace TLio.JsonPath.Internal.Rfc;
 
-/// <summary>A node found by a query, with where it was found (<see cref="Loc"/> is null when location tracking is off).</summary>
-internal readonly struct Hit<TNode>(TNode node, Loc loc)
+/// <summary>
+/// A node found by a query and the last step that led to it: the container it sits in and the member name
+/// or array index it sits at. That is all the evaluator records — enough for the caller to address the slot
+/// (a JSON null has no node of its own) — and costs no allocation; the full normalized path is resolved on
+/// demand (see <see cref="PathResolver"/>).
+/// </summary>
+internal readonly struct Hit<TNode>
 {
-    public readonly TNode Node = node;
-    public readonly Loc Loc = loc;
+    public readonly TNode Node;
+    public readonly TNode Parent;
+    public readonly string Name;
+    public readonly int Index;
+
+    private Hit(TNode node, TNode parent, string name, int index)
+    {
+        Node = node;
+        Parent = parent;
+        Name = name;
+        Index = index;
+    }
+
+    public static Hit<TNode> Root(TNode node) => new(node, default, null, -1);
+
+    public static Hit<TNode> Member(TNode node, TNode parent, string name) => new(node, parent, name, -1);
+
+    public static Hit<TNode> Element(TNode node, TNode parent, int index) => new(node, parent, null, index);
 }
 
 /// <summary>Per-evaluation limits taken from <see cref="JsonPathOptions"/>.</summary>
@@ -65,10 +86,49 @@ internal sealed class RfcEvaluator<TNode, TModel> where TModel : struct, IJsonMo
 
     // ── queries ───────────────────────────────────────────────────────────────────────────
 
-    public List<Hit<TNode>> Select(QueryAst query, TNode root, bool track)
+    public List<Hit<TNode>> Select(QueryAst query, TNode root)
     {
-        var current = new List<Hit<TNode>>(1) { new(root, track ? Loc.Root : null) };
+        if (query.IsSingular)
+        {
+            // `$.a.b[0]`: one name or index per segment, so at most one node and no lists to build.
+            var single = new List<Hit<TNode>>(1);
+            if (TryFollowSingular(query, root, out var hit)) single.Add(hit);
+            return single;
+        }
+
+        var current = new List<Hit<TNode>>(1) { Hit<TNode>.Root(root) };
         return Run(query, current, root);
+    }
+
+    private bool TryFollowSingular(QueryAst q, TNode root, out Hit<TNode> result)
+    {
+        var node = root;
+        var hit = Hit<TNode>.Root(root);
+        foreach (var seg in q.Segments)
+        {
+            var sel = seg.Selectors[0];
+            var kind = _m.KindOf(node);
+            if (sel is NameSelector name)
+            {
+                if (kind != NodeKind.Object || !_m.TryGetMember(node, name.Name, out var member)) { result = default; return false; }
+                hit = Hit<TNode>.Member(member, node, name.Name);
+                node = member;
+            }
+            else
+            {
+                var idx = ((IndexSelector)sel).Index;
+                if (kind != NodeKind.Array) { result = default; return false; }
+                var len = _m.Count(node);
+                var i = idx >= 0 ? idx : len + idx;
+                if (i < 0 || i >= len) { result = default; return false; }
+                var element = _m.ElementAt(node, (int)i);
+                hit = Hit<TNode>.Element(element, node, (int)i);
+                node = element;
+            }
+        }
+
+        result = hit;
+        return true;
     }
 
     private List<Hit<TNode>> Run(QueryAst query, List<Hit<TNode>> current, TNode root)
@@ -89,10 +149,10 @@ internal sealed class RfcEvaluator<TNode, TModel> where TModel : struct, IJsonMo
         return current;
     }
 
-    /// <summary>Runs a (sub-)query from the root or the current node without tracking locations.</summary>
+    /// <summary>Runs a (sub-)query from the root or the current node.</summary>
     private List<Hit<TNode>> RunQuery(QueryAst q, TNode root, TNode current)
     {
-        var start = new List<Hit<TNode>>(1) { new(q.Absolute ? root : current, null) };
+        var start = new List<Hit<TNode>>(1) { Hit<TNode>.Root(q.Absolute ? root : current) };
         return Run(q, start, root);
     }
 
@@ -116,11 +176,11 @@ internal sealed class RfcEvaluator<TNode, TModel> where TModel : struct, IJsonMo
                 if (kind == NodeKind.Object)
                 {
                     _m.MemberAt(hit.Node, i, out var name, out var value);
-                    stack.Push((new Hit<TNode>(value, hit.Loc == null ? null : Loc.Member(hit.Loc, name, hit.Node)), depth + 1));
+                    stack.Push((Hit<TNode>.Member(value, hit.Node, name), depth + 1));
                 }
                 else
                 {
-                    stack.Push((new Hit<TNode>(_m.ElementAt(hit.Node, i), hit.Loc == null ? null : Loc.Element(hit.Loc, i, hit.Node)), depth + 1));
+                    stack.Push((Hit<TNode>.Element(_m.ElementAt(hit.Node, i), hit.Node, i), depth + 1));
                 }
             }
         }
@@ -140,7 +200,7 @@ internal sealed class RfcEvaluator<TNode, TModel> where TModel : struct, IJsonMo
         {
             case NameSelector name:
                 if (kind == NodeKind.Object && _m.TryGetMember(node, name.Name, out var v))
-                    output.Add(new Hit<TNode>(v, hit.Loc == null ? null : Loc.Member(hit.Loc, name.Name, node)));
+                    output.Add(Hit<TNode>.Member(v, node, name.Name));
                 break;
 
             case WildcardSelector:
@@ -150,14 +210,14 @@ internal sealed class RfcEvaluator<TNode, TModel> where TModel : struct, IJsonMo
                     for (var i = 0; i < n; i++)
                     {
                         _m.MemberAt(node, i, out var k, out var mv);
-                        output.Add(new Hit<TNode>(mv, hit.Loc == null ? null : Loc.Member(hit.Loc, k, node)));
+                        output.Add(Hit<TNode>.Member(mv, node, k));
                     }
                 }
                 else if (kind == NodeKind.Array)
                 {
                     var n = _m.Count(node);
                     for (var i = 0; i < n; i++)
-                        output.Add(new Hit<TNode>(_m.ElementAt(node, i), hit.Loc == null ? null : Loc.Element(hit.Loc, i, node)));
+                        output.Add(Hit<TNode>.Element(_m.ElementAt(node, i), node, i));
                 }
 
                 break;
@@ -168,7 +228,7 @@ internal sealed class RfcEvaluator<TNode, TModel> where TModel : struct, IJsonMo
                     var len = _m.Count(node);
                     var i = index.Index >= 0 ? index.Index : len + index.Index;
                     if (i >= 0 && i < len)
-                        output.Add(new Hit<TNode>(_m.ElementAt(node, (int)i), hit.Loc == null ? null : Loc.Element(hit.Loc, (int)i, node)));
+                        output.Add(Hit<TNode>.Element(_m.ElementAt(node, (int)i), node, (int)i));
                 }
 
                 break;
@@ -185,7 +245,7 @@ internal sealed class RfcEvaluator<TNode, TModel> where TModel : struct, IJsonMo
                     {
                         _m.MemberAt(node, i, out var k, out var mv);
                         if (EvalLogical(filter.Expression, root, mv))
-                            output.Add(new Hit<TNode>(mv, hit.Loc == null ? null : Loc.Member(hit.Loc, k, node)));
+                            output.Add(Hit<TNode>.Member(mv, node, k));
                     }
                 }
                 else if (kind == NodeKind.Array)
@@ -195,7 +255,7 @@ internal sealed class RfcEvaluator<TNode, TModel> where TModel : struct, IJsonMo
                     {
                         var el = _m.ElementAt(node, i);
                         if (EvalLogical(filter.Expression, root, el))
-                            output.Add(new Hit<TNode>(el, hit.Loc == null ? null : Loc.Element(hit.Loc, i, node)));
+                            output.Add(Hit<TNode>.Element(el, node, i));
                     }
                 }
 
@@ -220,14 +280,14 @@ internal sealed class RfcEvaluator<TNode, TModel> where TModel : struct, IJsonMo
             lower = Math.Min(Math.Max(nStart, 0), len);
             upper = Math.Min(Math.Max(nEnd, 0), len);
             for (var i = lower; i < upper; i += step)
-                output.Add(new Hit<TNode>(_m.ElementAt(node, (int)i), hit.Loc == null ? null : Loc.Element(hit.Loc, (int)i, node)));
+                output.Add(Hit<TNode>.Element(_m.ElementAt(node, (int)i), node, (int)i));
         }
         else
         {
             upper = Math.Min(Math.Max(nStart, -1), len - 1);
             lower = Math.Min(Math.Max(nEnd, -1), len - 1);
             for (var i = upper; lower < i; i += step)
-                output.Add(new Hit<TNode>(_m.ElementAt(node, (int)i), hit.Loc == null ? null : Loc.Element(hit.Loc, (int)i, node)));
+                output.Add(Hit<TNode>.Element(_m.ElementAt(node, (int)i), node, (int)i));
         }
     }
 

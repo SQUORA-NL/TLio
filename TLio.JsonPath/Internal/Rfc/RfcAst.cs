@@ -49,18 +49,17 @@ internal sealed class QueryAst(bool absolute, Segment[] segments)
     public readonly Segment[] Segments = segments;
 
     /// <summary>RFC 9535 §2.3.5.1: only child segments, each with exactly one name or index selector — so it yields at most one node.</summary>
-    public bool IsSingular
-    {
-        get
-        {
-            foreach (var s in Segments)
-            {
-                if (s.Descendant || s.Selectors.Length != 1) return false;
-                if (s.Selectors[0] is not (NameSelector or IndexSelector)) return false;
-            }
+    public readonly bool IsSingular = ComputeSingular(segments);
 
-            return true;
+    private static bool ComputeSingular(Segment[] segments)
+    {
+        foreach (var s in segments)
+        {
+            if (s.Descendant || s.Selectors.Length != 1) return false;
+            if (s.Selectors[0] is not (NameSelector or IndexSelector)) return false;
         }
+
+        return true;
     }
 }
 

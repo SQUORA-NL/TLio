@@ -177,6 +177,56 @@ public class ApiTests
         Assert.That(engine.Select(query, JsonNode.Parse(doc)).Single().NormalizedPath, Is.EqualTo(expectedPath));
     }
 
+    [TestCase(JsonPathDialect.Newtonsoft)]
+    [TestCase(JsonPathDialect.Rfc9535)]
+    public void Normalized_paths_of_a_large_selection_come_from_one_walk_and_are_right(JsonPathDialect dialect)
+    {
+        var items = new JsonArray();
+        for (var i = 0; i < 20_000; i++)
+            items.Add(new JsonObject { ["id"] = i, ["owner"] = new JsonObject { ["name"] = "n" + i }, ["gone"] = null });
+        var engine = new JsonPathEngine(new JsonPathOptions { Dialect = dialect });
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var matches = engine.Select("$[*].owner.name", items);
+        var paths = matches.Select(m => m.NormalizedPath).ToList();
+        sw.Stop();
+
+        Assert.That(paths, Has.Count.EqualTo(20_000));
+        Assert.That(paths[0], Is.EqualTo("$[0]['owner']['name']"));
+        Assert.That(paths[19_999], Is.EqualTo("$[19999]['owner']['name']"));
+        Assert.That(paths.Distinct().Count(), Is.EqualTo(20_000));
+        Assert.That(sw.Elapsed, Is.LessThan(TimeSpan.FromSeconds(5)), "per-match searching of the array would take far longer than one walk");
+
+        // A JSON null has no node, so its path comes from its slot.
+        var nulls = engine.Select("$[*].gone", items);
+        Assert.That(nulls, Has.Count.EqualTo(20_000));
+        Assert.That(nulls.All(m => m.Node == null), Is.True);
+        Assert.That(nulls[7].NormalizedPath, Is.EqualTo("$[7]['gone']"));
+    }
+
+    [Test]
+    public void Paths_are_relative_to_the_node_the_query_was_run_on_not_its_document()
+    {
+        var doc = JsonNode.Parse("""{"outer":{"inner":{"x":1}}}""")!;
+        var sub = doc["outer"]!;
+        var m = JsonPathEngine.Default.Select("$.inner.x", sub).Single();
+        Assert.That(m.NormalizedPath, Is.EqualTo("$['inner']['x']"));
+    }
+
+    [Test]
+    public void Asking_for_paths_from_many_threads_is_safe()
+    {
+        var engine = new JsonPathEngine(new JsonPathOptions { Dialect = JsonPathDialect.Rfc9535 });
+        var matches = engine.Select("$.store.book[*].price", Store);
+        var wrong = 0;
+        Parallel.For(0, 1000, i =>
+        {
+            var m = matches[i % matches.Count];
+            if (m.NormalizedPath != $"$['store']['book'][{i % matches.Count}]['price']") Interlocked.Increment(ref wrong);
+        });
+        Assert.That(wrong, Is.Zero);
+    }
+
     [Test]
     public void The_library_has_no_dependency_on_TLio_or_Newtonsoft()
     {

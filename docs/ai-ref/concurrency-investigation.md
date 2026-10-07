@@ -107,7 +107,10 @@ Impact:
 Conclusion:
 - Ensure each run gets its own input graph (parse fresh input or deep clone before execution).
 
-## 6) System.Text.Json path fetcher has higher CPU/allocation cost per selection (HIGH for throughput)
+## 6) System.Text.Json path fetcher has higher CPU/allocation cost per selection (RESOLVED — historical)
+
+> Resolved: `SystemTextJsonPathItemsFetcher` now evaluates paths with `TLio.JsonPath` directly on the `JsonNode`
+> tree; there is no serialize/parse/navigate round trip. The analysis below describes the previous design.
 
 Relevant implementation:
 - `TLio.Json.SystemText/SystemTextJsonPathItemsFetcher.cs`

@@ -100,4 +100,37 @@ internal sealed class NBooleanExpression(NOp op, object left, object right) : NE
 {
     public readonly object Left = left;
     public readonly object Right = right;
+
+    /// <summary>The left side is a literal or a path that selects at most one node by plain names and non-negative indexes.</summary>
+    public readonly bool LeftIsSimple = NSimplePath.IsSimple(left);
+
+    /// <summary>As <see cref="LeftIsSimple"/>, for the right side (a missing right side — an existence test — counts as simple).</summary>
+    public readonly bool RightIsSimple = right == null || NSimplePath.IsSimple(right);
+}
+
+internal static class NSimplePath
+{
+    /// <summary>
+    /// A path made only of <c>$</c>, <c>.name</c> / <c>['name']</c> and <c>[n]</c> with n ≥ 0 selects at most one node and cannot
+    /// raise an error (outside ErrorWhenNoMatch), so it can be followed directly instead of through a chain of lazy iterators.
+    /// </summary>
+    public static bool IsSimple(object side)
+    {
+        if (side is Prim) return true;
+        if (side is not List<NFilter> filters) return false;
+        for (var i = 0; i < filters.Count; i++)
+        {
+            switch (filters[i])
+            {
+                case NRootFilter when i == 0:
+                case NFieldFilter { Name: not null }:
+                case NArrayIndexFilter { Index: >= 0 }:
+                    break;
+                default:
+                    return false;
+            }
+        }
+
+        return true;
+    }
 }
