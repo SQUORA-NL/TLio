@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>A standalone JSONPath engine for System.Text.Json.Nodes.JsonNode: full RFC 9535 (including function extensions and I-Regexp, RFC 9485), plus a bit-for-bit Newtonsoft.Json-compatible dialect. No dependencies beyond the BCL — it does not reference TLio or Newtonsoft.Json.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageTags>jsonpath rfc9535 json system-text-json jsonnode newtonsoft-compatible</PackageTags>
+  </PropertyGroup>
+
+  <!--
+    This package is deliberately free of TLio. It is used by TLio.Json.SystemText, but it is a
+    JSONPath engine first: `dotnet add package TLio.JsonPath` and a System.Text.Json document
+    is all that is needed. Do not add a ProjectReference to any TLio.* project here.
+    System.Text.Json is in-box; there is no PackageReference either.
+  -->
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>TLio.JsonPath.Tests, PublicKey=$(TlioPublicKey)</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>TLio.JsonPath.Benchmarks, PublicKey=$(TlioPublicKey)</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>
