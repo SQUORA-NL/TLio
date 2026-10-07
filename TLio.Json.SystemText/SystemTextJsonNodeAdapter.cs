@@ -217,7 +217,12 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
         if (v.TryGetValue<double>(out var d)) return d;
         if (v.TryGetValue<long>(out var l)) return l;
         if (v.TryGetValue<decimal>(out var dec)) return (double)dec;
-        if (v.TryGetValue<string>(out var s) && double.TryParse(s, out var parsed)) return parsed;
+        // Same style and culture as the Newtonsoft adapter's TryGetDouble: invariant, so "2.5" is two and a half
+        // on every machine (the current culture read it as 25 under nl-NL, where '.' groups thousands).
+        if (v.TryGetValue<string>(out var s)
+            && double.TryParse(s, System.Globalization.NumberStyles.Float | System.Globalization.NumberStyles.AllowThousands,
+                System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
         return null;
     }
 

@@ -1,68 +1,62 @@
 using System.Collections.Concurrent;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using JsonCons.JsonPath;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 using TLio.Json.SystemText.Internal;
+using TLio.JsonPath;
 
 namespace TLio.Json.SystemText;
 
 /// <summary>
-/// IItemsFetcher implementation for System.Text.Json using JsonCons.JsonPath
-/// for path-expression evaluation.
+/// IItemsFetcher implementation for System.Text.Json. Path expressions are evaluated by
+/// <see cref="TLio.JsonPath"/> — a JSONPath engine that runs directly on <see cref="JsonNode"/>,
+/// so selected nodes are the live nodes of the document (parent references intact, nothing
+/// serialized or copied).
 ///
-/// Behavioral requirement: must match Newtonsoft JsonPathItemsFetcher exactly.
-/// All path expressions that work in JLio must produce the same node selection here.
-///
-/// Architecture:
-///   JsonCons.JsonPath operates on immutable JsonElement (System.Text.Json).
-///   To return mutable JsonNode results with intact parent references, we:
-///   1. Serialize the JsonNode tree to a JSON string and parse as JsonDocument.
-///   2. Use JsonSelector.SelectNodes to get NormalizedPath for each match.
-///   3. Navigate the ORIGINAL JsonNode tree using the same path components.
-///   This preserves parent relationships required by Replace/RemoveFromParent.
+/// Behavioural requirement: must match the Newtonsoft fetcher (<c>TLio.Json.JsonPathItemsFetcher</c>)
+/// exactly. The default <see cref="JsonPathDialect.Newtonsoft"/> dialect is built to give the same
+/// nodes in the same order, and the same errors, as <c>JToken.SelectTokens</c>. Pass
+/// <see cref="JsonPathDialect.Rfc9535"/> or <see cref="JsonPathDialect.Extended"/> to opt in to the
+/// standard instead.
 /// </summary>
 public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposable
 {
     private static readonly Regex IndirectPattern =
         new(@"=indirect\(([^)]+)\)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    // ── Selector cache (static: shared across all instances and executions) ────
-    // JsonSelector instances are immutable compiled objects — safe to cache and reuse.
-    private static readonly ConcurrentDictionary<string, JsonSelector> _selectorCache = new();
+    // One engine per dialect, shared by every fetcher: a fetcher is created per execution, and
+    // the engine is what owns the parsed-query cache, so it has to outlive the fetcher.
+    private static readonly ConcurrentDictionary<JsonPathDialect, JsonPathEngine> SharedEngines = new();
 
-    private static JsonSelector GetSelector(string path) =>
-        _selectorCache.GetOrAdd(path, JsonSelector.Parse);
+    private static JsonPathEngine SharedEngine(JsonPathDialect dialect) =>
+        SharedEngines.GetOrAdd(dialect, d => new JsonPathEngine(new JsonPathOptions { Dialect = d }));
 
-    // ── Per-execution document cache (instance: one fetcher = one execution) ──
-    // Caches the last serialised JSON string and its parsed JsonDocument.
-    // Invalidated automatically when data.ToJsonString() produces a different result
-    // (i.e., after any in-place node mutation by a preceding command).
-    private string?       _cachedJson;
-    private JsonDocument? _cachedDocument;
+    private readonly JsonPathEngine _engine;
 
-    /// <summary>
-    /// Number of times JsonDocument.Parse was invoked on this instance.
-    /// Exposed for test observability (cache-miss counter).
-    /// </summary>
-    internal int ParseCount { get; private set; }
-
-    private JsonDocument GetDocument(JsonNode data)
+    /// <summary>A fetcher that reads paths in the Newtonsoft dialect (identical to <c>TLio.Json</c>).</summary>
+    public SystemTextJsonPathItemsFetcher() : this(JsonPathDialect.Newtonsoft)
     {
-        var json = data.ToJsonString();
-        if (json != _cachedJson)
-        {
-            _cachedDocument?.Dispose();
-            _cachedDocument = JsonDocument.Parse(json);
-            _cachedJson     = json;
-            ParseCount++;
-        }
-        return _cachedDocument!;
     }
 
-    public void Dispose() => _cachedDocument?.Dispose();
+    /// <summary>A fetcher that reads paths in <paramref name="dialect"/>, with default limits.</summary>
+    public SystemTextJsonPathItemsFetcher(JsonPathDialect dialect) : this(SharedEngine(dialect))
+    {
+    }
+
+    /// <summary>A fetcher backed by a configured engine (custom functions, regex timeout, limits, …).</summary>
+    public SystemTextJsonPathItemsFetcher(JsonPathEngine engine)
+    {
+        _engine = engine ?? throw new ArgumentNullException(nameof(engine));
+    }
+
+    /// <summary>The engine evaluating this fetcher's paths.</summary>
+    public JsonPathEngine Engine => _engine;
+
+    /// <summary>Nothing to release: the fetcher no longer holds a serialized snapshot of the document.</summary>
+    public void Dispose()
+    {
+    }
 
     // ── Protocol constants ────────────────────────────────────────────────────
 
@@ -76,51 +70,42 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
     // ── Node selection ────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Select all nodes matching <paramref name="path"/> in <paramref name="data"/>.
-    /// Uses JsonCons.JsonPath on a serialized snapshot to get path components,
-    /// then navigates the original JsonNode tree to return live (mutable) nodes.
+    /// Select all nodes matching <paramref name="path"/> in <paramref name="data"/>, in the order the
+    /// dialect defines. An invalid path throws <see cref="JsonPathException"/> — as Newtonsoft's
+    /// <c>SelectTokens</c> throws — rather than quietly matching nothing.
     /// </summary>
     public SelectedNodes<JsonNode> SelectNodes(string path, JsonNode data)
     {
         if (data == null) return new SelectedNodes<JsonNode>();
 
-        try
-        {
-            var doc       = GetDocument(data);
-            var selector  = GetSelector(path);
-            var pathNodes = selector.SelectNodes(doc.RootElement);
-
-            var results = new List<JsonNode>();
-            foreach (var pathNode in pathNodes)
-            {
-                var node = NavigateByPath(data, pathNode.Path);
-                if (node != null)
-                    results.Add(node);
-            }
-
-            return new SelectedNodes<JsonNode>(results);
-        }
-        catch
-        {
-            return new SelectedNodes<JsonNode>();
-        }
+        var matches = _engine.Select(path, data);
+        var results = new List<JsonNode>(matches.Count);
+        foreach (var match in matches)
+            results.Add(ToNode(match, data));
+        return new SelectedNodes<JsonNode>(results);
     }
 
+    /// <summary>
+    /// The single node <paramref name="path"/> selects, or null. Like Newtonsoft's <c>SelectToken</c>, a path that
+    /// selects more than one node throws (<see cref="JsonPathErrorKind.MultipleResults"/>).
+    /// </summary>
     public JsonNode? SelectNode(string path, JsonNode data)
     {
         if (data == null) return null;
-        try
-        {
-            var doc       = GetDocument(data);
-            var selector  = GetSelector(path);
-            var pathNodes = selector.SelectNodes(doc.RootElement);
-            if (!pathNodes.Any()) return null;
-            return NavigateByPath(data, pathNodes[0].Path);
-        }
-        catch
-        {
-            return null;
-        }
+
+        var match = _engine.SelectSingle(path, data);
+        return match == null ? null : ToNode(match.Value, data);
+    }
+
+    /// <summary>
+    /// A match's node. System.Text.Json stores JSON null as a C# null, so a hit on a null value has no node:
+    /// hand out the placeholder that stands for the slot it occupies (see <see cref="NullSlots"/>).
+    /// </summary>
+    private static JsonNode ToNode(JsonPathMatch match, JsonNode root)
+    {
+        if (match.Node != null) return match.Node;
+        if (match.Parent == null) return root; // the document itself is null: nothing to point at
+        return NullSlots.CreatePlaceholder(match.Parent, match.Name, match.Index >= 0 ? match.Index : null);
     }
 
     // ── Path introspection ────────────────────────────────────────────────────
@@ -518,57 +503,5 @@ public class SystemTextJsonPathItemsFetcher : IItemsFetcher<JsonNode>, IDisposab
                 result.Add($"{basePath}[*]");
         }
         return result;
-    }
-
-    // ── Private: JsonNode navigation by NormalizedPath ────────────────────────
-
-    /// <summary>
-    /// Navigate the original <paramref name="root"/> JsonNode tree by following
-    /// the components of <paramref name="path"/> (from JsonCons.JsonPath).
-    /// This preserves parent references on the returned JsonNode.
-    /// </summary>
-    private static JsonNode? NavigateByPath(JsonNode root, NormalizedPath path)
-    {
-        JsonNode? current = root;
-        JsonNode? parent = null;
-        string? key = null;
-        int? index = null;
-
-        foreach (var component in path)
-        {
-            if (current == null) return null;
-            switch (component.ComponentKind)
-            {
-                case NormalizedPathNodeKind.Root:
-                    current = root;
-                    parent = null; key = null; index = null;
-                    break;
-
-                case NormalizedPathNodeKind.Name:
-                    if (current is not JsonObject obj || !obj.ContainsKey(component.GetName()))
-                        return null;
-                    parent = current; key = component.GetName(); index = null;
-                    current = obj[key];
-                    break;
-
-                case NormalizedPathNodeKind.Index:
-                    if (current is not JsonArray arr || component.GetIndex() >= arr.Count)
-                        return null;
-                    parent = current; index = component.GetIndex(); key = null;
-                    current = arr[index.Value];
-                    break;
-
-                default:
-                    return null;
-            }
-        }
-
-        // The path landed on a JSON null, which System.Text.Json stores as C# null — there is
-        // no node to return. Hand out a placeholder that remembers the slot instead, so null
-        // nodes are as selectable here as they are in every other format (see NullSlots).
-        if (current == null && parent != null)
-            return NullSlots.CreatePlaceholder(parent, key, index);
-
-        return current;
     }
 }

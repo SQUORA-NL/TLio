@@ -1,22 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>TLio System.Text.Json adapter: INodeAdapter and IItemsFetcher implementations backed by System.Text.Json.Nodes.JsonNode and a JsonPath library. Provides identical transformation behaviour to TLio.Json (Newtonsoft) but using the in-box System.Text.Json stack.</Description>
+    <Description>TLio System.Text.Json adapter: INodeAdapter and IItemsFetcher implementations backed by System.Text.Json.Nodes.JsonNode and the TLio.JsonPath engine. Provides identical transformation behaviour to TLio.Json (Newtonsoft) — the same JSONPath dialect, node for node — but using the in-box System.Text.Json stack. RFC 9535 is available as an opt-in dialect.</Description>
     <IsPackable>true</IsPackable>
-    <PackageTags>tlio scripting json systemtext rfc9535</PackageTags>
+    <PackageTags>tlio scripting json systemtext jsonpath rfc9535</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <!--
       System.Text.Json is in-box from .NET 6 onward; no PackageReference needed.
-      For JsonPath support we use JsonCons.JsonPath which implements the RFC 9535
-      JsonPath standard and is broadly compatible with Newtonsoft's SelectTokens.
+      JSONPath comes from TLio.JsonPath, a standalone engine that runs on JsonNode directly and
+      has no dependencies of its own (it replaces JsonCons.JsonPath).
     -->
-    <PackageReference Include="JsonCons.JsonPath" Version="1.1.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
+    <ProjectReference Include="..\TLio.JsonPath\TLio.JsonPath.csproj" />
   </ItemGroup>
 
   <!-- Declared here rather than in an AssemblyInfo.cs so the public key stays in one place
