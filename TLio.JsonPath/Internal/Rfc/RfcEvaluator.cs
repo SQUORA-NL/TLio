@@ -12,13 +12,19 @@ internal readonly struct Hit<TNode>(TNode node, Loc loc)
 }
 
 /// <summary>Per-evaluation limits taken from <see cref="JsonPathOptions"/>.</summary>
-internal readonly struct EvalSettings(TimeSpan regexTimeout, int maxDepth, bool errorWhenNoMatch, bool emulateDates, bool strictRegexp)
+internal readonly struct EvalSettings(TimeSpan regexTimeout, int maxDepth, bool errorWhenNoMatch, bool emulateDates, bool strictRegexp, bool negativeIndexesFromEnd = false)
 {
     public readonly bool StrictRegexp = strictRegexp;
+
+    /// <summary>
+    /// Extended dialect only: Newtonsoft's <c>[-1]</c> throws an ArgumentOutOfRangeException (it never guarded the lower
+    /// bound), which is no answer to preserve; the Extended dialect gives the RFC 9535 answer — count from the end.
+    /// </summary>
     public readonly TimeSpan RegexTimeout = regexTimeout;
     public readonly int MaxDepth = maxDepth;
     public readonly bool ErrorWhenNoMatch = errorWhenNoMatch;
     public readonly bool EmulateDates = emulateDates;
+    public readonly bool NegativeIndexesFromEnd = negativeIndexesFromEnd;
 }
 
 /// <summary>ValueType result: Nothing, a node of the document, or a detached primitive (a literal, a computed length).</summary>

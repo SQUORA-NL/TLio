@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json.Nodes;
 using TLio.JsonPath.Internal;
+using TLio.JsonPath.Internal.Newtonsoft;
 using TLio.JsonPath.Internal.Rfc;
 
 namespace TLio.JsonPath;
@@ -76,9 +77,44 @@ public sealed class JsonPathEngine
         {
             case JsonPathDialect.Rfc9535:
                 return CompileRfc(path, JsonPathDialect.Rfc9535);
+
+            case JsonPathDialect.Extended:
+                // Newtonsoft first: anything it accepts keeps its Newtonsoft meaning (a strict superset).
+                // Only text it rejects is read as RFC 9535.
+                JsonPathException newtonsoftError;
+                try
+                {
+                    return CompileNewtonsoft(path);
+                }
+                catch (JsonPathException ex) when (ex.Kind == JsonPathErrorKind.Syntax)
+                {
+                    newtonsoftError = ex;
+                }
+
+                try
+                {
+                    return CompileRfc(path, JsonPathDialect.Rfc9535);
+                }
+                catch (JsonPathException rfcError) when (rfcError.Kind == JsonPathErrorKind.Syntax)
+                {
+                    throw new JsonPathException(
+                        $"not valid in the Newtonsoft dialect ({newtonsoftError.Message}) and not valid RFC 9535 ({rfcError.Message})",
+                        JsonPathErrorKind.Syntax,
+                        rfcError.Position);
+                }
+
             default:
-                throw new NotImplementedException();
+                return CompileNewtonsoft(path);
         }
+    }
+
+    private JsonPathQuery CompileNewtonsoft(string path)
+    {
+        var filters = NewtonsoftParser.Parse(path);
+        var settings = Options.Dialect == JsonPathDialect.Extended
+            ? new EvalSettings(Options.RegexTimeout, Options.MaxDepth, Options.ErrorWhenNoMatch, Options.EmulateNewtonsoftDates, Options.StrictIRegexp, negativeIndexesFromEnd: true)
+            : _settings;
+        return new JsonPathQuery(path, JsonPathDialect.Newtonsoft, new NewtonsoftPlan(filters, settings));
     }
 
     private JsonPathQuery CompileRfc(string path, JsonPathDialect reported)

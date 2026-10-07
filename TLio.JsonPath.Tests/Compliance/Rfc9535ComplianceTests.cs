@@ -61,16 +61,22 @@ public class Rfc9535ComplianceTests
         if (KnownExceptions.ContainsKey(c.Name))
             Assert.Ignore(KnownExceptions[c.Name]);
 
+        AssertCase(Engine, c);
+    }
+
+    /// <summary>Asserts one suite entry against <paramref name="engine"/> (also used by the Extended-dialect tests).</summary>
+    public static void AssertCase(JsonPathEngine engine, Case c)
+    {
         if (c.Invalid)
         {
-            var ex = Assert.Throws<JsonPathException>(() => Engine.Parse(c.Selector), $"'{c.Selector}' must be rejected");
+            var ex = Assert.Throws<JsonPathException>(() => engine.Parse(c.Selector), $"'{c.Selector}' must be rejected");
             Assert.That(ex!.Kind, Is.EqualTo(JsonPathErrorKind.Syntax));
             Assert.That(ex.Position, Is.GreaterThanOrEqualTo(0), "a parse error carries the position of the offending character");
             return;
         }
 
         var root = JsonNode.Parse(c.DocumentJson!);
-        var matches = Engine.Select(c.Selector, root);
+        var matches = engine.Select(c.Selector, root);
 
         // Any one of the listed alternatives may be the answer (member order is implementation-defined for some entries).
         var ok = false;
