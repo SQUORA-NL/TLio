@@ -65,6 +65,9 @@ public sealed class JsonPathEngine
     /// <summary>Parses (cached) and runs a query, returning the first match or null.</summary>
     public JsonPathMatch? SelectFirst(string path, JsonNode? root) => Parse(path).SelectFirst(root);
 
+    /// <summary>Parses (cached) and tests whether the query selects at least one node.</summary>
+    public bool Exists(string path, JsonNode? root) => Parse(path).Exists(root);
+
     /// <summary>Parses (cached) and runs a query that must select at most one node (Newtonsoft's <c>SelectToken</c>).</summary>
     public JsonPathMatch? SelectSingle(string path, JsonNode? root) => Parse(path).SelectSingle(root);
 

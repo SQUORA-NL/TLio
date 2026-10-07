@@ -165,9 +165,12 @@ internal sealed class NewtonsoftEvaluator<TNode, TModel> where TModel : struct, 
 
                 var token = e.Current;
                 yield return token;
-                if (depth + 1 > _settings.MaxDepth)
+
+                // Depth counts containers entered. A JProperty wrapper and its value are one level, not two.
+                var nextDepth = token.IsProperty ? depth : depth + 1;
+                if (nextDepth > _settings.MaxDepth && (token.IsProperty || _m.KindOf(token.Node) is NodeKind.Object or NodeKind.Array))
                     throw new JsonPathException($"document is nested deeper than the configured limit of {_settings.MaxDepth}", JsonPathErrorKind.Limit);
-                stack.Push((Children(token).GetEnumerator(), depth + 1));
+                stack.Push((Children(token).GetEnumerator(), nextDepth));
             }
         }
         finally
