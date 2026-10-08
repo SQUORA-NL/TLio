@@ -41,9 +41,11 @@ jobs:
       - name: Build
         run: dotnet build --no-restore -c Release -warnaserror
 
+      # -m:1: one test project at a time. With three target frameworks `dotnet test` otherwise runs three
+      # test hosts at once, and on a two-core runner that starves the timing assertions in the performance tests.
       - name: Test
         run: >
-          dotnet test --no-build -c Release
+          dotnet test --no-build -c Release -m:1
           --logger "trx" --results-directory ./test-results
           --collect:"XPlat Code Coverage"
 
@@ -118,7 +120,8 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
-      DOTNET_ROLLFORWARD: LatestMajor
+      # NB the name: DOTNET_ROLL_FORWARD (with the underscore). DOTNET_ROLLFORWARD is not read and the run silently stays on .NET 10.
+      DOTNET_ROLL_FORWARD: LatestMajor
       DOTNET_ROLL_FORWARD_TO_PRERELEASE: '1'
     steps:
       - uses: actions/checkout@v4
@@ -140,4 +143,4 @@ jobs:
           dotnet test TLio.JsonPath.Tests --no-build -c Release -f net10.0 --filter "FullyQualifiedName~RuntimeReport" --logger "console;verbosity=detailed" | tee runtime.log
           grep -E "RUNTIME: \.NET 1[1-9]" runtime.log
       - name: Test on the newer runtime
-        run: dotnet test --no-build -c Release -f net10.0
+        run: dotnet test --no-build -c Release -f net10.0 -m:1

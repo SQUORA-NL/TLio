@@ -102,8 +102,9 @@ thread-safety and precompilation guidance is in
 
 | Project | Purpose |
 |---|---|
-| `TLio.Json` | JSON adapter (Newtonsoft.Json + JsonPath) |
-| `TLio.Json.SystemText` | JSON adapter (System.Text.Json + JsonPath.Net / RFC 9535) |
+| `TLio.Json` | JSON adapter (Newtonsoft.Json + its JSONPath) |
+| `TLio.Json.SystemText` | JSON adapter (System.Text.Json + `TLio.JsonPath`); Newtonsoft's path dialect by default, RFC 9535 opt-in |
+| `TLio.JsonPath` | Standalone JSONPath engine for `System.Text.Json.Nodes.JsonNode` — a drop-in for Newtonsoft's `SelectToken`/`SelectTokens`, plus full RFC 9535. No dependencies, usable without the rest of TLio ([README](TLio.JsonPath/README.md)) |
 | `TLio.Xml` | XML adapter — slash-path (`SlashPathItemsFetcher`) and native XPath (`NativeXPathItemsFetcher`), both anchored on the document node |
 | `TLio.Yaml` | YAML adapter (YamlDotNet, dot-notation) |
 
@@ -139,6 +140,8 @@ paid-licence and Newtonsoft-bound.
 | `TLio.UnitTests` | Core / Commands / Engine / Client tests |
 | `TLio.Json.Tests` | Newtonsoft JSON adapter tests |
 | `TLio.Json.SystemText.Tests` | System.Text.Json adapter tests |
+| `TLio.JsonPath.Tests` | JSONPath engine: RFC 9535 compliance suite, differential tests against Newtonsoft.Json, divergence table |
+| `TLio.Json.AdapterParity.Tests` | Every fixture and the command/function sweep through both JSON adapters; outputs must be identical |
 | `TLio.Functions.Tests` | Built-in + extension-pack function tests |
 | `TLio.Xml.Tests` | XML adapter tests (slash-path + XPath fixtures) |
 | `TLio.Yaml.Tests` | YAML adapter tests |
@@ -205,3 +208,7 @@ The framework is fully implemented and in active development (specs 001–019).
 - An MCP server (`TLio.Mcp`) exposes execution, gap analysis and reference lookup to agents.
 - Unified script notation is documented in `docs/ai-ref/notation-reference.md`.
 - All library packages are NuGet-packable; CI/CD pipelines publish preview and release builds.
+
+## Target frameworks
+
+All libraries build for `net8.0`, `net9.0` and `net10.0`, each tested on its own runtime; later runtimes use the `net10.0` build and are checked in CI. .NET 8 and 9 reach end of support on 10 November 2026. See [docs/target-frameworks.md](docs/target-frameworks.md).
