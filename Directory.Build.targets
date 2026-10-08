@@ -4,8 +4,10 @@
     NuGet readme wiring.
 
     Every packable project ships its own README.md from its project directory.
-    Imported *after* the SDK's default item globs so `None Update` retargets the
-    existing item instead of adding a duplicate (NETSDK1022).
+    Remove-then-Include rather than `Update`: a project that targets several frameworks packs from the
+    outer build, where the SDK's default item globs do not exist, so `Update` would match nothing and the
+    readme would silently go missing (NU5039). Remove-then-Include is correct in both the outer and the
+    inner builds and never adds a duplicate (NETSDK1022).
 
     PackageReadmeFile is only set when the file actually exists, otherwise pack
     fails with NU5039 on projects that have no readme.
@@ -15,7 +17,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' == 'true' AND Exists('$(MSBuildProjectDirectory)\README.md')">
-    <None Update="README.md" Pack="true" PackagePath="\" />
+    <None Remove="README.md" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <!--

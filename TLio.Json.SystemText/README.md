@@ -2,7 +2,7 @@
 
 The **System.Text.Json** adapter for [TLio](https://github.com/SQUORA-NL/TLio) —
 `INodeAdapter<JsonNode>` and `IItemsFetcher<JsonNode>` implementations backed by
-`System.Text.Json.Nodes` and the [`TLio.JsonPath`](../TLio.JsonPath/README.md) engine, which evaluates
+`System.Text.Json.Nodes` and the [`TLio.JsonPath`](https://github.com/SQUORA-NL/TLio/blob/main/TLio.JsonPath/README.md) engine, which evaluates
 paths directly on the document's own nodes.
 
 Newtonsoft.Json is **not** referenced. Transformation behaviour is identical to `TLio.Json`: the
@@ -71,7 +71,7 @@ SystemTextJsonExecutionContext.Create(new JsonPathEngine(new JsonPathOptions { D
 | Matches `TLio.Json` | exactly | where the standard and Newtonsoft agree | wherever Newtonsoft has an answer |
 
 The full syntax tables, the divergence table and the configuration options are in the
-[`TLio.JsonPath` README](../TLio.JsonPath/README.md).
+[`TLio.JsonPath` README](https://github.com/SQUORA-NL/TLio/blob/main/TLio.JsonPath/README.md).
 
 ### Behaviour worth knowing
 

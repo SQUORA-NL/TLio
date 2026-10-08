@@ -104,7 +104,7 @@ public class SystemTextFixtureTests
         Assert.That(result.Success, Is.True,
             $"Engine reported failure. Log:\n{string.Join("\n", context.GetLogEntries().Select(e => $"  [{e.Level}] {e.Group}: {e.Message}"))}");
 
-        Assert.That(JsonNode.DeepEquals(result.Data, expected), Is.True,
+        Assert.That(_adapter.DeepEquals(result.Data, expected), Is.True,
             $"Result mismatch.\n  Expected: {expected}\n  Actual:   {result.Data}");
     }
 }

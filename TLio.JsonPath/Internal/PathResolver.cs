@@ -48,6 +48,18 @@ internal sealed class PathResolver<TNode, TModel> : PathResolver where TModel : 
 
     private Dictionary<object, string> Build()
     {
+        try
+        {
+            return BuildCore();
+        }
+        finally
+        {
+            JsonNodeModel.EndOperation();
+        }
+    }
+
+    private Dictionary<object, string> BuildCore()
+    {
         var paths = new Dictionary<object, string>(ReferenceEqualityComparer.Instance);
         var wanted = new HashSet<object>(ReferenceEqualityComparer.Instance);
         if (_matches != null)

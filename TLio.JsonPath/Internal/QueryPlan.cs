@@ -25,13 +25,20 @@ internal sealed class RfcPlan : QueryPlan
 
     public override void Execute(JsonNode root, List<JsonPathMatch> output, int limit)
     {
-        var evaluator = new RfcEvaluator<JsonNode, JsonNodeModel>(_settings);
-        var hits = evaluator.Select(_ast, root);
-        var resolver = new PathResolver<JsonNode, JsonNodeModel>(root);
-        var n = Math.Min(hits.Count, limit);
-        for (var i = 0; i < n; i++)
-            output.Add(new JsonPathMatch(hits[i].Node, hits[i].Parent, hits[i].Name, hits[i].Index, resolver));
-        resolver.SetMatches(output);
+        try
+        {
+            var evaluator = new RfcEvaluator<JsonNode, JsonNodeModel>(_settings);
+            var hits = evaluator.Select(_ast, root);
+            var resolver = new PathResolver<JsonNode, JsonNodeModel>(root);
+            var n = Math.Min(hits.Count, limit);
+            for (var i = 0; i < n; i++)
+                output.Add(new JsonPathMatch(hits[i].Node, hits[i].Parent, hits[i].Name, hits[i].Index, resolver));
+            resolver.SetMatches(output);
+        }
+        finally
+        {
+            JsonNodeModel.EndOperation();
+        }
     }
 }
 
@@ -53,6 +60,18 @@ internal sealed class NewtonsoftPlan : QueryPlan
     }
 
     public override void Execute(JsonNode root, List<JsonPathMatch> output, int limit)
+    {
+        try
+        {
+            Run(root, output, limit);
+        }
+        finally
+        {
+            JsonNodeModel.EndOperation();
+        }
+    }
+
+    private void Run(JsonNode root, List<JsonPathMatch> output, int limit)
     {
         var evaluator = new NewtonsoftEvaluator<JsonNode, JsonNodeModel>(_settings);
         var rootToken = new NToken<JsonNode>(root, null, null, -1, false);

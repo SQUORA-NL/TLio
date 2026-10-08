@@ -481,7 +481,50 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     // ── Equality ─────────────────────────────────────────────────────────────
 
     public bool DeepEquals(JsonNode a, JsonNode b) =>
-        JsonNode.DeepEquals(NullSlots.ToStorable(a), NullSlots.ToStorable(b));
+        ValueEquals(NullSlots.ToStorable(a), NullSlots.ToStorable(b));
+
+    /// <summary>
+    /// Structural equality with numbers compared by value, so <c>42</c> equals <c>42.0</c> and <c>1e2</c> equals <c>100</c> on
+    /// every runtime. (<c>JsonNode.DeepEquals</c> does that from .NET 9 on, but on .NET 8 it compares the numbers' representation,
+    /// which made <c>compare</c> and <c>merge</c> answer differently depending on the runtime.) Object members are matched by
+    /// name, not position; JSON null (a C# null here) equals only itself.
+    /// </summary>
+    internal static bool ValueEquals(JsonNode? a, JsonNode? b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        if (a is null || b is null) return false;
+
+        switch (a)
+        {
+            case JsonObject oa:
+                if (b is not JsonObject ob || oa.Count != ob.Count) return false;
+                foreach (var kv in oa)
+                {
+                    if (!ob.TryGetPropertyValue(kv.Key, out var other) || !ValueEquals(kv.Value, other)) return false;
+                }
+
+                return true;
+
+            case JsonArray aa:
+                if (b is not JsonArray ab || aa.Count != ab.Count) return false;
+                for (var i = 0; i < aa.Count; i++)
+                    if (!ValueEquals(aa[i], ab[i])) return false;
+                return true;
+
+            default:
+                if (b is JsonObject || b is JsonArray) return false;
+                var ka = a.GetValueKind();
+                if (ka != b.GetValueKind()) return false;
+                if (ka == System.Text.Json.JsonValueKind.Number)
+                    return TryDecimal(a, out var da) && TryDecimal(b, out var db) ? da == db : a.ToJsonString() == b.ToJsonString();
+                if (ka == System.Text.Json.JsonValueKind.String)
+                    return string.Equals(((JsonValue)a).GetValue<string>(), ((JsonValue)b).GetValue<string>(), StringComparison.Ordinal);
+                return true; // true / false / null: the kind decides
+        }
+    }
+
+    private static bool TryDecimal(JsonNode n, out decimal value) =>
+        decimal.TryParse(n.ToJsonString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value);
 
     // ── Serialisation ─────────────────────────────────────────────────────────
 
