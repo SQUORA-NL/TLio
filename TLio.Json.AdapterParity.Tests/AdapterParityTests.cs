@@ -69,7 +69,7 @@ public class AdapterParityTests
         }
     }
 
-    private sealed record Outcome(bool Threw, bool Success, string? Json, string Detail);
+    internal sealed record Outcome(bool Threw, bool Success, string? Json, string Detail);
 
     /// <summary>
     /// The repository's own fixture loaders read documents with <c>DateParseHandling.None</c> — date-looking
@@ -90,6 +90,10 @@ public class AdapterParityTests
         NodeAdapter = new SystemTextJsonNodeAdapter(),
         Logger = new TLio.Core.Models.ExecutionLogger(),
     };
+
+    internal static Outcome RunNewtonsoftPublic(string i, string s) => RunNewtonsoft(i, s);
+    internal static Outcome RunSystemTextPublic(string i, string s) => RunSystemText(i, s);
+    internal static string CanonicalPublic(string j) => Canonical(j);
 
     private static Outcome RunNewtonsoft(string inputJson, string scriptJson)
     {
