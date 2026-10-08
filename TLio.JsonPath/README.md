@@ -1,13 +1,33 @@
 # TLio.JsonPath
 
-A JSONPath engine for **`System.Text.Json.Nodes.JsonNode`**. It reads three dialects — full
-**RFC 9535**, a **bit-for-bit Newtonsoft.Json-compatible** one, and a superset of both — and has
-**no dependencies**: not Newtonsoft.Json, not JsonCons, and not TLio. It is the JSONPath engine
-behind [`TLio.Json.SystemText`](../TLio.Json.SystemText/README.md), but it is a package in its own right:
+**Moving from Newtonsoft.Json to System.Text.Json and still need `SelectToken` / `SelectTokens`?** This is a
+drop-in: the same JSONPath strings select the **same nodes, in the same order, failing in the same places**, on
+`System.Text.Json.Nodes.JsonNode`. That is not a claim, it is a test: every query in the suite is run through
+Newtonsoft.Json 13.0.4 and through this engine and the results must agree (≈1.8 million comparisons in the long soak).
+
+Want the standard instead? The same engine reads **RFC 9535** in full — function extensions, I-Regexp, normalized paths —
+and passes the official compliance suite (706 / 706). A third dialect, `Extended`, accepts both. No dependencies: not
+Newtonsoft.Json, not JsonCons, not TLio. It is the JSONPath engine behind
+[`TLio.Json.SystemText`](https://github.com/SQUORA-NL/TLio/blob/main/TLio.Json.SystemText/README.md), but it is a package in its own right:
 
 ```sh
 dotnet add package TLio.JsonPath
 ```
+
+Coming from Newtonsoft — the default dialect is yours, nothing to configure:
+
+```csharp
+using System.Text.Json.Nodes;
+using TLio.JsonPath;
+
+JsonNode doc = JsonNode.Parse(json)!;
+var engine = JsonPathEngine.Default;                        // Newtonsoft's dialect
+
+IReadOnlyList<JsonPathMatch> all = engine.Select("$.store.book[?(@.price < 10)].title", doc);   // ≈ SelectTokens
+JsonPathMatch?               one = engine.SelectSingle("$.store.book[0].title", doc);            // ≈ SelectToken (>1 match throws)
+```
+
+Wanting RFC 9535:
 
 ```csharp
 using System.Text.Json.Nodes;
@@ -186,14 +206,25 @@ by Unicode scalar value: `.` and negated classes consume a surrogate pair as one
 
 ## Dates
 
-`Newtonsoft.Json` parses a string like `"2020-06-15T12:30:45+02:00"` into a *date value* the moment it reads
-the document, and from then on it compares as a date: against a string it is converted back with
-Newtonsoft's own ISO writer (so `…00.50Z` becomes `…00.5Z`, and an offset is rewritten to **local time**), and
-`=~` never matches it. A System.Text.Json document still holds a string, so with
-`EmulateNewtonsoftDates` (default `true`) the Newtonsoft dialect applies the same recognition at
-comparison time, with Newtonsoft's own parser transcribed — including its dependence on the
-machine's time zone. Set it to `false` if you parsed the Newtonsoft document with
-`DateParseHandling.None`. The RFC dialect never treats strings as dates.
+Newtonsoft.Json parses a string like `"2020-06-15T12:30:45+02:00"` into a *date value* the moment it reads the
+document, and from then on it compares as a date. A System.Text.Json document still holds a string, so with
+`EmulateNewtonsoftDates` (default `true`) the Newtonsoft dialect applies the same recognition at comparison time,
+with Newtonsoft's own parser transcribed. What that means in practice:
+
+| Comparison | Behaviour | Depends on the machine's time zone? |
+|---|---|---|
+| `==` / `!=` against a string, date stored as `…Z` or with no zone | the date is written back with Newtonsoft's ISO writer and compared as text, so `…00.50Z` is *not* equal to `'…00.50Z'` (it is written as `…00.5Z`) | **no** |
+| `==` / `!=`, date stored with a numeric offset (`+02:00`) | the offset is converted to **local time** before writing back | **yes** |
+| `<` `<=` `>` `>=` against a string | the string is converted with `Convert.ToDateTime`, which yields **local time**, and ticks are compared | **yes** |
+| `=~` | never matches a date-looking value (it is not a string any more) | no |
+
+The time-zone dependence is Newtonsoft's own — the same query on the same document gives the same answer in
+Newtonsoft.Json on the same machine — and the tests hold the engine to it. But it does mean the *same query can answer
+differently on a laptop and in a container* (containers usually run in UTC). If your documents hold dates and you did not
+rely on Newtonsoft's behaviour, set `EmulateNewtonsoftDates = false`: date-looking strings are then plain strings
+everywhere, and every comparison is machine-independent. (Do the same if you parsed the Newtonsoft document with
+`DateParseHandling.None`.) The default stays `true` because the Newtonsoft dialect exists to give Newtonsoft's answers.
+The RFC 9535 dialect never treats strings as dates.
 
 ## Limits and safety
 
@@ -204,6 +235,14 @@ machine's time zone. Set it to `false` if you parsed the Newtonsoft document wit
 * Parsed queries are immutable and thread-safe; the cache is bounded.
 * Numbers: integers are exact (`long`, and `BigInteger` in the Newtonsoft dialect); an integer and a
   double are compared exactly, not through a lossy conversion.
+
+## Target frameworks
+
+`net10.0` only, for now. Widening it is planned but deliberately not done blind: the engine currently reads object members
+by position with `JsonObject.GetAt`, an API that older runtimes lack, so a `net8.0` build needs a fallback; and
+`netstandard2.0` / `net48` would additionally need the `System.Text.Json` NuGet package, which ends the
+"no dependencies" property. Each added target also has to carry the whole test suite on a real runtime for that target —
+this repository's CI currently runs .NET 10. If you need an older target, please say which on the issue tracker.
 
 ## How this is verified
 
@@ -219,16 +258,18 @@ The test project depends on Newtonsoft.Json as an **oracle** only; the package d
 
 ## Performance
 
-Measured with BenchmarkDotNet (`TLio.JsonPath.Benchmarks`), one run on an Apple M4 Pro / .NET 10; the full table,
-method and caveats are in [`docs/benchmarks/jsonpath-engine.md`](../docs/benchmarks/jsonpath-engine.md). They are
-measurements, not promises.
+Measured with BenchmarkDotNet (`TLio.JsonPath.Benchmarks`), one run on an Apple M4 Pro / .NET 10. The full tables, method and
+caveats are in [`docs/benchmarks/jsonpath-engine.md`](https://github.com/SQUORA-NL/TLio/blob/main/docs/benchmarks/jsonpath-engine.md).
+They are measurements, not promises, and they include the cases where this engine is **not** the fastest:
 
-* Against the JsonCons-based strategy this engine replaces (serialize the tree, parse it, select, navigate back):
-  faster in every case measured — from 2.3× on a small filter to over 100,000× for an indexed lookup in a
-  20,000-element document, which no longer serializes it.
-* Against Newtonsoft's own `SelectTokens`: faster on plain lookups (2–3×), on a large filter (1.8×) and on a large
-  descendant query (1.35×), slower where a query fans out over many nodes (a 20,000-element wildcard: 1.9×) and on a
+* **Against Newtonsoft's `SelectTokens`:** faster on plain lookups (2–3×), a large filter (2×) and a large descendant
+  query (1.3×); slower where a query fans out over many nodes (a 20,000-element wildcard: 2.6× the time) and on a
   four-element filter (1.4×) — Newtonsoft enumerates lazily and returns no list.
+* **Against the other RFC 9535 engines:** JsonPath.Net is 2–9× slower than this engine in every case measured.
+  Hyperbee.Json is faster on plain lookups (1.4–1.7×), the small descendant query and a 20,000-element wildcard, and
+  slower on filters (1.5–1.9×).
+* **Against the JsonCons-based strategy this package replaced** in `TLio.Json.SystemText`: faster in every case, from 2× on
+  a small filter to over 100,000× for an indexed lookup in a 20,000-element document (which no longer gets serialized).
 
 ## Migrating from the JsonCons-based `TLio.Json.SystemText`
 

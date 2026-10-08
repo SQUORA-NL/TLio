@@ -61,8 +61,8 @@
     <IsPackable>false</IsPackable>
     <Authors>Frans van Ek</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/FransVanEk/TLio</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/FransVanEk/TLio</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/SQUORA-NL/TLio</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SQUORA-NL/TLio</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
