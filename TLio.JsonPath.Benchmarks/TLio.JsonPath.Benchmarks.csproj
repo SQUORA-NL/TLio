@@ -13,6 +13,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
 
     <!-- Hyperbee.Json declares Microsoft.SourceLink.GitHub (a build-time tool) as a runtime dependency, which drags in

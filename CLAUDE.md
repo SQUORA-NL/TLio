@@ -125,6 +125,12 @@ Two rules to keep in mind when touching an adapter:
 
 Known, deliberate divergences are section E of `docs/behaviour-decisions.md`.
 
+## Target frameworks
+
+All libraries and tests build for `net8.0;net9.0;net10.0` (set once in `Directory.Build.props`); applications are `net10.0`. New runtimes
+are added when they ship, old ones dropped only in a major version, conditionals use `NETx_0_OR_GREATER`, and every target is tested on its own
+runtime. Details and the rules: `docs/target-frameworks.md`.
+
 ## Commands
 
 ```sh

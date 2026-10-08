@@ -34,6 +34,24 @@ public class SystemTextJsonNodeAdapterTests
         }
     }
 
+    [TestCase("42", "42.0", true)]
+    [TestCase("1e2", "100", true)]
+    [TestCase("0.10", "0.1", true)]
+    [TestCase("42", "43", false)]
+    [TestCase("\"42\"", "42", false)]
+    [TestCase("true", "true", true)]
+    [TestCase("true", "false", false)]
+    [TestCase("null", "null", true)]
+    [TestCase("{\"a\":1,\"b\":[1,2.0]}", "{\"b\":[1.0,2],\"a\":1}", true)]
+    [TestCase("{\"a\":1}", "{\"a\":1,\"b\":2}", false)]
+    [TestCase("[1,2]", "[2,1]", false)]
+    [TestCase("[]", "{}", false)]
+    public void DeepEquals_ComparesNumbersByValueOnEveryRuntime(string left, string right, bool expected)
+    {
+        // JsonNode.DeepEquals treats 42 and 42.0 as different on .NET 8 and equal from .NET 9; the adapter must not depend on the runtime.
+        Assert.That(_adapter.DeepEquals(JsonNode.Parse(left)!, JsonNode.Parse(right)!), Is.EqualTo(expected));
+    }
+
     // ── Type queries ──────────────────────────────────────────────────────────
 
     [Test]

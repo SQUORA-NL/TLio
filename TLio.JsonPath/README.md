@@ -238,11 +238,17 @@ The RFC 9535 dialect never treats strings as dates.
 
 ## Target frameworks
 
-`net10.0` only, for now. Widening it is planned but deliberately not done blind: the engine currently reads object members
-by position with `JsonObject.GetAt`, an API that older runtimes lack, so a `net8.0` build needs a fallback; and
-`netstandard2.0` / `net48` would additionally need the `System.Text.Json` NuGet package, which ends the
-"no dependencies" property. Each added target also has to carry the whole test suite on a real runtime for that target —
-this repository's CI currently runs .NET 10. If you need an older target, please say which on the issue tracker.
+`net8.0`, `net9.0` and `net10.0`, built in parallel and each tested on its own runtime. A later runtime (`net11.0` and
+beyond) uses the `net10.0` build — NuGet picks the highest compatible one — and that is checked, not assumed: the `net10.0`
+build passes the compliance suite and the Newtonsoft differential corpus unchanged on the .NET 11 release candidate.
+
+Microsoft's own support for .NET 8 and .NET 9 ends on **10 November 2026**; they are targeted because migrating teams are
+still on them, and will be dropped only in a major version after that date. Policy and the runtime differences found on the
+way (`JsonObject.GetAt`, `JsonNode.DeepEquals`) are in
+[`docs/target-frameworks.md`](https://github.com/SQUORA-NL/TLio/blob/main/docs/target-frameworks.md).
+
+Not targeted: `netstandard2.0` / .NET Framework 4.8 — it would need the `System.Text.Json` package as a dependency, which
+ends the "no dependencies" property. Say so on the issue tracker if you need it.
 
 ## How this is verified
 

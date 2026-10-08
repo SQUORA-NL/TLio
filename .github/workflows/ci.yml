@@ -29,7 +29,10 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
 
       - name: Restore
         run: dotnet restore
@@ -64,7 +67,10 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
       - name: Install the nl_NL locale
         run: sudo locale-gen nl_NL.UTF-8 && sudo update-locale
       - name: Build and test under nl-NL
@@ -86,7 +92,10 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
       - name: Build
         run: dotnet build -c Release -warnaserror
       - name: Concurrency and data-leakage regression checks
@@ -100,3 +109,35 @@ jobs:
         with:
           name: release-gate-results
           path: ./release-gate-results
+
+  # Later runtimes. A library built for net10.0 is consumed by net11.0 and beyond, but "should" is not "does": this job runs
+  # the existing net10.0 test builds on the newest runtime available (a preview, until it ships) and fails if the run did not
+  # really land on it. It is informational — a preview can break for reasons that are not ours — so it never blocks a merge.
+  # When a new .NET reaches GA: add its TFM to Directory.Build.props (docs/target-frameworks.md), then this job moves on to the next preview.
+  forward-compat:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      DOTNET_ROLLFORWARD: LatestMajor
+      DOTNET_ROLL_FORWARD_TO_PRERELEASE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup .NET (current SDK)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Setup .NET (next runtime, preview)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+          dotnet-quality: 'preview'
+      - name: Build
+        run: dotnet build -c Release -p:TargetFrameworks=net10.0
+      - name: Prove the tests land on the newer runtime
+        run: |
+          dotnet test TLio.JsonPath.Tests --no-build -c Release -f net10.0 --filter "FullyQualifiedName~RuntimeReport" --logger "console;verbosity=detailed" | tee runtime.log
+          grep -E "RUNTIME: \.NET 1[1-9]" runtime.log
+      - name: Test on the newer runtime
+        run: dotnet test --no-build -c Release -f net10.0
