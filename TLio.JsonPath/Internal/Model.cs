@@ -70,12 +70,83 @@ internal readonly struct JsonNodeModel : IJsonModel<JsonNode>
 
     public JsonNode ElementAt(JsonNode array, int index) => ((JsonArray)array)[index];
 
+#if NET9_0_OR_GREATER
     public void MemberAt(JsonNode obj, int index, out string name, out JsonNode value)
     {
         var kv = ((JsonObject)obj).GetAt(index);
         name = kv.Key;
         value = kv.Value;
     }
+
+    /// <summary>Called when a selection (or a path resolution) is finished. Nothing to release on runtimes with <c>JsonObject.GetAt</c>.</summary>
+    public static void EndOperation()
+    {
+    }
+#else
+    // .NET 8 has no way to read an object's N-th member (JsonObject.GetAt arrived in .NET 9). Every loop in the evaluators
+    // walks members in order, so a cursor over one enumerator keeps that linear instead of quadratic: asking for the member
+    // after the last one asked for just advances it; anything else starts over. The cursor is per thread, holds one object,
+    // and is dropped by EndOperation() when a selection ends — so it can never serve a stale answer to a later selection
+    // that follows a mutation, and never keeps a document alive.
+    [ThreadStatic]
+    private static MemberCursor s_cursor;
+
+    private sealed class MemberCursor(JsonObject owner)
+    {
+        public readonly JsonObject Owner = owner;
+        public IEnumerator<KeyValuePair<string, JsonNode>> Enumerator = ((IEnumerable<KeyValuePair<string, JsonNode>>)owner).GetEnumerator();
+        public int Position = -1;
+
+        public void Restart()
+        {
+            Enumerator.Dispose();
+            Enumerator = ((IEnumerable<KeyValuePair<string, JsonNode>>)Owner).GetEnumerator();
+            Position = -1;
+        }
+    }
+
+    public void MemberAt(JsonNode obj, int index, out string name, out JsonNode value)
+    {
+        var owner = (JsonObject)obj;
+        var cursor = s_cursor;
+        if (cursor == null || !ReferenceEquals(cursor.Owner, owner))
+            s_cursor = cursor = new MemberCursor(owner);
+        if (index < cursor.Position)
+            cursor.Restart();
+
+        try
+        {
+            while (cursor.Position < index)
+            {
+                if (!cursor.Enumerator.MoveNext())
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                cursor.Position++;
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // The object was modified under the enumerator: start over from the beginning.
+            cursor.Restart();
+            while (cursor.Position < index)
+            {
+                if (!cursor.Enumerator.MoveNext())
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                cursor.Position++;
+            }
+        }
+
+        var kv = cursor.Enumerator.Current;
+        name = kv.Key;
+        value = kv.Value;
+    }
+
+    /// <summary>Called when a selection (or a path resolution) is finished: forget the cursor.</summary>
+    public static void EndOperation()
+    {
+        s_cursor?.Enumerator.Dispose();
+        s_cursor = null;
+    }
+#endif
 
     public bool TryGetMember(JsonNode obj, string name, out JsonNode value) =>
         ((JsonObject)obj).TryGetPropertyValue(name, out value);

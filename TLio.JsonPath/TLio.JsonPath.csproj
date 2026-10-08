@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>A standalone JSONPath engine for System.Text.Json.Nodes.JsonNode: full RFC 9535 (including function extensions and I-Regexp, RFC 9485), plus a bit-for-bit Newtonsoft.Json-compatible dialect. No dependencies beyond the BCL — it does not reference TLio or Newtonsoft.Json.</Description>
+    <Description>Drop-in replacement for Newtonsoft's SelectToken/SelectTokens on System.Text.Json.Nodes.JsonNode: the same paths give the same nodes, in the same order, with the same errors — verified against Newtonsoft.Json itself. Full RFC 9535 (function extensions, I-Regexp) is there when you want the standard. No dependencies; does not reference Newtonsoft.Json.</Description>
     <IsPackable>true</IsPackable>
-    <PackageTags>jsonpath rfc9535 json system-text-json jsonnode newtonsoft-compatible</PackageTags>
+    <PackageTags>newtonsoft selecttoken selecttokens jsonpath system-text-json jsonnode json-path newtonsoft-migration rfc9535</PackageTags>
   </PropertyGroup>
 
   <!--

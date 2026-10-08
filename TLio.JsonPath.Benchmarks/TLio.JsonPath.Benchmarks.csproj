@@ -13,11 +13,24 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!-- Hyperbee.Json declares Microsoft.SourceLink.GitHub (a build-time tool) as a runtime dependency, which drags in
+         Microsoft.Build.Tasks.Git 10.0.300, currently carrying advisory GHSA-23fw-v26w-5fgq (NU1902). This project is a
+         benchmark console app: it is never packed, shipped or run on untrusted input, and the dependency exists only so
+         Hyperbee.Json can be measured. Suppressed here and only here; no TLio package references it. -->
+    <NoWarn>$(NoWarn);NU1902</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Hyperbee.Json leaks SourceLink (build-time tooling) into its dependents. Keep its build targets out of this project. -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" ExcludeAssets="all" />
+    <PackageReference Include="Microsoft.SourceLink.Common" Version="10.0.300" ExcludeAssets="all" />
+    <PackageReference Include="Microsoft.Build.Tasks.Git" Version="10.0.300" ExcludeAssets="all" />
     <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageReference Include="Hyperbee.Json" Version="3.3.2" />
+    <PackageReference Include="JsonPath.Net" Version="3.0.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="JsonCons.JsonPath" Version="1.1.0" />
     <ProjectReference Include="..\TLio.JsonPath\TLio.JsonPath.csproj" />

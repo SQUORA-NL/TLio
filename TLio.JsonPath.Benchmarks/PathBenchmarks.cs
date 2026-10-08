@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using BenchmarkDotNet.Attributes;
+using Hyperbee.Json.Extensions;
+using Json.Path;
 using Newtonsoft.Json.Linq;
 
 namespace TLio.JsonPath.Benchmarks;
@@ -12,6 +14,8 @@ namespace TLio.JsonPath.Benchmarks;
 /// <item><b>OldJsonCons</b> — the previous TLio.Json.SystemText strategy (see <see cref="JsonConsBaseline"/>).</item>
 /// <item><b>EngineNewtonsoft</b> — TLio.JsonPath, Newtonsoft dialect (the TLio.Json.SystemText default).</item>
 /// <item><b>EngineRfc9535</b> — TLio.JsonPath, RFC 9535 dialect.</item>
+/// <item><b>JsonPathNet</b> — JsonPath.Net (json-everything), RFC 9535, query parsed once.</item>
+/// <item><b>HyperbeeJson</b> — Hyperbee.Json, RFC 9535, <c>JsonNode.Select</c>.</item>
 /// </list>
 /// Each call selects from a document that has not changed, which is the old design's best case.
 /// </summary>
@@ -24,6 +28,7 @@ public class PathBenchmarks
     private JsonConsBaseline _old = null!;
     private JsonPathEngine _newtonsoftEngine = null!;
     private JsonPathEngine _rfcEngine = null!;
+    private Json.Path.JsonPath _jsonPathNet = null!;
 
     // Newtonsoft/JsonCons syntax and RFC syntax for the same query.
     private string _legacyPath = "";
@@ -59,10 +64,12 @@ public class PathBenchmarks
             _ => ("$..id", "$..id"),
         };
 
+        _jsonPathNet = Json.Path.JsonPath.Parse(_rfcPath);
+
         // Fail loudly if the implementations disagree about the answer: a benchmark of different work is meaningless.
         var expected = Newtonsoft();
-        if (EngineNewtonsoft() != expected || OldJsonCons() != expected || EngineRfc9535() != expected)
-            throw new InvalidOperationException($"implementations disagree on {Document}/{Query}: newtonsoft={expected} old={OldJsonCons()} engine={EngineNewtonsoft()} rfc={EngineRfc9535()}");
+        if (EngineNewtonsoft() != expected || OldJsonCons() != expected || EngineRfc9535() != expected || JsonPathNet() != expected || HyperbeeJson() != expected)
+            throw new InvalidOperationException($"implementations disagree on {Document}/{Query}: newtonsoft={expected} old={OldJsonCons()} engine={EngineNewtonsoft()} rfc={EngineRfc9535()} jsonpath.net={JsonPathNet()} hyperbee={HyperbeeJson()}");
     }
 
     [GlobalCleanup]
@@ -84,6 +91,17 @@ public class PathBenchmarks
 
     [Benchmark]
     public int EngineRfc9535() => _rfcEngine.Select(_rfcPath, _nodeDoc).Count;
+
+    [Benchmark]
+    public int JsonPathNet() => _jsonPathNet.Evaluate(_nodeDoc).Matches?.Count ?? 0;
+
+    [Benchmark]
+    public int HyperbeeJson()
+    {
+        var n = 0;
+        foreach (var _ in _nodeDoc.Select(_rfcPath)) n++;
+        return n;
+    }
 
     private const string Bookstore = """
         {
