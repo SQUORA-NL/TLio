@@ -71,6 +71,16 @@ object, removes a node, runs several commands.
 
 ## Function Decision Tree
 
+### Arithmetic
+
+| Goal | Write |
+|------|-------|
+| A fixed formula over paths | **Infix:** `=round($.p * $.r * $.f, 2)` — operators need whitespace on both sides |
+| Sum / product of an array | `sum($.items[*].x)`, `multiply($.factors)` |
+| A formula that arrives as data (a string in the document) | `calculate` |
+| Per-element arithmetic over an array | `forEach` / `setProperties`, not infix (wildcards flatten) |
+
+
 ### String checks (all return boolean)
 
 | Goal | Function | Null-safe? |

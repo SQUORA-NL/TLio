@@ -72,7 +72,9 @@ Only the outermost call needs the `=`. Nested calls may carry it or not — thes
 { "value": "=concat(=fetch($.first), ' ', =fetch($.last))" }
 ```
 
-See [notation-reference.md](notation-reference.md) §3a.
+Arithmetic can be written with operators — `"=round($.principal * $.rate * $.yearFraction, 2)"` —
+when each operator has whitespace on both sides. It is rewritten at parse time into
+`sum`/`subtract`/`multiply`/`divide`/`modulo`/`pow`. See [notation-reference.md](notation-reference.md) §3a and §3b.
 
 ### Default Setup
 
@@ -347,6 +349,11 @@ transformation.
 Functions are written as string values: `"value": "=functionName(arg1, arg2)"`. NOT as
 objects. The `=` prefix triggers function evaluation — on the outermost call only; nested
 calls may omit it (`=concat(fetch($.a), '!')`).
+
+Infix arithmetic (`+ - * / % ^`) is allowed inside a value or argument, **but only with whitespace
+on both sides of the operator**: `$.a * $.b` multiplies, `$.a*$.b` is one (unresolvable) path. A bare
+word (`rate * 2`) is not a value — write `$.rate`. Wildcard paths flatten, so `$.items[*].price * 2`
+is a single number, not a list. For a formula that arrives as data, use `calculate`.
 
 ### 2a. A JSON string value stays a string
 

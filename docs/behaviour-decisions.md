@@ -126,6 +126,15 @@ Pinned: `ResolveDepthTests.AnAbsoluteKeyPathIsEvaluatedAgainstTheTargetNode_NotT
 
 ---
 
+### A9. `$.items[*].price * 2` is one number, not a list
+
+Infix arithmetic is rewritten into `sum` / `multiply` / …, and those flatten arrays. A wildcard path
+therefore collapses to a single value (the product of all prices, times 2) instead of mapping over the
+elements — which is what the notation looks like it does. Per-element arithmetic needs `forEach` or
+`setProperties`. Pinned by `InfixExpressionTests`; documented in `ai-ref/notation-reference.md` §3b.
+
+---
+
 ## B. Inconsistent failure semantics
 
 Same situation, different answer depending on where you hit it.

@@ -3,6 +3,17 @@
 Moved out of `CLAUDE.md`, which keeps only what an editor needs on every task.
 Newest first.
 
+- infix-expressions: **infix arithmetic in function values** — `=round($.principal * $.rate * $.yearFraction, 2)`.
+  `TLio.Client/InfixExpression.cs` tokenises and parses (precedence climbing: `^` right-assoc > unary `-` >
+  `* / %` > `+ -`); `FunctionConverter` rewrites the tree into the existing `sum`/`subtract`/`multiply`/
+  `divide`/`modulo`/`pow`, so there is no new evaluator and execution is unchanged. Operators need
+  whitespace on both sides because operator characters are legal in paths (`$.a*$.b` is one path). Bare
+  words are rejected; a top-level parse failure becomes `InvalidExpressionValue` (logs the reason); an
+  invalid *argument* falls back to the old literal string with a warning. Only text that is not a single
+  plain call is considered, and such text previously resolved to an unknown function, so no existing script
+  changes meaning. Consequence recorded as `behaviour-decisions.md` A9 (wildcards flatten). Tests:
+  `TLio.Functions.Tests/FunctionsTests/MathTests/InfixExpressionTests.cs`.
+
 - jsonpath-in-system-text-json: **`TLio.JsonPath`**, a standalone JSONPath engine for `JsonNode` (no TLio,
   Newtonsoft or JsonCons dependency), replaces JsonCons in `TLio.Json.SystemText`. Three dialects:
   `Newtonsoft` (default; a transcription of Newtonsoft.Json 13.0.4's `JPath`/filters/`JValue.Compare`,

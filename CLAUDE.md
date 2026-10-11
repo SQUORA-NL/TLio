@@ -274,11 +274,22 @@ the rules JSON and YAML must spell identically; when they were separate, an attr
 One asymmetry to know: TLio's XML adapter ignores attributes by design, but after a `convert` to
 JSON or YAML they are ordinary `@name` properties. Converting is how a script edits an attribute.
 
+## Infix arithmetic
+
+A function value may use `+ - * / % ^` — `=round($.principal * $.rate * $.yearFraction, 2)`. It is
+parsed by `TLio.Client/InfixExpression.cs` and rewritten by `FunctionConverter` into
+`sum`/`subtract`/`multiply`/`divide`/`modulo`/`pow` (Math pack), so nothing new runs at execution time.
+**A binary operator needs whitespace on both sides** — operator characters are legal in paths, so
+`$.a*$.b` is one path. Operands are numbers, paths, quoted strings, calls and parentheses; a bare word is
+rejected. Wildcard paths flatten (`$.items[*].p * 2` is one number). Rules: `docs/ai-ref/notation-reference.md` §3b.
+
 ## Recent Changes
 
 The full log, including the design notes behind each entry (the `@` resolution and its
 concurrency bug, `setProperties`, the format converter), is in `docs/history.md`. Highlights:
 
+- infix-expressions: `=round($.a * $.b, 2)` — operators in function values, rewritten at parse time into the Math
+  functions. Whitespace on both sides of a binary operator is required. See *Infix arithmetic* above.
 - jsonpath-in-system-text-json: `TLio.JsonPath` — an own JSONPath engine on `JsonNode` replacing JsonCons.
   Default dialect is Newtonsoft's, held to Newtonsoft.Json 13.0.4 by differential tests; RFC 9535 passes the
   pinned compliance suite. See `docs/adr/0001-tlio-owned-jsonpath-engine.md`.

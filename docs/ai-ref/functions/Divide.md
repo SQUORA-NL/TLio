@@ -2,6 +2,8 @@
 
 > Divides the first argument by the second. Both sides accept arrays, which are summed before the division.
 
+> **Infix form:** `a / b` (whitespace on both sides) is rewritten into `=divide(a, b)` — see [notation-reference.md §3b](../notation-reference.md).
+
 ## Syntax
 
 ```

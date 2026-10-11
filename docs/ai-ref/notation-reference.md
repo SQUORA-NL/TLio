@@ -191,6 +191,62 @@ To produce a literal `=something` string inside quotes, double the `=`:
 
 → stores the literal text `=concat($.a, $.b)` (not evaluated).
 
+
+### 3b. Infix arithmetic
+
+Operators `+ - * / % ^` may be used in a value or in an argument. The expression is parsed once,
+when the script is read, and rewritten into the existing Math-pack functions — there is no second
+evaluator:
+
+| Operator | Becomes | Notes |
+|----------|---------|-------|
+| `a + b + c` | `sum(a, b, c)` | numeric only — use `concat` for text |
+| `a - b` | `subtract(a, b)` | left-associative |
+| `a * b * c` | `multiply(a, b, c)` | |
+| `a / b` | `divide(a, b)` | left-associative |
+| `a % b` | `modulo(a, b)` | |
+| `a ^ b` | `pow(a, b)` | right-associative |
+| `-x` | `multiply(-1, x)` | `-5` stays the number −5 |
+
+Precedence, high to low: `^`, unary `-`, `* / %`, `+ -`. Parentheses group.
+
+```json
+{ "value": "=round($.principal * $.rate * $.yearFraction, 2)" }   ✅ same as =round(=multiply(...), 2)
+{ "value": "=($.a + $.b) / 2" }                                    ✅ parenthesised start
+{ "value": "=round($.x, 1) * 2" }                                  ✅ a call is an operand
+{ "value": "=max($.a * 2, $.b * 2) + 1" }                          ✅ arguments may be infix
+```
+
+**The whitespace rule.** Operator characters are legal inside paths, so a binary operator is only
+recognised when whitespace stands on both sides of it:
+
+| Written | Read as |
+|---------|---------|
+| `$.a * $.b` | multiplication |
+| `$.a*$.b` | one path — it resolves to nothing, so nothing is written |
+| `$.unit-price` | one path; for a name that is awkward either way use `$['unit-price']` |
+| `($.a + 1)* 2` | rejected — "operator '*' needs whitespace on both sides" |
+| `$.items[?(@.n > 1)].n` | one path — brackets hide their contents |
+
+**Operands** are numbers (`2`, `-5`, `0.05`, `1.5e2`), paths starting with `$`, `@` or `/` (XML),
+`'quoted strings'`, calls `name(...)` and parentheses. A **bare word is not a value**: `$.a * rate`
+is reported as `'rate' is not a value`. Unary minus is attached to its operand (`-$.a`, `-(1 + 2)`).
+
+**What stays as it was.**
+- Anything inside quotes, `[...]`, or a plain call's own parentheses: `concat($.a, ' - ', $.b)` is a call, not subtraction.
+- A value starting with `==` is still the escape for a literal `=`.
+- An unquoted *argument* that contains a spaced operator but is not valid arithmetic (`concat($.a, and - then)`)
+  stays a literal string and logs a warning; quote it to keep it as text.
+- A top-level `=` expression that is not valid arithmetic writes nothing and logs the reason.
+- The plain call form is never reinterpreted, so every existing script keeps its meaning.
+
+**Consequences worth knowing.**
+- Arrays flatten exactly as in `sum`/`multiply`: `$.items[*].price * 2` is the product of all prices
+  times 2, not a list of doubled prices. Per-element maths needs `forEach`/`setProperties`.
+- Operators bind through a fixed table to function names. Without the Math pack, the log says to call `RegisterMath`.
+- Relative paths (`@.x`) inside a function argument still resolve against the document root.
+- Numeric coercion is the functions' own (see `behaviour-decisions.md` A1 for comma decimals).
+
 ### Doubled-quote escape (`''`)
 
 To embed a literal single-quote character inside a `'...'` argument, double it:

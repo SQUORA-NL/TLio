@@ -85,6 +85,30 @@ Rules:
 - Path arguments starting with `$` or `@` inside a function call are resolved against
   the document ROOT (`$`), not the current element.
 
+### Infix arithmetic
+
+Arithmetic can be written with operators instead of nested calls (needs the Math pack):
+
+```json
+{ "command": "put", "path": "$.interest", "value": "=round($.principal * $.rate * $.yearFraction, 2)" }
+```
+
+It is rewritten at parse time into `sum` / `subtract` / `multiply` / `divide` / `modulo` / `pow`
+(`+ - * / % ^`), so it behaves exactly like those functions — including array flattening:
+`$.items[*].price * 2` is the product of all prices times 2, not a list of doubled prices.
+
+Rules:
+- **A binary operator needs whitespace on both sides.** Operator characters are legal in paths,
+  so `$.a*$.b` and `$.unit-price` are single paths. Use `$['unit-price']` for awkward names.
+- Operands are numbers, paths (`$`, `@`, or `/` in XML), `'quoted strings'`, calls `name(...)`
+  and parentheses. A bare word (`rate`) is not a value and is reported.
+- Unary minus is attached to its operand: `-5`, `-$.a`, `-(1 + 2)`.
+- Precedence: `^` (right-assoc) > unary `-` > `* / %` > `+ -`. `+` is numeric only; use `concat` for text.
+- Not parsed as arithmetic: anything inside quotes, `[...]` or a plain call's own argument list.
+  An argument that looks like arithmetic but is not valid falls back to a literal string with a warning.
+- A value starting with `==` is still the escape for a literal `=`.
+- The plain call form always works and is never reinterpreted.
+
 ---
 
 ## Trace Outcomes

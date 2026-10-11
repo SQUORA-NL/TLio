@@ -2,6 +2,8 @@
 
 > Multiplies all numeric arguments together. Arrays are flattened, so a single array argument is the product of its elements.
 
+> **Infix form:** `a * b` (whitespace on both sides) is rewritten into `=multiply(a, b)` — see [notation-reference.md §3b](../notation-reference.md).
+
 ## Syntax
 
 ```
