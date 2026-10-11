@@ -2,6 +2,8 @@
 
 > Subtracts the second argument from the first. Both sides accept arrays, which are summed before the subtraction.
 
+> **Infix form:** `a - b` (whitespace on both sides) is rewritten into `=subtract(a, b)` — see [notation-reference.md §3b](../notation-reference.md).
+
 ## Syntax
 
 ```

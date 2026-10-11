@@ -2,6 +2,8 @@
 
 > Raises a base to an exponent power.
 
+> **Infix form:** `a ^ b` (whitespace on both sides) is rewritten into `=pow(a, b)` — see [notation-reference.md §3b](../notation-reference.md).
+
 ## Syntax
 
 ```

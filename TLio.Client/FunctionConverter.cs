@@ -158,6 +158,25 @@ public class FunctionConverter<TNode>
     private IFunctionSupportedValue<TNode>? ParseFunctionExpression(string expression, INodeAdapter<TNode> adapter,
         Action<string>? warnCallback = null)
     {
+        // Infix arithmetic: =round($.a * $.b, 2). Only text that is NOT a single plain call is
+        // considered, and such text was never valid before (it resolved to an unknown function),
+        // so no existing script changes meaning.
+        var trimmedExpression = expression.Trim();
+        if (!TryGetInnerCallName(trimmedExpression, out _) &&
+            (InfixExpression.LooksLikeInfix(trimmedExpression) ||
+             trimmedExpression.StartsWith("(") || trimmedExpression.StartsWith("-")))
+        {
+            try
+            {
+                return ParseInfix(trimmedExpression, adapter, warnCallback);
+            }
+            catch (InfixExpression.InfixSyntaxException ex)
+            {
+                warnCallback?.Invoke($"Expression '={trimmedExpression}' could not be parsed as arithmetic: {ex.Message}.");
+                return new InvalidExpressionValue<TNode>(trimmedExpression, ex.Message);
+            }
+        }
+
         var parenIdx = expression.IndexOf('(');
         if (parenIdx < 0)
         {
@@ -186,40 +205,148 @@ public class FunctionConverter<TNode>
         {
             var trimmed = arg.Trim();
             if (string.IsNullOrEmpty(trimmed)) continue;
-            // Path expressions inside function calls are treated as string literals
-            // so that functions like fetch() and partial() can evaluate the path themselves.
-            IFunctionSupportedValue<TNode>? argValue;
-            if (trimmed.StartsWith("$") || trimmed.StartsWith("@"))
-            {
-                // The path is handed to the function as a string, so ParseValue never sees it —
-                // run the same notation check here.
-                if (trimmed.StartsWith("@") && !trimmed.StartsWith("@@"))
-                    WarnIfRelativePathIsMissingDot(trimmed, warnCallback);
-                argValue = new FixedValue<TNode>(adapter.CreateString(trimmed), trimmed);
-            }
-            else if (TryGetInnerCallName(trimmed, out var innerName))
-            {
-                // Inner (nested) call: the leading "=" is optional here — only the
-                // outermost expression is required to carry it. An unknown name is not
-                // a call at all; keep the historic literal-string fallback but warn,
-                // because that silently turns a typo into text.
-                if (_functionsProvider.GetFunction(innerName) != null)
-                    argValue = ParseFunctionExpression(trimmed, adapter, warnCallback);
-                else
-                {
-                    warnCallback?.Invoke(
-                        $"Argument '{trimmed}' looks like a call to '{innerName}', but no such function is registered — " +
-                        "it is treated as a literal string. Check the spelling, or register the function pack that provides it. " +
-                        $"To keep it as text, quote it: '{trimmed}'.");
-                    argValue = ParseValue(trimmed, adapter, warnCallback, asArgument: true);
-                }
-            }
-            else
-                argValue = ParseValue(trimmed, adapter, warnCallback, asArgument: true);
+            var argValue = ParseArgument(trimmed, adapter, warnCallback);
             if (argValue != null)
                 arguments.Add(argValue);
         }
 
+        function.SetArguments(arguments);
+        return new FunctionSupportedValue<TNode>(function);
+    }
+
+    /// <summary>
+    /// Parse one already-trimmed function argument. <paramref name="allowInfix"/> is false for the
+    /// operands of an infix expression, which by construction contain no top-level operator.
+    /// </summary>
+    private IFunctionSupportedValue<TNode>? ParseArgument(string trimmed, INodeAdapter<TNode> adapter,
+        Action<string>? warnCallback, bool allowInfix = true)
+    {
+        if (allowInfix && InfixExpression.LooksLikeInfix(trimmed))
+        {
+            try
+            {
+                return ParseInfix(trimmed, adapter, warnCallback);
+            }
+            catch (InfixExpression.InfixSyntaxException ex)
+            {
+                // Unquoted text with " - " in it was a literal string before; keep that, but say why.
+                warnCallback?.Invoke(
+                    $"Argument '{trimmed}' looks like an arithmetic expression but could not be parsed ({ex.Message}). " +
+                    $"It is treated as a literal string; to keep it as text, quote it: '{trimmed}'.");
+            }
+        }
+
+        IFunctionSupportedValue<TNode>? argValue;
+        // Path expressions inside function calls are treated as string literals
+        // so that functions like fetch() and partial() can evaluate the path themselves.
+        if (trimmed.StartsWith("$") || trimmed.StartsWith("@"))
+        {
+            // The path is handed to the function as a string, so ParseValue never sees it —
+            // run the same notation check here.
+            if (trimmed.StartsWith("@") && !trimmed.StartsWith("@@"))
+                WarnIfRelativePathIsMissingDot(trimmed, warnCallback);
+            argValue = new FixedValue<TNode>(adapter.CreateString(trimmed), trimmed);
+        }
+        else if (TryGetInnerCallName(trimmed, out var innerName))
+        {
+            // Inner (nested) call: the leading "=" is optional here — only the
+            // outermost expression is required to carry it. An unknown name is not
+            // a call at all; keep the historic literal-string fallback but warn,
+            // because that silently turns a typo into text.
+            if (_functionsProvider.GetFunction(innerName) != null)
+                argValue = ParseFunctionExpression(trimmed, adapter, warnCallback);
+            else
+            {
+                warnCallback?.Invoke(
+                    $"Argument '{trimmed}' looks like a call to '{innerName}', but no such function is registered — " +
+                    "it is treated as a literal string. Check the spelling, or register the function pack that provides it. " +
+                    $"To keep it as text, quote it: '{trimmed}'.");
+                argValue = ParseValue(trimmed, adapter, warnCallback, asArgument: true);
+            }
+        }
+        else
+            argValue = ParseValue(trimmed, adapter, warnCallback, asArgument: true);
+        return argValue;
+    }
+
+    /// <summary>Parse <paramref name="text"/> as infix arithmetic and build the function tree for it.</summary>
+    /// <exception cref="InfixExpression.InfixSyntaxException">The text is not valid infix arithmetic.</exception>
+    private IFunctionSupportedValue<TNode>? ParseInfix(string text, INodeAdapter<TNode> adapter,
+        Action<string>? warnCallback)
+        => BuildInfix(InfixExpression.Parse(text), adapter, warnCallback);
+
+    private IFunctionSupportedValue<TNode>? BuildInfix(InfixExpression.Node node, INodeAdapter<TNode> adapter,
+        Action<string>? warnCallback)
+    {
+        switch (node)
+        {
+            case InfixExpression.Leaf { Kind: InfixExpression.LeafKind.Call } call:
+                return ParseFunctionExpression(call.Text, adapter, warnCallback);
+
+            case InfixExpression.Leaf leaf:
+                return ParseArgument(leaf.Text, adapter, warnCallback, allowInfix: false);
+
+            case InfixExpression.Negate negate:
+            {
+                var operand = BuildInfix(negate.Operand, adapter, warnCallback);
+                if (operand == null) return null;
+                var minusOne = new FixedValue<TNode>(adapter.CreateValue(-1L), "-1");
+                return BuildOperatorCall('-', new[] { minusOne, operand }, "multiply", warnCallback);
+            }
+
+            case InfixExpression.Binary binary:
+            {
+                // a + b + c and a * b * c are one variadic sum / multiply, not a nest of binaries.
+                var operands = new List<InfixExpression.Node>();
+                var current = (InfixExpression.Node)binary;
+                while (current is InfixExpression.Binary b && b.Op == binary.Op && binary.Op is '+' or '*')
+                {
+                    operands.Insert(0, b.Right);
+                    current = b.Left;
+                }
+                operands.Insert(0, current);
+                if (operands.Count == 1) operands = new List<InfixExpression.Node> { binary.Left, binary.Right };
+
+                var built = new List<IFunctionSupportedValue<TNode>>();
+                foreach (var operand in operands)
+                {
+                    var value = BuildInfix(operand, adapter, warnCallback);
+                    if (value == null) return null;
+                    built.Add(value);
+                }
+
+                return BuildOperatorCall(binary.Op, built, OperatorFunctionName(binary.Op), warnCallback);
+            }
+
+            default:
+                return null;
+        }
+    }
+
+    private static string OperatorFunctionName(char op) => op switch
+    {
+        '+' => "sum",
+        '-' => "subtract",
+        '*' => "multiply",
+        '/' => "divide",
+        '%' => "modulo",
+        _ => "pow",
+    };
+
+    private IFunctionSupportedValue<TNode> BuildOperatorCall(char op, IEnumerable<IFunctionSupportedValue<TNode>> operands,
+        string functionName, Action<string>? warnCallback)
+    {
+        var function = _functionsProvider.GetFunction(functionName);
+        if (function == null)
+        {
+            warnCallback?.Invoke(
+                $"Operator '{op}' needs the function '{functionName}', which is not registered — " +
+                "register the pack that provides it (the Math pack: RegisterMath).");
+            return new NotFoundFunctionValue<TNode>(functionName);
+        }
+
+        var arguments = new Arguments<TNode>();
+        foreach (var operand in operands) arguments.Add(operand);
         function.SetArguments(arguments);
         return new FunctionSupportedValue<TNode>(function);
     }

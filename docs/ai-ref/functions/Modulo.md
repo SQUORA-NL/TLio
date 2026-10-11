@@ -2,6 +2,8 @@
 
 > Returns the remainder of dividing dividend by divisor.
 
+> **Infix form:** `a % b` (whitespace on both sides) is rewritten into `=modulo(a, b)` — see [notation-reference.md §3b](../notation-reference.md).
+
 ## Syntax
 
 ```

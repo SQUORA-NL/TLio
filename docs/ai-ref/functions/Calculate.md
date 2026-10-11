@@ -59,7 +59,8 @@ Verified by: `TLio.Functions.Tests/FunctionsTests/MathTests/CalculateTests.cs` �
 
 ## When NOT to use
 
-- **A fixed chain of `+`, `-`, `*` or `÷` known at script-writing time** — use `sum`,
+- **A fixed formula known at script-writing time** — write it infix (`=$.a * $.b + 1`, see
+  [notation-reference.md §3b](../notation-reference.md)) or use `sum`,
   `subtract`, `multiply`, `divide` directly. `calculate(=concat(a,'*',b))` builds a
   `DataTable`, formats every operand into a string, and parses an expression to do what
   `multiply` does directly — see [Multiply.md](Multiply.md) and [Divide.md](Divide.md).

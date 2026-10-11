@@ -2,6 +2,8 @@
 
 > Sums all numeric values from one or more paths (arrays are flattened).
 
+> **Infix form:** `a + b` (whitespace on both sides) is rewritten into `=sum(a, b)` — see [notation-reference.md §3b](../notation-reference.md).
+
 ## Syntax
 
 ```
