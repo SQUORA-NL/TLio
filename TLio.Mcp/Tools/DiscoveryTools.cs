@@ -84,7 +84,7 @@ public sealed class DiscoveryTools
             return new { error = "not_found", name, suggestions };
         }
 
-        var resolvedType = type ?? DetectType(name);
+        var resolvedType = type ?? _reader.GetKind(name, null) ?? DetectType(name);
         return new { name, type = resolvedType, content };
     }
 

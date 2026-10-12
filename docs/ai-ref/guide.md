@@ -49,6 +49,17 @@
 inside a single `put`. Reach for `ifElse` when a branch does something structural — adds an
 object, removes a node, runs several commands.
 
+### Repeating work
+
+| Intent | Command | Note |
+|--------|---------|------|
+| Run steps once per array element | `forEach` | `@` / `@.field` address the element; update in place with `set path="@"` |
+| Repeat while a condition holds | `while` | `maxIterations` is required |
+| One identical write to every element | `set` / `put` with a wildcard path | No loop needed |
+
+`forEach` and `while` come from the Looping pack — registered in the MCP server, but a host
+application must call `RegisterLooping<TNode>()`.
+
 ### Combining data
 
 | Intent | Command |

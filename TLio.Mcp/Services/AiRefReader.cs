@@ -30,6 +30,20 @@ public sealed class AiRefReader
         return file is null ? null : File.ReadAllText(file);
     }
 
+    /// <summary>"command", "function" or "adapter" — the folder the document for <paramref name="name"/> lives in.</summary>
+    public string? GetKind(string name, string? type)
+    {
+        var file = FindFile(name, type);
+        if (file is null) return null;
+        return Path.GetFileName(Path.GetDirectoryName(file)) switch
+        {
+            "commands" => "command",
+            "functions" => "function",
+            "adapters" => "adapter",
+            _ => null
+        };
+    }
+
     public string[] GetSuggestions(string name, string? type)
     {
         var dirs = GetSearchDirs(type);
