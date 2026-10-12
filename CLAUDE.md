@@ -49,7 +49,10 @@ TLio.Functions/Collections/ ← distinct, sort, sortBy, last — built in, regis
 TLio.Extensions.Looping/   ← forEach, while — the loop primitives, opt-in via RegisterLooping (feature/actus-pam-contract)
 TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtures
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
-TLio.Mcp/                   ← MCP stdio server (tlio_list_commands, tlio_describe, tlio_execute, tlio_analyze, 019)
+TLio.Mcp/                   ← MCP stdio server (tlio_list_commands, tlio_describe, tlio_execute, tlio_analyze, 019).
+                              Registers every pack incl. Looping (a new pack must be added in ExecutionTools.CreateEngine
+                              or tlio_execute rejects commands the ai-ref documents). Publish bundles docs/ai-ref.
+                              Setup for clients: TLio.Mcp/README.md
 TLio.Mcp.Tests/             ← MCP server tests (DiscoveryTools, ExecutionTools, AnalysisTools, E2E workflow)
 TLio.Parity.Tests/          ← Cross-format regression net (020): one fixture corpus run against
                               JSON, XML and YAML through each format's own script notation

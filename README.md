@@ -113,6 +113,7 @@ thread-safety and precompilation guidance is in
 | Project | Purpose |
 |---|---|
 | `TLio.Extensions.ETL` | ETL commands: flatten, restore, resolve, tocsv |
+| `TLio.Extensions.Looping` | Loop commands: `forEach` (once per array element, `@` addresses the element) and `while` (repeat while a condition holds, `maxIterations` required). Register with `RegisterLooping<TNode>()` — format-agnostic, works on JSON, XML and YAML |
 | `TLio.Extensions.Math` | 27 math functions: abs, avg, calculate, ceiling, clamp, count, divide, floor, max, median, min, modulo, multiply, pow, round, sign, sqrt, subtract, sum and the conditional aggregates (sumIf(s), countIf(s), averageIf(s), maxIfs, minIfs) |
 | `TLio.Extensions.Text` | 26 text functions: concat, contains, endsWith, format, indexOf, isEmpty, join, length, newGuid, padLeft/Right, parse, regexExtract, regexReplace, replace, right, split, startsWith, substring, toFixed, toLower, toString, toUpper, trim, trimStart/End |
 | `TLio.Extensions.TimeDate` | 12 date functions: avgDate, dateAdd, dateCompare, dateDiff, datePart, endOfMonth, formatDate, isDateBetween, maxDate, minDate, parseDate, startOfMonth (`datetime` is core, not in this pack) |
@@ -131,7 +132,7 @@ paid-licence and Newtonsoft-bound.
 
 | Project | Purpose |
 |---|---|
-| `TLio.Mcp` | MCP stdio server: `tlio_execute`, `tlio_analyze`, `tlio_list_commands`, `tlio_list_functions`, `tlio_describe`, `tlio_guide` |
+| `TLio.Mcp` | MCP stdio server: `tlio_execute`, `tlio_analyze`, `tlio_list_commands`, `tlio_list_functions`, `tlio_describe`, `tlio_guide`. Every command and extension pack is registered (including `forEach` / `while`). Setup for Claude Code, Claude Desktop and others: [TLio.Mcp/README.md](TLio.Mcp/README.md) |
 
 ### Tests
 
@@ -203,9 +204,9 @@ The framework is fully implemented and in active development (specs 001–019).
 
 - All adapters ship and are tested: Newtonsoft JSON, System.Text.Json, XML (slash-path + XPath), YAML.
 - All commands and built-in functions are implemented and covered by fixture-based NUnit tests.
-- Four extension packs are available: ETL, Math, Text, TimeDate.
+- Five extension packs are available: ETL, Looping, Math, Text, TimeDate.
 - A fluent `TLioConvert` API, `ScriptEngine` and `CompiledScript` are provided in `TLio.Client`.
-- An MCP server (`TLio.Mcp`) exposes execution, gap analysis and reference lookup to agents.
+- An MCP server (`TLio.Mcp`) exposes execution, gap analysis and reference lookup to agents — see [TLio.Mcp/README.md](TLio.Mcp/README.md) to set it up.
 - Unified script notation is documented in `docs/ai-ref/notation-reference.md`.
 - All library packages are NuGet-packable; CI/CD pipelines publish preview and release builds.
 

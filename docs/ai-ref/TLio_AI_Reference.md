@@ -93,6 +93,21 @@ Register explicitly:
 options.CommandsProvider.RegisterETL<JToken>();
 ```
 
+### Looping Extension Pack
+
+`forEach` and `while` are in `TLio.Extensions.Looping` and are not in `CreateDefault()`.
+Register explicitly (add `using TLio.Extensions.Looping;`):
+
+```csharp
+options.CommandsProvider.RegisterLooping<JToken>();
+```
+
+`forEach` runs a nested script once per array element, with `@` / `@.field` addressing the
+element; `while` repeats a nested script while a condition holds and **requires**
+`maxIterations`. Both work on JSON, XML and YAML. The MCP server (`TLio.Mcp`) registers this
+pack already. Full pages: [commands/ForEach.md](commands/ForEach.md),
+[commands/While.md](commands/While.md).
+
 ### Text Extension Pack
 
 `concat`, `length`, `substring`, `right`, `toLower`, `toUpper`, `trim`, `trimStart`, `trimEnd`,
@@ -171,6 +186,14 @@ Paths after a `convert` speak the new format's path language. See
 |------|---------|
 | Deep-merge two objects | `merge` |
 | Fan-out / join by key across collections | `resolve` |
+
+### Repetition
+
+| Goal | Command | Note |
+|------|---------|------|
+| Run the same steps for every element of an array | `forEach` | Looping pack required; `@` / `@.field` address the current element |
+| Repeat while a computed condition holds | `while` | Looping pack required; `maxIterations` is mandatory |
+| Same write to every element, no per-element logic | A wildcard path (`$.items[*].x`) on `set` / `put` | No loop needed |
 
 ### ETL and serialization
 
@@ -839,6 +862,34 @@ operations. Do not flatten without metadata if you intend to restore.
 | metadataPath | string | — | Where to write flattening metadata (enables `restore`). |
 | includeArrayIndices | boolean | false | Include array indices in flattened keys. |
 | preserveTypes | boolean | false | Preserve type information alongside values. |
+
+---
+
+### forEach
+
+> Executes a nested script once per element of an array; `@` addresses the element the
+> iteration is on. Looping pack (`RegisterLooping`). Full page: [commands/ForEach.md](commands/ForEach.md).
+
+```json
+{ "command": "forEach", "path": "$.items", "commands": [
+    { "command": "set", "path": "@", "value": "=multiply(@.n, 2)" } ] }
+```
+
+**When to use**: per-element logic over a runtime-sized array. **Not for**: one identical write
+to every element (use a wildcard path) or a condition-driven repeat (use `while`).
+
+---
+
+### while
+
+> Repeats a nested script while a condition holds. Looping pack (`RegisterLooping`).
+> `maxIterations` is required — reaching it logs a warning and stops the loop.
+> Full page: [commands/While.md](commands/While.md).
+
+```json
+{ "command": "while", "condition": "=lessThan($.n, 3)", "maxIterations": 10, "commands": [
+    { "command": "set", "path": "$.n", "value": "=sum($.n, 1)" } ] }
+```
 
 ---
 

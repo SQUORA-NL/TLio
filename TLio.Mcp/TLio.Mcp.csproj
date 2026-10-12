@@ -21,6 +21,7 @@
     <ProjectReference Include="..\TLio.Functions\TLio.Functions.csproj" />
     <ProjectReference Include="..\TLio.Extensions.ETL\TLio.Extensions.ETL.csproj" />
     <ProjectReference Include="..\TLio.Extensions.Text\TLio.Extensions.Text.csproj" />
+    <ProjectReference Include="..\TLio.Extensions.Looping\TLio.Extensions.Looping.csproj" />
     <ProjectReference Include="..\TLio.Extensions.Math\TLio.Extensions.Math.csproj" />
     <ProjectReference Include="..\TLio.Extensions.TimeDate\TLio.Extensions.TimeDate.csproj" />
     <ProjectReference Include="..\TLio.FormatConverter\TLio.FormatConverter.csproj" />
@@ -28,6 +29,11 @@
 
   <ItemGroup>
     <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- The reference docs travel with the server: AiRefReader looks for docs/ai-ref next to the
+         binary first, so a published server answers tlio_describe without TLIO_MCP_AIREF. -->
+    <Content Include="..\docs\ai-ref\**\*.md" Link="docs\ai-ref\%(RecursiveDir)%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

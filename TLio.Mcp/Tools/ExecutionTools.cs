@@ -9,6 +9,7 @@ using TLio.Client;
 using TLio.Core.Contracts;
 using TLio.Core.Models;
 using TLio.Extensions.ETL;
+using TLio.Extensions.Looping;
 using TLio.Extensions.Math;
 using TLio.Extensions.Text;
 using TLio.Extensions.TimeDate;
@@ -291,6 +292,7 @@ public sealed class ExecutionTools
         options.FunctionsProvider.RegisterText<TNode>();
         options.FunctionsProvider.RegisterTimeDate<TNode>();
         options.CommandsProvider.RegisterETL<TNode>();
+        options.CommandsProvider.RegisterLooping<TNode>();
         options.CommandsProvider.RegisterFormatConversion<TNode>(converter, documentFormatId);
         return new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider)
             // All three notations on every engine: the notation a script is written in is

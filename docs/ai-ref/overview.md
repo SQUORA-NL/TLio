@@ -158,6 +158,9 @@ var result  = engine.Execute(scriptJson, data, JsonExecutionContext.CreateDefaul
 // ETL commands: flatten, restore, resolve, tocsv
 options.CommandsProvider.RegisterETL<JToken>();
 
+// Looping commands: forEach, while (TLio.Extensions.Looping)
+options.CommandsProvider.RegisterLooping<JToken>();
+
 // Text functions: concat, format, substring, right, toLower, toUpper, trim, trimStart, trimEnd,
 //   split, join, contains, startsWith, endsWith, indexOf, isEmpty, replace, regexReplace,
 //   regexExtract, parse, toString, toFixed, newguid, padleft, padright, length
