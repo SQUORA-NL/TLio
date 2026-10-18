@@ -208,6 +208,109 @@ public class SchemaShapeTests
         Assert.That(flat.Properties[1].Value.Flatten(null).Default!.Type, Is.EqualTo(JTokenType.Float));
     }
 
+    // ── Discriminator selection (phase 2) ─────────────────────────────────────
+
+    private string[] Discriminated(string schema, string data)
+    {
+        var document = new SchemaDocument<JToken>(JToken.Parse(schema), context.NodeAdapter, warnings.Add);
+        var selector = new DiscriminatorBranchSelector<JToken>(document, context.NodeAdapter);
+        var view = new SchemaView<JToken>(document, new[] { document.Root }, selector);
+        return Names(view.Flatten(JToken.Parse(data)));
+    }
+
+    private const string CarOrPlane = @"{ ""oneOf"": [
+        { ""properties"": { ""kind"": { ""const"": ""car"" }, ""wheels"": {} } },
+        { ""properties"": { ""kind"": { ""const"": ""plane"" }, ""wings"": {} } } ] }";
+
+    [Test]
+    public void Discriminator_PicksTheOnlyBranchThatAllowsTheValue() =>
+        Assert.That(Discriminated(CarOrPlane, @"{ ""kind"": ""plane"" }"), Is.EqualTo(new[] { "kind", "wings" }));
+
+    [TestCase(@"{ ""kind"": ""boat"" }", Description = "no branch allows it")]
+    [TestCase(@"{ ""wings"": 2 }", Description = "the data lacks the discriminator")]
+    [TestCase(@"{ ""kind"": { ""x"": 1 } }", Description = "the value is not a scalar")]
+    public void Discriminator_FallsBackToTheUnion_WhenItCannotDecide(string data) =>
+        Assert.That(Discriminated(CarOrPlane, data), Is.EqualTo(new[] { "kind", "wheels", "wings" }));
+
+    [Test]
+    public void Discriminator_FallsBackToTheUnion_WhenTheDataIsNotAnObject() =>
+        Assert.That(Discriminated(CarOrPlane, @"""plane"""), Is.EqualTo(new[] { "kind", "wheels", "wings" }));
+
+    [Test]
+    public void Discriminator_FallsBackToTheUnion_WhenABranchPinsNothing()
+    {
+        // The second branch has no discriminator, so "car" proves nothing about it.
+        var schema = @"{ ""oneOf"": [
+            { ""properties"": { ""kind"": { ""const"": ""car"" }, ""wheels"": {} } },
+            { ""properties"": { ""wings"": {} } } ] }";
+
+        Assert.That(Discriminated(schema, @"{ ""kind"": ""car"" }"), Is.EqualTo(new[] { "kind", "wheels", "wings" }));
+    }
+
+    [Test]
+    public void Discriminator_TriesTheNextCandidate_WhenTheFirstIsAmbiguous()
+    {
+        // `family` does not separate the branches, `version` does.
+        var schema = @"{ ""oneOf"": [
+            { ""properties"": { ""family"": { ""const"": ""x"" }, ""version"": { ""const"": 1 }, ""a"": {} } },
+            { ""properties"": { ""family"": { ""const"": ""x"" }, ""version"": { ""const"": 2 }, ""b"": {} } } ] }";
+
+        Assert.That(Discriminated(schema, @"{ ""family"": ""x"", ""version"": 2 }"),
+            Is.EqualTo(new[] { "family", "version", "b" }));
+    }
+
+    [Test]
+    public void Discriminator_ReadsBranchesThroughRefAndAllOf()
+    {
+        var schema = @"{
+            ""$defs"": {
+                ""Base"": { ""properties"": { ""id"": {} } },
+                ""Car"":   { ""allOf"": [ { ""$ref"": ""#/$defs/Base"" }, { ""properties"": { ""kind"": { ""const"": ""car"" }, ""wheels"": {} } } ] },
+                ""Plane"": { ""allOf"": [ { ""$ref"": ""#/$defs/Base"" }, { ""properties"": { ""kind"": { ""const"": ""plane"" }, ""wings"": {} } } ] }
+            },
+            ""oneOf"": [ { ""$ref"": ""#/$defs/Car"" }, { ""$ref"": ""#/$defs/Plane"" } ] }";
+
+        Assert.That(Discriminated(schema, @"{ ""kind"": ""car"" }"), Is.EqualTo(new[] { "id", "kind", "wheels" }));
+    }
+
+    [Test]
+    public void Discriminator_TreatsNumbersAndBooleansTheSameWhateverTheTextForm()
+    {
+        var schema = @"{ ""oneOf"": [
+            { ""properties"": { ""n"": { ""const"": 1 }, ""one"": {} } },
+            { ""properties"": { ""n"": { ""const"": 2 }, ""two"": {} } } ] }";
+        var flags = @"{ ""anyOf"": [
+            { ""properties"": { ""on"": { ""const"": true }, ""yes"": {} } },
+            { ""properties"": { ""on"": { ""const"": false }, ""no"": {} } } ] }";
+
+        // XML and YAML scalars arrive as text.
+        Assert.That(Discriminated(schema, @"{ ""n"": ""2"" }"), Is.EqualTo(new[] { "n", "two" }));
+        Assert.That(Discriminated(schema, @"{ ""n"": 1.0 }"), Is.EqualTo(new[] { "n", "one" }));
+        Assert.That(Discriminated(flags, @"{ ""on"": ""false"" }"), Is.EqualTo(new[] { "on", "no" }));
+    }
+
+    [Test]
+    public void Discriminator_LeavesThenAndElseAUnion()
+    {
+        var schema = @"{
+            ""if"": { ""properties"": { ""kind"": { ""const"": ""car"" } } },
+            ""then"": { ""properties"": { ""kind"": { ""const"": ""car"" }, ""wheels"": {} } },
+            ""else"": { ""properties"": { ""kind"": { ""const"": ""plane"" }, ""wings"": {} } } }";
+
+        Assert.That(Discriminated(schema, @"{ ""kind"": ""car"" }"), Is.EqualTo(new[] { "kind", "wheels", "wings" }));
+    }
+
+    [Test]
+    public void TheFlag_MustBeTheThirdArgumentOfOrderBySchema()
+    {
+        var (success, data) = Run(
+            @"[{ ""command"": ""put"", ""path"": ""$.r"", ""value"": ""=orderBySchema($.s,$.d,'bogus')"" }]",
+            @"{ ""s"": { ""properties"": { ""a"": {} } }, ""d"": { ""a"": 1 } }");
+
+        Assert.That(success && data["r"] is not null, Is.False);
+        Assert.That(context.GetLogEntries().Select(e => e.Message), Has.Some.Contain("must be 'discriminate'"));
+    }
+
     // ── The functions' error paths ────────────────────────────────────────────
 
     private (bool Success, JToken Data) Run(string script, string document)

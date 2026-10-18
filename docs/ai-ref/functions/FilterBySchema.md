@@ -7,6 +7,8 @@
 ```
 =filterBySchema(<schema>, <data>)
 =filterBySchema(<schema>, <data>, 'keepAdditional')
+=filterBySchema(<schema>, <data>, 'discriminate')
+=filterBySchema(<schema>, <data>, 'discriminate', 'keepAdditional')
 ```
 
 ## Arguments
@@ -15,7 +17,7 @@
 |---|------|----------|-------------|
 | 1 | path or JSON text | yes | The schema — a path to a schema node (`$.schema`; JSON, XML or YAML) or a JSON string. |
 | 2 | path | yes | The node to filter. Inside `forEach`, `@` names the current item. |
-| 3 | `'keepAdditional'` | no | Keep properties the schema does not list, unless it says `additionalProperties: false`. |
+| 3, 4 | `'keepAdditional'`, `'discriminate'` | no | Flags, in either order. `'keepAdditional'` keeps properties the schema does not list, unless it says `additionalProperties: false`. `'discriminate'` narrows each `oneOf` / `anyOf` to the branch the data's discriminator selects. |
 
 ## Returns
 
@@ -33,6 +35,24 @@ Values and the order of what remains are untouched.
   `then` / `else` branch is kept. Choosing one branch without validating would silently drop data.
 - `$ref` is followed when local (`#`, `#/$defs/…`, `#/definitions/…`). This is not a validator:
   `type`, `required` and the like are never evaluated.
+
+### `'discriminate'` — tagged unions
+
+By default a `oneOf` keeps the properties of **every** branch, so a car carrying a stray `wings`
+keeps it. When each branch pins a property with `const` (or `enum`) — `kind: "car"` vs `kind: "plane"` —
+`'discriminate'` reads the data's value and keeps only the matching branch's properties, so the
+car loses `wings`.
+
+- A **discriminator** is a property pinned in **every** branch; the branch is chosen when the data's
+  scalar value for it is allowed by **exactly one** branch (`enum` lists work: `["car","van"]`).
+- Wherever it cannot decide — data not an object, property missing, no branch or several match, a
+  branch pins nothing — that choice **stays a union**, so `'discriminate'` can only ever remove
+  *more* than the default when it is sure. It is decided separately at every level.
+- `then` / `else` are never discriminated.
+
+Verified by: `Fixtures/Schema/filterbyschema/07-discriminate-drops-the-other-branch.json`; flag off
+`08-…`; `enum` `09-…`; both flags `10-…`; and across JSON, XML and YAML by
+`TLio.Parity.Tests/Fixtures/Functions/15-filter-by-schema-discriminate` and `16-…-enum`.
 
 ## Verified example
 
@@ -75,5 +95,6 @@ union: `05-anyof-keeps-union.json`. In place on the same path: `06-in-place-on-t
 
 - **Omitting the data argument.** JLio's one-argument form is not supported; see `orderBySchema`.
 - **Expecting a free-form object to be emptied.** `{"type":"object"}` with no `properties` keeps its contents.
-- **Expecting `oneOf` to select a branch.** The union of all branches is kept.
+- **Expecting `oneOf` to select a branch by itself.** The union of all branches is kept unless you pass `'discriminate'`.
+- **Using `'discriminate'` on a union with no `const`/`enum` tag.** It has nothing to read and quietly stays a union.
 - **Putting `'keepAdditional'` and expecting `additionalProperties: false` to be overridden.** It is honoured.

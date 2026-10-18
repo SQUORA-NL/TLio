@@ -99,6 +99,7 @@ public sealed class FlatSchema<TNode>
         var additional = new List<SchemaNode<TNode>>();
         var allowed = false;
         var forbidden = false;
+        var allowedValues = new List<TNode>();
 
         foreach (var node in nodes)
         {
@@ -130,12 +131,15 @@ public sealed class FlatSchema<TNode>
                 HasDefault = true;
                 Default = node.Default;
             }
+            allowedValues.AddRange(node.AllowedValues);
             if (!HasConst && node.AllowedValues.Count == 1)
             {
                 HasConst = true;
                 Const = node.AllowedValues[0];
             }
         }
+
+        AllowedValues = allowedValues;
 
         Properties = order
             .Select(name => new KeyValuePair<string, SchemaView<TNode>>(
@@ -167,6 +171,9 @@ public sealed class FlatSchema<TNode>
     public TNode? Default { get; }
     public bool HasConst { get; }
     public TNode? Const { get; }
+
+    /// <summary>Every <c>const</c> / <c>enum</c> value contributed by the expanded schemas.</summary>
+    public IReadOnlyList<TNode> AllowedValues { get; }
 
     /// <summary>
     /// True when the schema says something about the shape of an object or array here. A schema

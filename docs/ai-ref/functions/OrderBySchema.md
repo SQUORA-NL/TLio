@@ -6,6 +6,7 @@
 
 ```
 =orderBySchema(<schema>, <data>)
+=orderBySchema(<schema>, <data>, 'discriminate')
 ```
 
 ## Arguments
@@ -14,6 +15,7 @@
 |---|------|----------|-------------|
 | 1 | path or JSON text | yes | The schema. A path to a schema node in the document (`$.schema`) — the schema may live in a JSON, XML or YAML document — or a JSON string (`'{"properties":{"a":{},"b":{}}}'`). |
 | 2 | path | yes | The node to order. Inside `forEach`, `@` names the current item. |
+| 3 | `'discriminate'` | no | Narrow each `oneOf` / `anyOf` to the branch the data's discriminator selects (see below). Any other third argument is an error. |
 
 ## Returns
 
@@ -39,6 +41,32 @@ Only the keywords that decide shape are read:
 | `allOf` | Every member contributes, in order. |
 | `oneOf`, `anyOf`, `then`, `else` | **Union**: every branch contributes, in branch order. Without validation there is no knowing which branch the data matches, and a union never loses a property. A property declared by two branches keeps the position of the first. |
 | `if`, `not`, `patternProperties`, `propertyNames` | Ignored. |
+
+### `'discriminate'` — tagged unions
+
+A tagged union pins one property to a constant in every branch:
+
+```json
+{ "oneOf": [
+  { "properties": { "kind": { "const": "car" },   "color": {}, "wheels": {} } },
+  { "properties": { "color": {}, "kind": { "const": "plane" }, "wings":  {} } } ] }
+```
+
+By default both branches contribute, so a plane's properties are ordered `kind, color, wings`
+(the first branch's order wins for shared names). With `'discriminate'` the data's `kind` selects the
+plane branch, and the same plane is ordered `color, kind, wings`.
+
+- A **discriminator** is a property pinned by `const` (or `enum`) in **every** branch. The branch is
+  chosen when the data has a scalar value for it that **exactly one** branch allows.
+- Anywhere it cannot decide — the data is not an object, lacks the property, no branch or several
+  allow the value, a branch pins nothing — that choice **stays a union**. Several discriminators are
+  tried in the first branch's declaration order. It is decided separately at every level of the data.
+- Values compare the same in every format: `1`, `"1"` and `1.0` agree, and so do `true` and `"true"`.
+- `then` / `else` are never discriminated (they depend on an `if` that is not evaluated).
+
+Verified by: `Fixtures/Schema/orderbyschema/08-discriminate-picks-the-matching-branch.json`; the
+flag-off union `09-…`; no branch matches `10-…`; every level `11-…`; and across JSON, XML and YAML by
+`TLio.Parity.Tests/Fixtures/Functions/14-order-by-schema-discriminate`.
 
 ## Verified example
 
@@ -90,5 +118,6 @@ schema: `06-recursive-ref.json`. A schema given as JSON text: `07-schema-as-json
 ## Common mistakes
 
 - **Omitting the data argument.** JLio's one-argument form ("shape the node being set") is not supported: in TLio's `set` the node a function is evaluated against is the target's *parent*, so it would shape the wrong object. Pass the data path explicitly.
-- **Expecting `oneOf` to pick a branch.** All branches contribute. If two branches declare the same property differently, the first declaration decides its position.
+- **Expecting `oneOf` to pick a branch by itself.** All branches contribute unless you pass `'discriminate'`. If two branches declare the same property differently, the first declaration decides its position.
+- **Expecting `'discriminate'` to validate.** It reads one `const`/`enum` value to choose a branch; a document that matches no branch is simply ordered by the union.
 - **Expecting a remote `$ref` to load.** Only `#`-local references are followed.

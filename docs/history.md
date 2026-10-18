@@ -11,7 +11,10 @@ Newest first.
   (default; never loses a property) and `FirstBranchSelector` (`skeleton`). Phase 2 — a discriminator
   selector choosing the branch from a `const`/`enum` property of the data — is a new selector class only:
   `Flatten` already passes the data node and `SchemaNode.AllowedValues` already holds the `const`/`enum`
-  values (`SchemaShapeTests.BranchSelector_ReceivesTheDataNode_…` pins the seam). Reordering uses
+  values (`SchemaShapeTests.BranchSelector_ReceivesTheDataNode_…` pins the seam). Phase 2 landed on that
+  seam: `DiscriminatorBranchSelector` (opt-in `'discriminate'`) picks the one `oneOf`/`anyOf` branch whose
+  `const`/`enum` tag — pinned in every branch — matches the data, and stays a union wherever it is not
+  sure; the only reader change was a read-only `FlatSchema.AllowedValues`. Reordering uses
   remove-then-set on the adapter, which lands last in every format, so no new adapter method. Decisions in
   `behaviour-decisions.md` section C; spec in `specs/025-schema-shaping/`. Tests: `Fixtures/Schema/` (compared
   order-sensitively — `JToken.DeepEquals` ignores property order), `SchemaShapeTests`, parity fixtures

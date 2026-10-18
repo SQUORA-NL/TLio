@@ -1,7 +1,7 @@
 # Feature Specification: Schema Shaping (orderBySchema, filterBySchema, skeleton)
 
 **Feature Branch**: `feature/match-jlio-support`
-**Status**: Phase 1 implemented; phase 2 specified, not started
+**Status**: Phases 1 and 2 implemented
 **Origin**: JLio's `JLio.Extensions.JSchema` pack (`filterBySchema`, `orderBySchema`), deferred from
 spec 002 because the schema library JLio uses (Newtonsoft.Json.Schema) is AGPL / paid and bound to
 Newtonsoft. TLio has to run without Newtonsoft, so the *functionality* is wanted, not the implementation.
@@ -14,7 +14,7 @@ Newtonsoft. TLio has to run without Newtonsoft, so the *functionality* is wanted
 | 2 | Is `skeleton` in scope? | **Yes**, phase 1. |
 | 3 | `$ref` | **Local only** (`#`, `#/$defs/…`, `#/definitions/…`). Remote references are ignored with a warning. |
 | 4 | `oneOf` / `anyOf` / `allOf` | `allOf` and every branch of `oneOf`/`anyOf`/`then`/`else` **union**; `skeleton` commits to the first branch. |
-| 5 | Discriminator-based branch selection | **Phase 2**, but phase 1 is built to take it without reworking the traversal. |
+| 5 | Discriminator-based branch selection | **Phase 2**, opt-in via `'discriminate'`; phase 1 was built to take it without reworking the traversal. |
 
 ## What JLio actually does with a schema
 
@@ -62,7 +62,7 @@ document cannot be two shapes — and takes the first branch.
 - **FR-8** No new adapter method: reordering is remove-then-set, which appends in every format.
 - **FR-9** Tests that assert order compare serialised text; `JToken.DeepEquals` is order-insensitive.
 
-## Phase 2 — discriminator selection (not started)
+## Phase 2 — discriminator selection (implemented)
 
 A tagged union is written as branches that pin one property to a constant:
 
@@ -86,8 +86,29 @@ decidable (no such property, the data lacks it, several branches match) fall bac
 | A pinned test of the seam | `SchemaShapeTests.BranchSelector_ReceivesTheDataNode_AndTheBranchKindsConstValues`. |
 
 Phase 2 therefore adds one class (`DiscriminatorBranchSelector<TNode>`), a way to choose it (a trailing
-option on the functions, e.g. `'discriminate'`), docs and fixtures — no change to `SchemaDocument`,
-`SchemaView` or `SchemaShaper`. The default stays the union.
+option on the functions, `'discriminate'`), docs and fixtures — no change to `SchemaDocument` or
+`SchemaShaper`. The default stays the union. The one touch to phase 1's reader was a read-only
+accessor, `FlatSchema.AllowedValues` (all `const`/`enum` values of an expanded property), because a
+property pinned across `allOf` members is only visible once flattened.
+
+### As built
+
+- **FR-10** A **discriminator** is a property pinned (`const`, or `enum`) in **every** `oneOf`/`anyOf`
+  branch. When the data holds a scalar value for it that **exactly one** branch allows, that branch is
+  the only one that contributes.
+- **FR-11** Where that cannot be decided — data not an object, property missing or not a scalar, no
+  branch or several allow the value, a branch pins nothing — the choice **stays a union**. Further
+  discriminators are tried in the first branch's declaration order before giving up. So `'discriminate'`
+  never removes anything it is not sure about.
+- **FR-12** Branches are read through `$ref` and `allOf`; the choice is made independently at every level
+  of the data. `then`/`else` are never discriminated (they hang on an `if` that is not evaluated).
+- **FR-13** Values compare the same in every format: `1`, `"1"`, `1.0` agree; `true` and `"true"` agree.
+- **FR-14** Opt-in: `orderBySchema(schema, data, 'discriminate')`;
+  `filterBySchema(schema, data, 'discriminate' [, 'keepAdditional'])`, flags in either order. A third
+  argument to `orderBySchema` that is not `'discriminate'` is an error. `skeleton` is unchanged (first branch).
+
+Tests: `Fixtures/Schema/orderbyschema/08`–`11`, `filterbyschema/07`–`10`, `SchemaShapeTests`
+(discriminator section), parity `Functions/14`–`16`.
 
 ## Not in scope
 

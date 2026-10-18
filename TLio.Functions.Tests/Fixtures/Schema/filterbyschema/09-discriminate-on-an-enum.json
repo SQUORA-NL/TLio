@@ -1,0 +1,77 @@
+{
+  "input": {
+    "schema": {
+      "anyOf": [
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "car",
+                "van"
+              ]
+            },
+            "wheels": {}
+          }
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "plane"
+              ]
+            },
+            "wings": {}
+          }
+        }
+      ]
+    },
+    "data": {
+      "kind": "van",
+      "wheels": 6,
+      "wings": 1
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.filtered",
+      "value": "=filterBySchema($.schema, $.data, 'discriminate')"
+    }
+  ],
+  "result": {
+    "schema": {
+      "anyOf": [
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "car",
+                "van"
+              ]
+            },
+            "wheels": {}
+          }
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "plane"
+              ]
+            },
+            "wings": {}
+          }
+        }
+      ]
+    },
+    "data": {
+      "kind": "van",
+      "wheels": 6,
+      "wings": 1
+    },
+    "filtered": {
+      "kind": "van",
+      "wheels": 6
+    }
+  }
+}

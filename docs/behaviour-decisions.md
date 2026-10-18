@@ -201,7 +201,7 @@ Recorded so they read as choices rather than gaps.
 | `orderBySchema` / `filterBySchema` data argument | one argument, acts on the node being set | **explicit second argument** (`=orderBySchema($.schema, $.data)`). In TLio's legacy `set` the node a function is evaluated against is the target's *parent*, so the implicit form would shape the wrong object |
 | `filterBySchema` on a free-form value (`{"type":"object"}`, `{}`) | strips its contents (compares paths) | kept whole — a schema that says nothing about shape does not make a value "undescribed" |
 | `filterBySchema` and `additionalProperties` | ignored | ignored by default (unlisted properties are dropped, as in JLio); `'keepAdditional'` honours it |
-| `oneOf` / `anyOf` in the schema | not read | **union** of all branches — without validation the matching branch is unknowable, and picking one would silently drop data. Discriminator-based selection is phase 2 |
+| `oneOf` / `anyOf` in the schema | not read | **union** of all branches — without validation the matching branch is unknowable, and picking one would silently drop data. `'discriminate'` opts in to choosing the branch whose `const`/`enum` tag matches the data, and still falls back to the union wherever it is not sure |
 | `skeleton(schema)` | — | new: the empty document a schema describes, with schema `default`s; the schema counterpart of `merge` |
 
 ---

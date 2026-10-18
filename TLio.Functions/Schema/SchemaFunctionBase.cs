@@ -57,6 +57,33 @@ public abstract class SchemaFunctionBase<TNode> : FunctionBase<TNode>
         return true;
     }
 
+    protected const string DiscriminateFlag = "discriminate";
+
+    /// <summary>
+    /// True when the argument is the literal word <paramref name="flag"/> (case-insensitive).
+    /// Evaluated with <c>GetValue</c>, not <c>ResolveArg</c>: a flag is text, and a data path
+    /// must never be mistaken for one.
+    /// </summary>
+    protected static bool IsFlag(
+        IFunctionSupportedValue<TNode> arg, string flag,
+        TNode currentNode, TNode dataContext, IExecutionContext<TNode> context)
+    {
+        var raw = arg.GetValue(currentNode, dataContext, context);
+        var text = raw.Success && raw.Data.Count == 1 ? context.NodeAdapter.TryGetString(raw.Data[0]) : null;
+        return string.Equals(text, flag, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// The branch selector for <c>oneOf</c> / <c>anyOf</c>: the union by default, or — with the
+    /// <c>'discriminate'</c> flag — the branch a <c>const</c>/<c>enum</c> discriminator in the data
+    /// picks, falling back to the union wherever it cannot decide.
+    /// </summary>
+    protected static IBranchSelector<TNode> CreateSelector(
+        bool discriminate, SchemaDocument<TNode> document, INodeAdapter<TNode> adapter) =>
+        discriminate
+            ? new DiscriminatorBranchSelector<TNode>(document, adapter)
+            : UnionBranchSelector<TNode>.Instance;
+
     /// <summary>Resolve the data argument to the node to shape.</summary>
     protected bool TryReadData(
         IFunctionSupportedValue<TNode> arg,
