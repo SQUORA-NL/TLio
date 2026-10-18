@@ -1,0 +1,55 @@
+{
+  "input": {
+    "s": {
+      "properties": {
+        "id": {},
+        "address": {
+          "properties": {
+            "city": {}
+          }
+        }
+      }
+    },
+    "d": {
+      "id": "1",
+      "secret": "x",
+      "address": {
+        "city": "Delft",
+        "zip": "2611"
+      }
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.r",
+      "value": "=filterBySchema($.s,$.d)"
+    }
+  ],
+  "result": {
+    "s": {
+      "properties": {
+        "id": {},
+        "address": {
+          "properties": {
+            "city": {}
+          }
+        }
+      }
+    },
+    "d": {
+      "id": "1",
+      "secret": "x",
+      "address": {
+        "city": "Delft",
+        "zip": "2611"
+      }
+    },
+    "r": {
+      "id": "1",
+      "address": {
+        "city": "Delft"
+      }
+    }
+  }
+}

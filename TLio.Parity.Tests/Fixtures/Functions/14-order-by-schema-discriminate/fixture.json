@@ -1,0 +1,72 @@
+{
+  "input": {
+    "s": {
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "car"
+            },
+            "color": {},
+            "wheels": {}
+          }
+        },
+        {
+          "properties": {
+            "color": {},
+            "kind": {
+              "const": "plane"
+            },
+            "wings": {}
+          }
+        }
+      ]
+    },
+    "d": {
+      "wings": "2",
+      "kind": "plane",
+      "color": "red"
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.r",
+      "value": "=orderBySchema($.s,$.d,'discriminate')"
+    }
+  ],
+  "result": {
+    "s": {
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "car"
+            },
+            "color": {},
+            "wheels": {}
+          }
+        },
+        {
+          "properties": {
+            "color": {},
+            "kind": {
+              "const": "plane"
+            },
+            "wings": {}
+          }
+        }
+      ]
+    },
+    "d": {
+      "wings": "2",
+      "kind": "plane",
+      "color": "red"
+    },
+    "r": {
+      "color": "red",
+      "kind": "plane",
+      "wings": "2"
+    }
+  }
+}

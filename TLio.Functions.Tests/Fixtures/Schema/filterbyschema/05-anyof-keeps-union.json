@@ -1,0 +1,55 @@
+{
+  "input": {
+    "schema": {
+      "anyOf": [
+        {
+          "properties": {
+            "a": {}
+          }
+        },
+        {
+          "properties": {
+            "b": {}
+          }
+        }
+      ]
+    },
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.filtered",
+      "value": "=filterBySchema($.schema, $.data)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "anyOf": [
+        {
+          "properties": {
+            "a": {}
+          }
+        },
+        {
+          "properties": {
+            "b": {}
+          }
+        }
+      ]
+    },
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "filtered": {
+      "a": 1,
+      "b": 2
+    }
+  }
+}

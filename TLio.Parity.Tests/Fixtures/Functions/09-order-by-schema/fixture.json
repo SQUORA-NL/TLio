@@ -1,0 +1,45 @@
+{
+  "input": {
+    "s": {
+      "properties": {
+        "last": {},
+        "first": {},
+        "age": {}
+      }
+    },
+    "d": {
+      "age": 30,
+      "first": "John",
+      "country": "USA",
+      "last": "Doe"
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.r",
+      "value": "=orderBySchema($.s,$.d)"
+    }
+  ],
+  "result": {
+    "s": {
+      "properties": {
+        "last": {},
+        "first": {},
+        "age": {}
+      }
+    },
+    "d": {
+      "age": 30,
+      "first": "John",
+      "country": "USA",
+      "last": "Doe"
+    },
+    "r": {
+      "last": "Doe",
+      "first": "John",
+      "age": 30,
+      "country": "USA"
+    }
+  }
+}

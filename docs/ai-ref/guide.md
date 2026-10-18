@@ -220,6 +220,15 @@ birthdays passed, not `days/365.25`.
 | Order objects by a field | `sortBy` | key is a plain property chain, not a path expression |
 | Last match of a path | `last` | `partial` counts from the front only |
 
+### Shaping to a JSON Schema
+
+| Goal | Function | Note |
+|------|----------|------|
+| Reorder properties to schema order | `orderBySchema` | undeclared properties follow; nothing removed |
+| Drop what the schema does not describe | `filterBySchema` | `'keepAdditional'` opts out; free-form `{}` values kept whole |
+| Blank document from a schema | `skeleton` | `default`/`const` honoured; first `oneOf` branch |
+| Pick the right `oneOf` branch from the data | `'discriminate'` flag | needs a `const`/`enum` tag in every branch; else union. Not a validator |
+
 These four return a **collection** — the containing command is normally a `put` to an array
 path. They are the only new capability here rather than a shorthand: before them, de-duplicating
 needed `merge` with `uniqueItemsWithoutKeys` and a second document, and ordering was unreachable.

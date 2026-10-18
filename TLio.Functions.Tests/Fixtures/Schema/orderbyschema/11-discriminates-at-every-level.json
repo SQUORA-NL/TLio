@@ -1,0 +1,91 @@
+{
+  "input": {
+    "schema": {
+      "properties": {
+        "vehicle": {
+          "oneOf": [
+            {
+              "properties": {
+                "kind": {
+                  "const": "car"
+                },
+                "color": {},
+                "wheels": {}
+              }
+            },
+            {
+              "properties": {
+                "color": {},
+                "kind": {
+                  "const": "plane"
+                },
+                "wings": {}
+              }
+            }
+          ]
+        },
+        "owner": {}
+      }
+    },
+    "data": {
+      "owner": "ada",
+      "vehicle": {
+        "wings": 2,
+        "kind": "plane",
+        "color": "red"
+      }
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.ordered",
+      "value": "=orderBySchema($.schema, $.data, 'discriminate')"
+    }
+  ],
+  "result": {
+    "schema": {
+      "properties": {
+        "vehicle": {
+          "oneOf": [
+            {
+              "properties": {
+                "kind": {
+                  "const": "car"
+                },
+                "color": {},
+                "wheels": {}
+              }
+            },
+            {
+              "properties": {
+                "color": {},
+                "kind": {
+                  "const": "plane"
+                },
+                "wings": {}
+              }
+            }
+          ]
+        },
+        "owner": {}
+      }
+    },
+    "data": {
+      "owner": "ada",
+      "vehicle": {
+        "wings": 2,
+        "kind": "plane",
+        "color": "red"
+      }
+    },
+    "ordered": {
+      "vehicle": {
+        "color": "red",
+        "kind": "plane",
+        "wings": 2
+      },
+      "owner": "ada"
+    }
+  }
+}

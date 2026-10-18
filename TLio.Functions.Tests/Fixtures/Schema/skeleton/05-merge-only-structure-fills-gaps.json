@@ -1,0 +1,57 @@
+{
+  "input": {
+    "schema": {
+      "properties": {
+        "id": {},
+        "status": {
+          "default": "new"
+        },
+        "currency": {
+          "default": "EUR"
+        }
+      }
+    },
+    "doc": {
+      "status": "open",
+      "id": 5
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.blank",
+      "value": "=skeleton($.schema)"
+    },
+    {
+      "command": "merge",
+      "fromPath": "$.blank",
+      "toPath": "$.doc",
+      "settings": {
+        "strategy": "onlyStructure"
+      }
+    }
+  ],
+  "result": {
+    "schema": {
+      "properties": {
+        "id": {},
+        "status": {
+          "default": "new"
+        },
+        "currency": {
+          "default": "EUR"
+        }
+      }
+    },
+    "doc": {
+      "status": "open",
+      "id": 5,
+      "currency": "EUR"
+    },
+    "blank": {
+      "id": null,
+      "status": "new",
+      "currency": "EUR"
+    }
+  }
+}

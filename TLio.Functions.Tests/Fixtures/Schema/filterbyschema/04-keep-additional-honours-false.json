@@ -1,0 +1,36 @@
+{
+  "input": {
+    "schema": {
+      "properties": {
+        "id": {}
+      },
+      "additionalProperties": false
+    },
+    "data": {
+      "id": 1,
+      "extra": true
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.filtered",
+      "value": "=filterBySchema($.schema, $.data, 'keepAdditional')"
+    }
+  ],
+  "result": {
+    "schema": {
+      "properties": {
+        "id": {}
+      },
+      "additionalProperties": false
+    },
+    "data": {
+      "id": 1,
+      "extra": true
+    },
+    "filtered": {
+      "id": 1
+    }
+  }
+}

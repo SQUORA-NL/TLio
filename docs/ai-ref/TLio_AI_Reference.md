@@ -132,7 +132,8 @@ options.FunctionsProvider.RegisterMath<JToken>();
 options.FunctionsProvider.RegisterTimeDate<JToken>();
 ```
 
-`if`, `coalesce`, `between`, `distinct`, `sort`, `sortBy` and `last` need no registration —
+`if`, `coalesce`, `between`, `distinct`, `sort`, `sortBy`, `last`, `orderBySchema`, `filterBySchema` and
+`skeleton` need no registration —
 they are built in, like the other predicates and path functions.
 
 ---
@@ -340,6 +341,23 @@ They are new capability rather than shorthand: before them, de-duplicating requi
 
 Note `=distinct($.items)` on an empty array answers `[]`, but `=distinct($.items[*])` on the
 same document **fails** — `[*]` genuinely matches nothing, and path-not-found is an error.
+
+### Shaping a document to a JSON Schema
+
+| Goal | Function | Notes |
+|------|----------|-------|
+| Put properties in schema-declared order | `orderBySchema` | Undeclared properties follow, in original order; nothing is added or removed |
+| Keep only what the schema describes | `filterBySchema` | Drops undeclared properties (`'keepAdditional'` keeps them unless `additionalProperties: false`); free-form values (`{}`) are kept whole |
+| Empty document a schema describes | `skeleton` | `default`/`const` where given, `[]` for arrays, `null` elsewhere; first branch of `oneOf`/`anyOf`; recursive schemas terminate |
+
+The schema is a **path to a schema node** in the document (JSON, XML or YAML) or JSON text. The data is an
+explicit argument — there is no implicit "current node" form. **This is not a validator**: only
+`properties`, `items`, `prefixItems`, `additionalProperties`, local `$ref`, `allOf`/`oneOf`/`anyOf`,
+`then`/`else`, `default`, `const`, `enum` and `type` (skeleton) are read. By default every `oneOf`/`anyOf`
+branch contributes (union); pass `'discriminate'` to `orderBySchema`/`filterBySchema` to keep only the branch
+whose `const`/`enum` tag matches the data, falling back to the union when it cannot tell. Pages:
+[OrderBySchema](functions/OrderBySchema.md), [FilterBySchema](functions/FilterBySchema.md),
+[Skeleton](functions/Skeleton.md).
 
 ### Advanced and path functions
 
@@ -1974,6 +1992,9 @@ or `sweep.xml` — fixing that means re-recording the sweep (`dotnet test TLio.P
 | sort | `=sort(array)` / `=sort(array,dir)` | Order scalars, stable | built-in |
 | sortBy | `=sortby(array,keyPath)` / `=sortby(array,keyPath,dir)` | Order objects by a field | built-in |
 | last | `=last(path)` | Last match of a path | built-in |
+| orderBySchema | `=orderBySchema(schema,data)` / `=orderBySchema(schema,data,'discriminate')` | Reorder properties to schema order | built-in |
+| filterBySchema | `=filterBySchema(schema,data [,'discriminate'] [,'keepAdditional'])` | Keep only what the schema describes | built-in |
+| skeleton | `=skeleton(schema)` | Empty document a schema describes | built-in |
 | toArray | `=toArray()` / `=toArray(path)` | Wrap the current node, or a path, in an array | built-in |
 
 Full pages for every function, including the traps, live in `docs/ai-ref/functions/` and are

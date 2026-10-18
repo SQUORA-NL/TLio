@@ -1,0 +1,55 @@
+{
+  "input": {
+    "schema": {
+      "properties": {
+        "id": {},
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    "data": {
+      "id": 1,
+      "extra": true,
+      "payload": {
+        "anything": {
+          "goes": 1
+        }
+      }
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.filtered",
+      "value": "=filterBySchema($.schema, $.data)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "properties": {
+        "id": {},
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    "data": {
+      "id": 1,
+      "extra": true,
+      "payload": {
+        "anything": {
+          "goes": 1
+        }
+      }
+    },
+    "filtered": {
+      "id": 1,
+      "payload": {
+        "anything": {
+          "goes": 1
+        }
+      }
+    }
+  }
+}

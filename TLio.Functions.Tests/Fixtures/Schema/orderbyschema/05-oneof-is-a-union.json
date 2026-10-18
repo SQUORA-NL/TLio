@@ -1,0 +1,57 @@
+{
+  "input": {
+    "schema": {
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {},
+            "wheels": {}
+          }
+        },
+        {
+          "properties": {
+            "kind": {},
+            "wings": {}
+          }
+        }
+      ]
+    },
+    "data": {
+      "wings": 2,
+      "kind": "plane"
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.ordered",
+      "value": "=orderBySchema($.schema, $.data)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {},
+            "wheels": {}
+          }
+        },
+        {
+          "properties": {
+            "kind": {},
+            "wings": {}
+          }
+        }
+      ]
+    },
+    "data": {
+      "wings": 2,
+      "kind": "plane"
+    },
+    "ordered": {
+      "kind": "plane",
+      "wings": 2
+    }
+  }
+}

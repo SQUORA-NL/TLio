@@ -963,6 +963,43 @@
   },
   {
     "command": "add",
+    "path": "$.shape.schema",
+    "value": {
+      "properties": {
+        "id": {},
+        "name": {},
+        "status": {
+          "default": "new"
+        }
+      }
+    }
+  },
+  {
+    "command": "add",
+    "path": "$.shape.data",
+    "value": {
+      "extra": "dropped",
+      "name": "Ada",
+      "id": "7"
+    }
+  },
+  {
+    "command": "put",
+    "path": "$.shape.ordered",
+    "value": "=orderBySchema($.shape.schema,$.shape.data)"
+  },
+  {
+    "command": "put",
+    "path": "$.shape.filtered",
+    "value": "=filterBySchema($.shape.schema,$.shape.data)"
+  },
+  {
+    "command": "put",
+    "path": "$.shape.blank",
+    "value": "=skeleton($.shape.schema)"
+  },
+  {
+    "command": "add",
     "path": "$.loop",
     "value": {}
   },

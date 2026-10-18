@@ -46,6 +46,9 @@ TLio.JsonPath.Benchmarks/   ← BenchmarkDotNet: engine vs Newtonsoft vs the old
 TLio.Functions.Tests/       ← Built-in function tests + extension-pack fixture tests (Math, Text, TimeDate, ETL, TextPack)
 TLio.Extensions.Text/      ← Optional text function pack: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim (008), regexReplace, regexExtract, right (023)
 TLio.Functions/Collections/ ← distinct, sort, sortBy, last — built in, registered by ParseOptions (023)
+TLio.Functions/Schema/      ← orderBySchema, filterBySchema, skeleton — a JSON Schema's *shape* (property order,
+                              items, local $ref, allOf/oneOf/anyOf), no schema library, not a validator (025).
+                              Tests compare property order, which JToken.DeepEquals does not.
 TLio.Extensions.Looping/   ← forEach, while — the loop primitives, opt-in via RegisterLooping (feature/actus-pam-contract)
 TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtures
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
@@ -291,6 +294,9 @@ rejected. Wildcard paths flatten (`$.items[*].p * 2` is one number). Rules: `doc
 The full log, including the design notes behind each entry (the `@` resolution and its
 concurrency bug, `setProperties`, the format converter), is in `docs/history.md`. Highlights:
 
+- schema-shaping (025): `orderBySchema`, `filterBySchema`, `skeleton` — built in, read a JSON Schema's shape
+  (not a validator, no schema library). `'discriminate'` picks the `oneOf` branch from a `const`/`enum` tag.
+  See `specs/025-schema-shaping/spec.md`.
 - infix-expressions: `=round($.a * $.b, 2)` — operators in function values, rewritten at parse time into the Math
   functions. Whitespace on both sides of a binary operator is required. See *Infix arithmetic* above.
 - jsonpath-in-system-text-json: `TLio.JsonPath` — an own JSONPath engine on `JsonNode` replacing JsonCons.

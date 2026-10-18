@@ -1,0 +1,33 @@
+{
+  "input": {
+    "s": {
+      "properties": {
+        "id": {},
+        "status": {
+          "default": "new"
+        }
+      }
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.r",
+      "value": "=skeleton($.s)"
+    }
+  ],
+  "result": {
+    "s": {
+      "properties": {
+        "id": {},
+        "status": {
+          "default": "new"
+        }
+      }
+    },
+    "r": {
+      "id": null,
+      "status": "new"
+    }
+  }
+}

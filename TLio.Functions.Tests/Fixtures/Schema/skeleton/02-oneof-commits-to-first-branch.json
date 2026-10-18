@@ -1,0 +1,44 @@
+{
+  "input": {
+    "schema": {
+      "oneOf": [
+        {
+          "properties": {
+            "a": {}
+          }
+        },
+        {
+          "properties": {
+            "b": {}
+          }
+        }
+      ]
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.blank",
+      "value": "=skeleton($.schema)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "oneOf": [
+        {
+          "properties": {
+            "a": {}
+          }
+        },
+        {
+          "properties": {
+            "b": {}
+          }
+        }
+      ]
+    },
+    "blank": {
+      "a": null
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "input": {
+    "schema": {
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "car"
+            },
+            "color": {},
+            "wheels": {}
+          }
+        },
+        {
+          "properties": {
+            "color": {},
+            "kind": {
+              "const": "plane"
+            },
+            "wings": {}
+          }
+        }
+      ]
+    },
+    "data": {
+      "kind": "car",
+      "wheels": 4,
+      "wings": 0,
+      "color": "red"
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.filtered",
+      "value": "=filterBySchema($.schema, $.data, 'discriminate')"
+    }
+  ],
+  "result": {
+    "schema": {
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "car"
+            },
+            "color": {},
+            "wheels": {}
+          }
+        },
+        {
+          "properties": {
+            "color": {},
+            "kind": {
+              "const": "plane"
+            },
+            "wings": {}
+          }
+        }
+      ]
+    },
+    "data": {
+      "kind": "car",
+      "wheels": 4,
+      "wings": 0,
+      "color": "red"
+    },
+    "filtered": {
+      "kind": "car",
+      "wheels": 4,
+      "color": "red"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "input": {
+    "schema": {
+      "properties": {
+        "id": {}
+      }
+    },
+    "person": {
+      "id": 1,
+      "extra": 2
+    }
+  },
+  "script": [
+    {
+      "command": "set",
+      "path": "$.person",
+      "value": "=filterBySchema($.schema, $.person)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "properties": {
+        "id": {}
+      }
+    },
+    "person": {
+      "id": 1
+    }
+  }
+}
