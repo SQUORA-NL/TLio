@@ -81,6 +81,41 @@ Opaque values: `02-opaque-value-is-kept.json`. `'keepAdditional'`: `03-keep-addi
 and with `additionalProperties: false`: `04-keep-additional-honours-false.json`. `anyOf` as a
 union: `05-anyof-keeps-union.json`. In place on the same path: `06-in-place-on-the-same-path.json`.
 
+## In YAML and XML
+
+YAML — `{ "command": "put", "path": "$.filtered", "value": "=filterBySchema($.schema, $.data)" }`
+
+```yaml
+schema:
+  properties:
+    id: {}
+    address: { properties: { city: {} } }
+data: { id: 1, secret: x, address: { city: Delft, zip: "2611" } }
+```
+
+adds
+
+```yaml
+filtered: { id: 1, address: { city: Delft } }
+```
+
+XML — `{ "command": "put", "path": "/root/filtered", "value": "=filterBySchema(/root/schema, /root/data)" }`
+
+```xml
+<root>
+  <schema><properties><id/><address><properties><city/></properties></address></properties></schema>
+  <data><id>1</id><secret>x</secret><address><city>Delft</city><zip>2611</zip></address></data>
+</root>
+```
+
+adds
+
+```xml
+<filtered><id>1</id><address><city>Delft</city></address></filtered>
+```
+
+Run with `xmlPathStyle: xpath`; paths name the document element. XML attributes are ignored by the adapter, so `convert` to JSON or YAML first if the schema or data depends on them.
+
 ## When to use
 
 - Stripping internal fields before a document leaves a boundary — the schema is the allow-list.

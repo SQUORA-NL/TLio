@@ -95,6 +95,43 @@ Nested objects and array items: `03-nested-and-array-items.json` / parity `10-�
 `allOf`: `04-ref-and-allof.json`. `oneOf` as a union: `05-oneof-is-a-union.json`. A recursive
 schema: `06-recursive-ref.json`. A schema given as JSON text: `07-schema-as-json-text.json`.
 
+## In YAML and XML
+
+The same function, the same result; only the paths speak the document's language. Output below is from a real
+`tlio_execute` run.
+
+YAML — `{ "command": "put", "path": "$.ordered", "value": "=orderBySchema($.schema, $.data)" }`
+
+```yaml
+schema:
+  type: object
+  properties: { lastName: {}, firstName: {}, age: {} }
+data: { age: 30, firstName: John, country: USA, lastName: Doe }
+```
+
+adds
+
+```yaml
+ordered: { lastName: Doe, firstName: John, age: 30, country: USA }
+```
+
+XML — `{ "command": "put", "path": "/root/ordered", "value": "=orderBySchema(/root/schema, /root/data)" }`
+
+```xml
+<root>
+  <schema><properties><lastName/><firstName/><age/></properties></schema>
+  <data><age>30</age><firstName>John</firstName><country>USA</country><lastName>Doe</lastName></data>
+</root>
+```
+
+adds
+
+```xml
+<ordered><lastName>Doe</lastName><firstName>John</firstName><age>30</age><country>USA</country></ordered>
+```
+
+An empty element (`<lastName/>`) is the XML spelling of the schema node `{}`. Run with `xmlPathStyle: xpath`; paths name the document element. XML attributes are ignored by the adapter, so `convert` to JSON or YAML first if the schema or data depends on them.
+
 ## When to use
 
 - Normalising property order before serialising — API responses, XML that a consumer reads positionally, diff-friendly output.
