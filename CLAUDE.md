@@ -294,6 +294,9 @@ rejected. Wildcard paths flatten (`$.items[*].p * 2` is one number). Rules: `doc
 The full log, including the design notes behind each entry (the `@` resolution and its
 concurrency bug, `setProperties`, the format converter), is in `docs/history.md`. Highlights:
 
+- schema-shaping (025): `orderBySchema`, `filterBySchema`, `skeleton` — built in, read a JSON Schema's shape
+  (not a validator, no schema library). `'discriminate'` picks the `oneOf` branch from a `const`/`enum` tag.
+  See `specs/025-schema-shaping/spec.md`.
 - infix-expressions: `=round($.a * $.b, 2)` — operators in function values, rewritten at parse time into the Math
   functions. Whitespace on both sides of a binary operator is required. See *Infix arithmetic* above.
 - jsonpath-in-system-text-json: `TLio.JsonPath` — an own JSONPath engine on `JsonNode` replacing JsonCons.

@@ -180,7 +180,8 @@ Predicates for `ifElse` / `decisionTable` conditions — equals, notEquals, grea
 greaterOrEqual, lessThan, lessOrEqual, between, and, or, not, exists, isNull, isString,
 isNumber, isBoolean, isArray, isObject, in, matches — are built in and need no registration.
 
-So are the value-choosing and collection functions: if, coalesce, distinct, sort, sortBy, last.
+So are the value-choosing and collection functions: if, coalesce, distinct, sort, sortBy, last, and the
+schema-shaping functions orderBySchema, filterBySchema, skeleton.
 
 ### Minimal script example
 
