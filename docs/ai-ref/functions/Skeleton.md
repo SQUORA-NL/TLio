@@ -60,6 +60,35 @@ JSON, XML and YAML by `TLio.Parity.Tests/Fixtures/Functions/13-skeleton-defaults
 First-branch commitment: `02-oneof-commits-to-first-branch.json`. Recursion:
 `03-recursive-schema-terminates.json`.
 
+## In YAML and XML
+
+YAML — `{ "command": "put", "path": "$.blank", "value": "=skeleton($.schema)" }`
+
+```yaml
+schema:
+  properties:
+    id: { type: integer }
+    status: { type: string, default: new }
+    tags: { type: array, items: { type: string } }
+    address: { properties: { city: {}, zip: {} } }
+```
+
+adds
+
+```yaml
+blank: { id: null, status: new, tags: [], address: { city: null, zip: null } }
+```
+
+XML — `{ "command": "put", "path": "/root/blank", "value": "=skeleton(/root/schema)" }`, with the same schema written as elements
+(`<status><type>string</type><default>new</default></status>`, …), adds
+
+```xml
+<blank><id/><status>new</status><tags/><address><city/><zip/></address></blank>
+```
+
+In XML an empty element is null, `""`, `{}` and `[]` at once, so `<id/>` and `<tags/>` are how `null` and `[]` are written; the
+distinction returns if you `convert` the result to JSON or YAML. Run with `xmlPathStyle: xpath`; paths name the document element. XML attributes are ignored by the adapter, so `convert` to JSON or YAML first if the schema or data depends on them.
+
 ## With `merge`
 
 A skeleton works on either side of a `merge`.
