@@ -238,9 +238,8 @@ The RFC 9535 dialect never treats strings as dates.
 
 ## Target frameworks
 
-`net8.0`, `net9.0` and `net10.0`, built in parallel and each tested on its own runtime. A later runtime (`net11.0` and
-beyond) uses the `net10.0` build — NuGet picks the highest compatible one — and that is checked, not assumed: the `net10.0`
-build passes the compliance suite and the Newtonsoft differential corpus unchanged on the .NET 11 release candidate.
+`net8.0`, `net9.0`, `net10.0` and `net11.0`, built in parallel and each tested on its own runtime. A later runtime
+(`net12.0` and beyond) uses the `net11.0` build — NuGet picks the highest compatible one — until a build for it exists.
 
 Microsoft's own support for .NET 8 and .NET 9 ends on **10 November 2026**; they are targeted because migrating teams are
 still on them, and will be dropped only in a major version after that date. Policy and the runtime differences found on the

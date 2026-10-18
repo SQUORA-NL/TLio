@@ -4,8 +4,8 @@
 
 | | Targets |
 |---|---|
-| Every library package (`TLio.Core`, `TLio.Commands`, `TLio.Functions`, `TLio.Client`, the adapters, the extension packs, `TLio.FormatConverter`, `TLio.JsonPath`) | `net8.0`, `net9.0`, `net10.0` |
-| Every test project | the same three, so each is exercised on its own runtime |
+| Every library package (`TLio.Core`, `TLio.Commands`, `TLio.Functions`, `TLio.Client`, the adapters, the extension packs, `TLio.FormatConverter`, `TLio.JsonPath`) | `net8.0`, `net9.0`, `net10.0`, `net11.0` |
+| Every test project | the same four, so each is exercised on its own runtime |
 | Applications (`TLio.Mcp`, the benchmark consoles) and the tests of an application (`TLio.Mcp.Tests`) | `net10.0` only |
 
 The list lives in one place, `Directory.Build.props` (`TargetFrameworks`). An application opts out with its own
@@ -20,7 +20,7 @@ From <https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core> (c
 | 10 | LTS | 14 Nov 2028 |
 | 9 | STS (24 months) | **10 Nov 2026** |
 | 8 | LTS | **10 Nov 2026** |
-| 11 | STS (in RC at the time of writing) | — |
+| 11 | STS (GA November 2026; `net11.0` is built on the RC SDK until then) | — |
 
 `net8.0` and `net9.0` are kept because a large part of the Newtonsoft → System.Text.Json migration crowd is still on them,
 not because they will stay supported: both lose Microsoft support on the same day.
@@ -34,9 +34,8 @@ not because they will stay supported: both lose Microsoft support on the same da
 2. **Old runtimes are dropped only in a major version**, and only after Microsoft's end of support. `net8.0` and `net9.0`
    can go in the first major release after 10 Nov 2026; removing a target is a breaking change for anyone still on it.
 3. **A package built for `netX.0` runs on every later runtime.** NuGet picks the highest compatible `lib/` folder, so an
-   application on `net11.0` or later receives the `net10.0` build until a `net11.0` one exists. This is checked, not
-   assumed: the `net10.0` build was run on the .NET 11 release candidate (compliance suite 706/706, 0 mismatches against
-   Newtonsoft over the differential corpus).
+   application on `net12.0` or later receives the `net11.0` build until a `net12.0` one exists. `net11.0` itself is built
+   and tested natively (every test project, all green on the .NET 11 RC).
 4. **Conditional code uses `NETx_0_OR_GREATER`, never `NETx_0`.** `#if NET9_0_OR_GREATER` stays true on every later target;
    `#if NET9_0` would silently fall back to the slow path on `net10.0` and beyond.
 5. **Runtime differences are bugs in our code until proven otherwise.** Two turned up when `net8.0` was added, and are the
@@ -58,7 +57,7 @@ It is feasible; it is a separate decision from supporting the current .NET relea
 
 ```sh
 dotnet build -warnaserror
-dotnet test                       # runs every test project on every target (needs the 8, 9 and 10 runtimes)
+dotnet test                       # runs every test project on every target (needs the 8, 9, 10 and 11 runtimes)
 dotnet test -f net8.0             # one runtime
 ```
 
