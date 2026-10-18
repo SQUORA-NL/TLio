@@ -1,0 +1,25 @@
+{
+  "input": {
+    "data": {
+      "b": 1,
+      "a": 2
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.ordered",
+      "value": "=orderBySchema('{\"properties\":{\"a\":{},\"b\":{}}}', $.data)"
+    }
+  ],
+  "result": {
+    "data": {
+      "b": 1,
+      "a": 2
+    },
+    "ordered": {
+      "a": 2,
+      "b": 1
+    }
+  }
+}

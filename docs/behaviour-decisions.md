@@ -197,7 +197,12 @@ Recorded so they read as choices rather than gaps.
 |---|---|---|
 | `{{$.path}}` substitution inside `=calculate()` | supported | not supported — build the expression with `=concat()` or store it in the document |
 | Comma decimals in `=calculate()` | accepted | rejected (see A1 for the inconsistency with the math pack) |
-| JSchema pack (`filterBySchema`, `orderBySchema`) | present | absent — deferred in `specs/002-migration-from-jlio/spec.md`; the schema library JLio uses is AGPL / paid and Newtonsoft-bound |
+| JSchema pack (`filterBySchema`, `orderBySchema`) | separate package on the AGPL / paid Newtonsoft.Json.Schema library | **built in, no schema library** (spec 025): the schema is read as a document through the node adapter and only its *shape* is used — `properties` order, `items`, local `$ref`, `allOf`/`oneOf`/`anyOf`. Not a validator. Same functions, same defaults; the differences are below |
+| `orderBySchema` / `filterBySchema` data argument | one argument, acts on the node being set | **explicit second argument** (`=orderBySchema($.schema, $.data)`). In TLio's legacy `set` the node a function is evaluated against is the target's *parent*, so the implicit form would shape the wrong object |
+| `filterBySchema` on a free-form value (`{"type":"object"}`, `{}`) | strips its contents (compares paths) | kept whole — a schema that says nothing about shape does not make a value "undescribed" |
+| `filterBySchema` and `additionalProperties` | ignored | ignored by default (unlisted properties are dropped, as in JLio); `'keepAdditional'` honours it |
+| `oneOf` / `anyOf` in the schema | not read | **union** of all branches — without validation the matching branch is unknowable, and picking one would silently drop data. Discriminator-based selection is phase 2 |
+| `skeleton(schema)` | — | new: the empty document a schema describes, with schema `default`s; the schema counterpart of `merge` |
 
 ---
 

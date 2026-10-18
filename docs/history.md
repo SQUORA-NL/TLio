@@ -3,6 +3,20 @@
 Moved out of `CLAUDE.md`, which keeps only what an editor needs on every task.
 Newest first.
 
+- 025-schema-shaping: **`orderBySchema`, `filterBySchema`, `skeleton`** — JLio's JSchema pack without its
+  schema library. `TLio.Functions/Schema/`: `SchemaDocument` reads a schema through `INodeAdapter` (so it
+  can live in a JSON, XML or YAML document, or arrive as JSON text) into `SchemaNode`s, following local
+  `$ref` lazily; `SchemaView.Flatten(data)` expands `$ref`/`allOf`/`oneOf`/`anyOf`/`then`/`else` into one
+  effective shape, asking an `IBranchSelector` which branches count. Phase 1 ships `UnionBranchSelector`
+  (default; never loses a property) and `FirstBranchSelector` (`skeleton`). Phase 2 — a discriminator
+  selector choosing the branch from a `const`/`enum` property of the data — is a new selector class only:
+  `Flatten` already passes the data node and `SchemaNode.AllowedValues` already holds the `const`/`enum`
+  values (`SchemaShapeTests.BranchSelector_ReceivesTheDataNode_…` pins the seam). Reordering uses
+  remove-then-set on the adapter, which lands last in every format, so no new adapter method. Decisions in
+  `behaviour-decisions.md` section C; spec in `specs/025-schema-shaping/`. Tests: `Fixtures/Schema/` (compared
+  order-sensitively — `JToken.DeepEquals` ignores property order), `SchemaShapeTests`, parity fixtures
+  `Functions/09`–`13`, and the sweep.
+
 - infix-expressions: **infix arithmetic in function values** — `=round($.principal * $.rate * $.yearFraction, 2)`.
   `TLio.Client/InfixExpression.cs` tokenises and parses (precedence climbing: `^` right-assoc > unary `-` >
   `* / %` > `+ -`); `FunctionConverter` rewrites the tree into the existing `sum`/`subtract`/`multiply`/

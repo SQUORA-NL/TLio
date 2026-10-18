@@ -1,0 +1,56 @@
+{
+  "input": {
+    "s": {
+      "allOf": [
+        {
+          "properties": {
+            "id": {}
+          }
+        },
+        {
+          "properties": {
+            "name": {}
+          }
+        }
+      ]
+    },
+    "d": {
+      "extra": "x",
+      "name": "Ada",
+      "id": "7"
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.r",
+      "value": "=orderBySchema($.s,$.d)"
+    }
+  ],
+  "result": {
+    "s": {
+      "allOf": [
+        {
+          "properties": {
+            "id": {}
+          }
+        },
+        {
+          "properties": {
+            "name": {}
+          }
+        }
+      ]
+    },
+    "d": {
+      "extra": "x",
+      "name": "Ada",
+      "id": "7"
+    },
+    "r": {
+      "id": "7",
+      "name": "Ada",
+      "extra": "x"
+    }
+  }
+}

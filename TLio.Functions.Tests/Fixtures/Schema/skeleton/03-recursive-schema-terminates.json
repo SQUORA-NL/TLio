@@ -1,0 +1,43 @@
+{
+  "input": {
+    "schema": {
+      "$ref": "#/$defs/Node",
+      "$defs": {
+        "Node": {
+          "properties": {
+            "name": {},
+            "next": {
+              "$ref": "#/$defs/Node"
+            }
+          }
+        }
+      }
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.blank",
+      "value": "=skeleton($.schema)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "$ref": "#/$defs/Node",
+      "$defs": {
+        "Node": {
+          "properties": {
+            "name": {},
+            "next": {
+              "$ref": "#/$defs/Node"
+            }
+          }
+        }
+      }
+    },
+    "blank": {
+      "name": null,
+      "next": null
+    }
+  }
+}

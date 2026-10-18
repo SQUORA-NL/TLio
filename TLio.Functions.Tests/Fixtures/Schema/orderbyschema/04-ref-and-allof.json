@@ -1,0 +1,87 @@
+{
+  "input": {
+    "schema": {
+      "$defs": {
+        "Name": {
+          "properties": {
+            "last": {},
+            "first": {}
+          }
+        }
+      },
+      "allOf": [
+        {
+          "properties": {
+            "id": {}
+          }
+        },
+        {
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/Name"
+            },
+            "email": {}
+          }
+        }
+      ]
+    },
+    "data": {
+      "email": "a@b.c",
+      "name": {
+        "first": "A",
+        "last": "B"
+      },
+      "id": 7
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.ordered",
+      "value": "=orderBySchema($.schema, $.data)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "$defs": {
+        "Name": {
+          "properties": {
+            "last": {},
+            "first": {}
+          }
+        }
+      },
+      "allOf": [
+        {
+          "properties": {
+            "id": {}
+          }
+        },
+        {
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/Name"
+            },
+            "email": {}
+          }
+        }
+      ]
+    },
+    "data": {
+      "email": "a@b.c",
+      "name": {
+        "first": "A",
+        "last": "B"
+      },
+      "id": 7
+    },
+    "ordered": {
+      "id": 7,
+      "name": {
+        "last": "B",
+        "first": "A"
+      },
+      "email": "a@b.c"
+    }
+  }
+}

@@ -77,6 +77,35 @@ public class FixtureTests
     public void Collections_Last(JToken input, string script, JToken expected)
         => RunFixture(input, script, expected);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Schema/orderbyschema" })]
+    public void Schema_OrderBySchema(JToken input, string script, JToken expected)
+        => RunOrderedFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Schema/filterbyschema" })]
+    public void Schema_FilterBySchema(JToken input, string script, JToken expected)
+        => RunOrderedFixture(input, script, expected);
+
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Schema/skeleton" })]
+    public void Schema_Skeleton(JToken input, string script, JToken expected)
+        => RunOrderedFixture(input, script, expected);
+
+    /// <summary>
+    /// <see cref="JToken.DeepEquals"/> ignores property order, which is the one thing the schema
+    /// functions exist to change — so these compare the serialised text instead.
+    /// </summary>
+    private void RunOrderedFixture(JToken input, string script, JToken expected)
+    {
+        var context = JsonExecutionContext.CreateDefault();
+        var result = _engine.Execute(script, input, context);
+
+        Assert.That(result.Success, Is.True,
+            $"Engine reported failure. Log:\n{string.Join("\n", context.GetLogEntries().Select(e => $"  [{e.Level}] {e.Group}: {e.Message}"))}");
+
+        Assert.That(result.Data.ToString(Newtonsoft.Json.Formatting.None),
+            Is.EqualTo(expected.ToString(Newtonsoft.Json.Formatting.None)),
+            "Result differs, or has the same content in a different property order.");
+    }
+
     private void RunFixture(JToken input, string script, JToken expected)
     {
         var context = JsonExecutionContext.CreateDefault();

@@ -1,0 +1,37 @@
+{
+  "input": {
+    "schema": {
+      "properties": {
+        "b": {},
+        "a": {}
+      }
+    },
+    "data": {
+      "a": 1,
+      "b": 2
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.ordered",
+      "value": "=orderBySchema($.schema, $.data)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "properties": {
+        "b": {},
+        "a": {}
+      }
+    },
+    "data": {
+      "a": 1,
+      "b": 2
+    },
+    "ordered": {
+      "b": 2,
+      "a": 1
+    }
+  }
+}

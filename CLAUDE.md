@@ -46,6 +46,9 @@ TLio.JsonPath.Benchmarks/   ← BenchmarkDotNet: engine vs Newtonsoft vs the old
 TLio.Functions.Tests/       ← Built-in function tests + extension-pack fixture tests (Math, Text, TimeDate, ETL, TextPack)
 TLio.Extensions.Text/      ← Optional text function pack: concat, toString, parse, format, length, substring, replace, toLower, toUpper, trim (008), regexReplace, regexExtract, right (023)
 TLio.Functions/Collections/ ← distinct, sort, sortBy, last — built in, registered by ParseOptions (023)
+TLio.Functions/Schema/      ← orderBySchema, filterBySchema, skeleton — a JSON Schema's *shape* (property order,
+                              items, local $ref, allOf/oneOf/anyOf), no schema library, not a validator (025).
+                              Tests compare property order, which JToken.DeepEquals does not.
 TLio.Extensions.Looping/   ← forEach, while — the loop primitives, opt-in via RegisterLooping (feature/actus-pam-contract)
 TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtures
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures

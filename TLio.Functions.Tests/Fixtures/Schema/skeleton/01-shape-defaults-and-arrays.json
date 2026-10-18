@@ -1,0 +1,68 @@
+{
+  "input": {
+    "schema": {
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "default": "new"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "address": {
+          "properties": {
+            "city": {},
+            "zip": {}
+          }
+        }
+      }
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.blank",
+      "value": "=skeleton($.schema)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "default": "new"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "address": {
+          "properties": {
+            "city": {},
+            "zip": {}
+          }
+        }
+      }
+    },
+    "blank": {
+      "id": null,
+      "status": "new",
+      "tags": [],
+      "address": {
+        "city": null,
+        "zip": null
+      }
+    }
+  }
+}

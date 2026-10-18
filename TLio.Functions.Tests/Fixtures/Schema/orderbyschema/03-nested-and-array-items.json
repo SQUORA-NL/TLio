@@ -1,0 +1,107 @@
+{
+  "input": {
+    "schema": {
+      "properties": {
+        "user": {
+          "properties": {
+            "lastName": {},
+            "firstName": {}
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "properties": {
+              "id": {},
+              "name": {}
+            }
+          }
+        },
+        "timestamp": {}
+      }
+    },
+    "data": {
+      "timestamp": "2023-01-01",
+      "items": [
+        {
+          "name": "x",
+          "id": 1
+        },
+        {
+          "name": "y",
+          "id": 2
+        }
+      ],
+      "user": {
+        "age": 25,
+        "firstName": "Alice",
+        "lastName": "Smith"
+      }
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.ordered",
+      "value": "=orderBySchema($.schema, $.data)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "properties": {
+        "user": {
+          "properties": {
+            "lastName": {},
+            "firstName": {}
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "properties": {
+              "id": {},
+              "name": {}
+            }
+          }
+        },
+        "timestamp": {}
+      }
+    },
+    "data": {
+      "timestamp": "2023-01-01",
+      "items": [
+        {
+          "name": "x",
+          "id": 1
+        },
+        {
+          "name": "y",
+          "id": 2
+        }
+      ],
+      "user": {
+        "age": 25,
+        "firstName": "Alice",
+        "lastName": "Smith"
+      }
+    },
+    "ordered": {
+      "user": {
+        "lastName": "Smith",
+        "firstName": "Alice",
+        "age": 25
+      },
+      "items": [
+        {
+          "id": 1,
+          "name": "x"
+        },
+        {
+          "id": 2,
+          "name": "y"
+        }
+      ],
+      "timestamp": "2023-01-01"
+    }
+  }
+}

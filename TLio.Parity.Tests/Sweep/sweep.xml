@@ -602,6 +602,33 @@
   <put path="/root/core/sortedBy">
     <value>=sortby(/root/rows,'n','asc')</value>
   </put>
+  <add path="/root/shape/schema">
+    <value>
+      <properties>
+        <id></id>
+        <name></name>
+        <status>
+          <default>new</default>
+        </status>
+      </properties>
+    </value>
+  </add>
+  <add path="/root/shape/data">
+    <value>
+      <extra>dropped</extra>
+      <name>Ada</name>
+      <id>7</id>
+    </value>
+  </add>
+  <put path="/root/shape/ordered">
+    <value>=orderBySchema(/root/shape/schema,/root/shape/data)</value>
+  </put>
+  <put path="/root/shape/filtered">
+    <value>=filterBySchema(/root/shape/schema,/root/shape/data)</value>
+  </put>
+  <put path="/root/shape/blank">
+    <value>=skeleton(/root/shape/schema)</value>
+  </put>
   <!--
     A single-element array: SlashPathItemsFetcher.GetPath does not disambiguate same-named
     siblings (a known, pre-existing limitation — see CLAUDE.md), so bare "." only resolves

@@ -1,0 +1,88 @@
+{
+  "input": {
+    "schema": {
+      "properties": {
+        "id": {},
+        "address": {
+          "properties": {
+            "city": {}
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "properties": {
+              "label": {}
+            }
+          }
+        }
+      }
+    },
+    "data": {
+      "id": 1,
+      "secret": "x",
+      "address": {
+        "city": "Delft",
+        "zip": "1"
+      },
+      "tags": [
+        {
+          "label": "a",
+          "internal": 1
+        }
+      ]
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.filtered",
+      "value": "=filterBySchema($.schema, $.data)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "properties": {
+        "id": {},
+        "address": {
+          "properties": {
+            "city": {}
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "properties": {
+              "label": {}
+            }
+          }
+        }
+      }
+    },
+    "data": {
+      "id": 1,
+      "secret": "x",
+      "address": {
+        "city": "Delft",
+        "zip": "1"
+      },
+      "tags": [
+        {
+          "label": "a",
+          "internal": 1
+        }
+      ]
+    },
+    "filtered": {
+      "id": 1,
+      "address": {
+        "city": "Delft"
+      },
+      "tags": [
+        {
+          "label": "a"
+        }
+      ]
+    }
+  }
+}

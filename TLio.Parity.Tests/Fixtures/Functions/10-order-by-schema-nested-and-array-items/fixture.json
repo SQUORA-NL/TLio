@@ -1,0 +1,99 @@
+{
+  "input": {
+    "s": {
+      "properties": {
+        "head": {
+          "properties": {
+            "b": {},
+            "a": {}
+          }
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "properties": {
+              "id": {},
+              "qty": {}
+            }
+          }
+        }
+      }
+    },
+    "d": {
+      "lines": [
+        {
+          "qty": 2,
+          "id": "x"
+        },
+        {
+          "qty": 5,
+          "id": "y"
+        }
+      ],
+      "head": {
+        "a": "1",
+        "b": "2"
+      }
+    }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.r",
+      "value": "=orderBySchema($.s,$.d)"
+    }
+  ],
+  "result": {
+    "s": {
+      "properties": {
+        "head": {
+          "properties": {
+            "b": {},
+            "a": {}
+          }
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "properties": {
+              "id": {},
+              "qty": {}
+            }
+          }
+        }
+      }
+    },
+    "d": {
+      "lines": [
+        {
+          "qty": 2,
+          "id": "x"
+        },
+        {
+          "qty": 5,
+          "id": "y"
+        }
+      ],
+      "head": {
+        "a": "1",
+        "b": "2"
+      }
+    },
+    "r": {
+      "head": {
+        "b": "2",
+        "a": "1"
+      },
+      "lines": [
+        {
+          "id": "x",
+          "qty": 2
+        },
+        {
+          "id": "y",
+          "qty": 5
+        }
+      ]
+    }
+  }
+}

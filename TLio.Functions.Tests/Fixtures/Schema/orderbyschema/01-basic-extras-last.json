@@ -1,0 +1,41 @@
+{
+  "input": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "lastName": {},
+        "firstName": {},
+        "age": {}
+      }
+    },
+    "person": {
+      "age": 30,
+      "firstName": "John",
+      "country": "USA",
+      "lastName": "Doe"
+    }
+  },
+  "script": [
+    {
+      "command": "set",
+      "path": "$.person",
+      "value": "=orderBySchema($.schema, $.person)"
+    }
+  ],
+  "result": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "lastName": {},
+        "firstName": {},
+        "age": {}
+      }
+    },
+    "person": {
+      "lastName": "Doe",
+      "firstName": "John",
+      "age": 30,
+      "country": "USA"
+    }
+  }
+}

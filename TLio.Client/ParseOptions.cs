@@ -4,6 +4,7 @@ using TLio.Core.Contracts;
 using TLio.Functions;
 using TLio.Functions.Collections;
 using TLio.Functions.Logic;
+using TLio.Functions.Schema;
 
 namespace TLio.Client;
 
@@ -104,6 +105,13 @@ public class ParseOptions<TNode>
         options.FunctionsProvider.Register("sort",           () => new Sort<TNode>());
         options.FunctionsProvider.Register("sortby",         () => new SortBy<TNode>());
         options.FunctionsProvider.Register("last",           () => new Last<TNode>());
+
+        // Schema shaping — orders, filters and blanks a document by a JSON Schema's *shape*.
+        // Built in rather than a pack: no schema library is involved, only the schema read as a
+        // document through the node adapter.
+        options.FunctionsProvider.Register("orderBySchema",  () => new OrderBySchema<TNode>());
+        options.FunctionsProvider.Register("filterBySchema", () => new FilterBySchema<TNode>());
+        options.FunctionsProvider.Register("skeleton",       () => new Skeleton<TNode>());
 
         return options;
     }
