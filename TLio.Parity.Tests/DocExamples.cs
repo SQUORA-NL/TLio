@@ -228,6 +228,9 @@ public sealed class DocExamples
         };
     }
 
+    /// <summary>A rendered document with the platform's line ending (JSON-escaped) read as LF.</summary>
+    private static string Lf(string rendered) => rendered.Replace("\\r\\n", "\\n");
+
     private static string Humanise(string title) =>
         Regex.IsMatch(title, @"^\d+-") ? Regex.Replace(title, @"^\d+-", "").Replace('-', ' ') : title;
 
@@ -286,11 +289,11 @@ public sealed class DocExamples
             {
                 var start = r.Language.Split(' ')[0].ToLowerInvariant();
                 var want = FormatRunners.RenderForComparison(ex.ExpectedByStart?[start] ?? ex.Expected);
-                if (r.Error is null && r.Normalised != want)
-                    errors.Add($"'{ex.Title}' {r.Language} - result does not match the expected result:\n    expected: {want}\n    actual:   {r.Normalised}");
+                if (r.Error is null && Lf(r.Normalised) != want)
+                    errors.Add($"'{ex.Title}' {r.Language} - result does not match the expected result:\n    expected: {want}\n    actual:   {Lf(r.Normalised)}");
             }
 
-            var differ = !converts && runs.All(r => r.Error is null) && runs.Select(r => r.Normalised).Distinct().Count() > 1;
+            var differ = !converts && runs.All(r => r.Error is null) && runs.Select(r => Lf(r.Normalised)).Distinct().Count() > 1;
             if (differ)
             {
                 TestContext.Out.WriteLine($"DIFFERS '{ex.Title}':\n" + string.Join("\n", runs.Select(r => $"    {r.Language}: {r.Normalised}")));
@@ -316,7 +319,8 @@ public sealed class DocExamples
             }
         }
 
-        return (sb.ToString(), errors);
+        // XElement.ToString() and toCsv use the platform newline; a page is always LF.
+        return (sb.ToString().Replace("\r\n", "\n"), errors);
     }
 
     // ── Runs: the displayed text is the text that is executed ────────────────
