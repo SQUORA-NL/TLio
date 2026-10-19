@@ -1,0 +1,27 @@
+name: Bug report
+description: Something behaves differently than documented
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: TLio version and .NET runtime
+      placeholder: "TLio.Client 0.9.0, net10.0"
+    validations: { required: true }
+  - type: dropdown
+    id: format
+    attributes:
+      label: Document format
+      options: [JSON (Newtonsoft), JSON (System.Text.Json), XML, YAML, Several / convert]
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: The document, the script, and what you ran.
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs. actual result
+    validations: { required: true }

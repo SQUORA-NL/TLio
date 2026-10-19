@@ -1,5 +1,10 @@
 # TLio
 
+[![CI](https://github.com/SQUORA-NL/TLio/actions/workflows/ci.yml/badge.svg)](https://github.com/SQUORA-NL/TLio/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/vpre/TLio.Client?label=TLio.Client)](https://www.nuget.org/packages/TLio.Client)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-ea4aaa)](https://github.com/sponsors/FransVanEk)
+
 **TLio** is a type-agnostic, format-neutral scripting framework for structured data transformation.
 It is the successor to [JLio](https://jlio.online/) and extends the same command/function scripting
 model to JSON, XML, YAML, and any future structured data format.
@@ -213,3 +218,16 @@ The framework is fully implemented and in active development (specs 001–019).
 ## Target frameworks
 
 All libraries build for `net8.0`, `net9.0` and `net10.0`, each tested on its own runtime; later runtimes use the `net10.0` build and are checked in CI. .NET 8 and 9 reach end of support on 10 November 2026. See [docs/target-frameworks.md](docs/target-frameworks.md).
+
+## Contributing
+
+Contributions are welcome — read [CONTRIBUTING.md](CONTRIBUTING.md) first, and please follow the
+[Code of Conduct](CODE_OF_CONDUCT.md). Security issues: [SECURITY.md](SECURITY.md).
+
+## Support the project
+
+If TLio saves you time, you can [sponsor its development](https://github.com/sponsors/FransVanEk).
+
+## License
+
+[MIT](LICENSE) © SQUORA
