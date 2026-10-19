@@ -20,7 +20,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # MinVer reads the version off the git history during the build; a shallow checkout
           # finds no tag and warns its way to 0.0.0-alpha.0.
@@ -64,7 +64,7 @@ jobs:
       LC_ALL: nl_NL.UTF-8
       LANG: nl_NL.UTF-8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-dotnet@v6
@@ -89,7 +89,7 @@ jobs:
       (github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-dotnet@v6
@@ -124,7 +124,7 @@ jobs:
       DOTNET_ROLL_FORWARD: LatestMajor
       DOTNET_ROLL_FORWARD_TO_PRERELEASE: '1'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Setup .NET (current SDK)
