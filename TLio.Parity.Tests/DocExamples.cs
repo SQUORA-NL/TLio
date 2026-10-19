@@ -95,11 +95,22 @@ public sealed class DocExamples
             var (block, errors) = Render(examples);
             problems.AddRange(errors.Select(e => $"{kind}/{name}: {e}"));
 
-            if (Splice(File.ReadAllText(page), block) != File.ReadAllText(page).Replace("\r\n", "\n"))
-                problems.Add($"{kind}/{name}: page is stale — run the GenerateDocExamples test");
+            var onDisk = File.ReadAllText(page).Replace("\r\n", "\n");
+            var expected = Splice(onDisk, block);
+            if (expected != onDisk)
+                problems.Add($"{kind}/{name}: page is stale — run the GenerateDocExamples test\n{FirstDifference(onDisk, expected)}");
         }
 
         Assert.That(problems, Is.Empty, string.Join("\n", problems));
+    }
+
+    /// <summary>Where a stale page first differs, so a failure on a machine you cannot reach is still readable.</summary>
+    private static string FirstDifference(string onDisk, string expected)
+    {
+        var i = 0;
+        while (i < onDisk.Length && i < expected.Length && onDisk[i] == expected[i]) i++;
+        string Around(string t) => t.Substring(Math.Max(0, i - 40), Math.Min(120, t.Length - Math.Max(0, i - 40))).Replace("\r", "<CR>").Replace("\n", "<LF>");
+        return $"    first difference at {i}:\n      on disk:  {Around(onDisk)}\n      expected: {Around(expected)}";
     }
 
     [Test, Explicit("Rewrites docs/ai-ref pages")]
@@ -228,6 +239,9 @@ public sealed class DocExamples
         };
     }
 
+    /// <summary>A rendered document with the platform's line ending (JSON-escaped) read as LF.</summary>
+    private static string Lf(string rendered) => rendered.Replace("\\r\\n", "\\n");
+
     private static string Humanise(string title) =>
         Regex.IsMatch(title, @"^\d+-") ? Regex.Replace(title, @"^\d+-", "").Replace('-', ' ') : title;
 
@@ -286,11 +300,11 @@ public sealed class DocExamples
             {
                 var start = r.Language.Split(' ')[0].ToLowerInvariant();
                 var want = FormatRunners.RenderForComparison(ex.ExpectedByStart?[start] ?? ex.Expected);
-                if (r.Error is null && r.Normalised != want)
-                    errors.Add($"'{ex.Title}' {r.Language} - result does not match the expected result:\n    expected: {want}\n    actual:   {r.Normalised}");
+                if (r.Error is null && Lf(r.Normalised) != want)
+                    errors.Add($"'{ex.Title}' {r.Language} - result does not match the expected result:\n    expected: {want}\n    actual:   {Lf(r.Normalised)}");
             }
 
-            var differ = !converts && runs.All(r => r.Error is null) && runs.Select(r => r.Normalised).Distinct().Count() > 1;
+            var differ = !converts && runs.All(r => r.Error is null) && runs.Select(r => Lf(r.Normalised)).Distinct().Count() > 1;
             if (differ)
             {
                 TestContext.Out.WriteLine($"DIFFERS '{ex.Title}':\n" + string.Join("\n", runs.Select(r => $"    {r.Language}: {r.Normalised}")));
@@ -316,7 +330,8 @@ public sealed class DocExamples
             }
         }
 
-        return (sb.ToString(), errors);
+        // XElement.ToString() and toCsv use the platform newline; a page is always LF.
+        return (Lf(sb.ToString().Replace("\r\n", "\n")), errors);
     }
 
     // ── Runs: the displayed text is the text that is executed ────────────────
@@ -426,6 +441,28 @@ public sealed class DocExamples
         catch (Exception e) { return new FormatRun("XML", input, script, "", "", e.Message); }
     }
 
+    /// <summary>
+    /// Strings the engine builds (toString of a node, a compare description) end lines with the
+    /// platform newline. YamlDotNet picks a different block style for CRLF text (<c>&gt;+</c>
+    /// instead of <c>&gt;</c>), so a page generated on Windows would differ from one generated
+    /// elsewhere.
+    /// </summary>
+    private static void LineFeedsOnly(YamlNode node)
+    {
+        switch (node)
+        {
+            case YamlScalarNode scalar when scalar.Value is { } v && v.Contains('\r'):
+                scalar.Value = v.Replace("\r\n", "\n");
+                break;
+            case YamlMappingNode map:
+                foreach (var child in map.Children.Values) LineFeedsOnly(child);
+                break;
+            case YamlSequenceNode seq:
+                foreach (var child in seq.Children) LineFeedsOnly(child);
+                break;
+        }
+    }
+
     private static FormatRun RunYaml(DocExample ex)
     {
         var input  = CanonicalShape.ToYamlDocument(ex.Input);
@@ -437,6 +474,7 @@ public sealed class DocExamples
             var adapter = context.NodeAdapter;
             var parser  = new YamlScriptParser<YamlNode>(options.CommandsProvider, options.FunctionsProvider, adapter);
             var result  = parser.ParseScript(script).Execute(adapter.Parse(input), context);
+            LineFeedsOnly(result.Data);
             return new FormatRun("YAML", input, script, adapter.Serialize(result.Data, true),
                 FormatRunners.RenderYamlForComparison(result.Data), null);
         }
