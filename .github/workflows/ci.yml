@@ -33,6 +33,7 @@ jobs:
             8.0.x
             9.0.x
             10.0.x
+            11.0.x
 
       - name: Restore
         run: dotnet restore
@@ -73,6 +74,7 @@ jobs:
             8.0.x
             9.0.x
             10.0.x
+            11.0.x
       - name: Install the nl_NL locale
         run: sudo locale-gen nl_NL.UTF-8 && sudo update-locale
       - name: Build and test under nl-NL
@@ -98,6 +100,7 @@ jobs:
             8.0.x
             9.0.x
             10.0.x
+            11.0.x
       - name: Build
         run: dotnet build -c Release -warnaserror
       - name: Concurrency and data-leakage regression checks

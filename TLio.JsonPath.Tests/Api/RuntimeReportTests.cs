@@ -18,8 +18,10 @@ public class RuntimeReportTests
     }
 
     private static string BuiltFor =>
-#if NET10_0_OR_GREATER
-        "net10.0+";
+#if NET11_0_OR_GREATER
+        "net11.0+";
+#elif NET10_0_OR_GREATER
+        "net10.0";
 #elif NET9_0_OR_GREATER
         "net9.0";
 #else
