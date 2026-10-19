@@ -30,15 +30,18 @@ namespace TLio.Parity.Tests;
 public class ResolveValueParityTests
 {
     /// <summary>
-    /// One lookup, spelled for one path language. The settings are identical in all three —
-    /// only the two absolute paths differ, because those address the document.
+    /// One lookup, spelled for one path language. The join key is named differently on the two
+    /// sides (<c>wanted</c> against <c>code</c>): XML once compared the elements' own names as
+    /// well as their content, so a join only worked when both sides happened to share a name.
+    /// The settings are identical in all three — only the two absolute paths differ, because
+    /// those address the document.
     /// </summary>
     private static string Script(string target, string references) => $$"""
         [
           { "command": "resolve", "path": "{{target}}",
             "resolveSettings": [
               { "referencesCollectionPath": "{{references}}",
-                "resolveKeys": [ { "keyPath": "@.code", "referenceKeyPath": "@.code" } ],
+                "resolveKeys": [ { "keyPath": "@.wanted", "referenceKeyPath": "@.code" } ],
                 "values": [
                   { "targetPath": "@.label",     "value": "@.label" },
                   { "targetPath": "@.nested",    "value": "@.detail.tier" },
@@ -48,7 +51,7 @@ public class ResolveValueParityTests
         """;
 
     private const string JsonDocument = """
-        { "ref": { "code": "B" },
+        { "ref": { "wanted": "B" },
           "table": [
             { "code": "A", "label": "Alpha", "detail": { "tier": "one" } },
             { "code": "B", "label": "Beta",  "detail": { "tier": "two" } }
@@ -57,7 +60,7 @@ public class ResolveValueParityTests
 
     private const string XmlDocument =
         "<root>" +
-          "<ref><code>B</code></ref>" +
+          "<ref><wanted>B</wanted></ref>" +
           "<table>" +
             "<item><code>A</code><label>Alpha</label><detail><tier>one</tier></detail></item>" +
             "<item><code>B</code><label>Beta</label><detail><tier>two</tier></detail></item>" +
@@ -66,7 +69,7 @@ public class ResolveValueParityTests
 
     private const string YamlDocument = """
         ref:
-          code: B
+          wanted: B
         table:
           - code: A
             label: Alpha

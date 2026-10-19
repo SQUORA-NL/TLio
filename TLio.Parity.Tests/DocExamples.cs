@@ -33,6 +33,16 @@ public sealed class DocExample
     /// <summary>Hand-written XML document, for inputs that hold a path or text written in one format's own language.</summary>
     public string? XmlInput { get; init; }
 
+    /// <summary>
+    /// For <c>convert</c>, which changes the document's format and so cannot run on one engine:
+    /// the format each tab converts to, keyed by the format it starts in. The script's
+    /// <c>{to}</c> is filled in per tab, and the run goes through <see cref="MultiFormatScriptRunner"/>.
+    /// </summary>
+    public JObject? ConvertTo { get; init; }
+
+    /// <summary>Where a starting format's result is not <see cref="Expected"/>: XML's document element becomes a JSON key.</summary>
+    public JObject? ExpectedByStart { get; init; }
+
     /// <summary>The result the example must produce; for a fixture-backed example, the fixture's own.</summary>
     public required JToken Expected { get; init; }
 
@@ -42,12 +52,12 @@ public sealed class DocExample
     public DocExample With(string diverges) => new()
     {
         Title = Title, Description = Description, Input = Input, Script = Script,
-        Diverges = diverges, XmlScript = XmlScript, XmlInput = XmlInput, Expected = Expected, Source = Source
+        Diverges = diverges, XmlScript = XmlScript, XmlInput = XmlInput, ConvertTo = ConvertTo, ExpectedByStart = ExpectedByStart, Expected = Expected, Source = Source
     };
 }
 
 /// <summary>What one example looks like, and what it produced, in each format's own words.</summary>
-public sealed record FormatRun(string Language, string Input, string Script, string Result, string Normalised, string? Error);
+public sealed record FormatRun(string Language, string Input, string Script, string Result, string Normalised, string? Error, string? ResultLanguage = null);
 
 /// <summary>
 /// Turns the example corpus into the "Examples in every format" section of each reference page.
@@ -115,9 +125,7 @@ public sealed class DocExamples
         var root = RepoRoot();
         Assume.That(root, Is.Not.Null);
 
-        // convert changes the whole document, which the engine cannot run (see Convert.md);
-        // restore needs a document that was converted with metadata first.
-        var exempt = new HashSet<string> { "commands/Convert", "commands/Restore" };
+        var exempt = new HashSet<string>();
         var have = Corpus().Select(c => $"{c.Kind}/{c.Name}").ToHashSet();
         var missing = Kinds
             .SelectMany(k => Directory.GetFiles(Path.Combine(root!, "docs", "ai-ref", k), "*.md")
@@ -211,6 +219,8 @@ public sealed class DocExamples
             Diverges    = o["diverges"]?.ToString(),
             XmlScript   = o["xmlScript"]?.ToString(),
             XmlInput    = o["xmlInput"]?.ToString(),
+            ConvertTo   = o["convertTo"] as JObject,
+            ExpectedByStart = o["expectedByStart"] as JObject,
             Source      = source
         };
     }
@@ -259,16 +269,25 @@ public sealed class DocExamples
         foreach (var source in examples)
         {
             var ex = source;
-            var runs = new[] { RunJson(ex), RunXml(ex), RunYaml(ex) };
+            var converts = ex.ConvertTo is not null;
+            var runs = converts
+                ? new[] { RunConvert(ex, "json"), RunConvert(ex, "xml"), RunConvert(ex, "yaml") }
+                : new[] { RunJson(ex), RunXml(ex), RunYaml(ex) };
 
             foreach (var r in runs.Where(r => r.Error is not null))
                 errors.Add($"'{ex.Title}' {r.Language}: {r.Error}");
 
-            if (runs[0].Error is null &&
-                runs[0].Normalised != FormatRunners.RenderForComparison(ex.Expected))
-                errors.Add($"'{ex.Title}' - JSON result does not match the expected result:\n    expected: {FormatRunners.RenderForComparison(ex.Expected)}\n    actual:   {runs[0].Normalised}");
+            // A conversion keeps the data, so every tab must come out as the expected document;
+            // otherwise the JSON run is the reference and the other two are compared to it.
+            foreach (var r in converts ? runs : runs.Take(1))
+            {
+                var start = r.Language.Split(' ')[0].ToLowerInvariant();
+                var want = FormatRunners.RenderForComparison(ex.ExpectedByStart?[start] ?? ex.Expected);
+                if (r.Error is null && r.Normalised != want)
+                    errors.Add($"'{ex.Title}' {r.Language} - result does not match the expected result:\n    expected: {want}\n    actual:   {r.Normalised}");
+            }
 
-            var differ = runs.All(r => r.Error is null) && runs.Select(r => r.Normalised).Distinct().Count() > 1;
+            var differ = !converts && runs.All(r => r.Error is null) && runs.Select(r => r.Normalised).Distinct().Count() > 1;
             if (differ)
             {
                 TestContext.Out.WriteLine($"DIFFERS '{ex.Title}':\n" + string.Join("\n", runs.Select(r => $"    {r.Language}: {r.Normalised}")));
@@ -284,11 +303,12 @@ public sealed class DocExamples
             foreach (var r in runs)
             {
                 var lang = r.Language;
-                var fence = lang.ToLowerInvariant();
+                var fence = lang.Split(' ')[0].ToLowerInvariant();
+                var resultFence = (r.ResultLanguage ?? lang).Split(' ')[0].ToLowerInvariant();
                 sb.Append($"<details>\n<summary>{lang}</summary>\n\n");
                 sb.Append($"Input\n\n```{fence}\n{r.Input.TrimEnd()}\n```\n\n");
                 sb.Append($"Script\n\n```{fence}\n{r.Script.TrimEnd()}\n```\n\n");
-                sb.Append($"Result\n\n```{fence}\n{r.Result.TrimEnd()}\n```\n\n");
+                sb.Append($"Result\n\n```{resultFence}\n{r.Result.TrimEnd()}\n```\n\n");
                 sb.Append("</details>\n\n");
             }
         }
@@ -309,6 +329,58 @@ public sealed class DocExamples
         var options = FormatRunners.Options<TNode>();
         options.CommandsProvider.RegisterFormatConversion<TNode>(converter, documentFormat);
         return options;
+    }
+
+    private static FormatRun RunConvert(DocExample ex, string start)
+    {
+        var target = ex.ConvertTo![start]!.ToString();
+        var label = $"{start.ToUpperInvariant()} → {target.ToUpperInvariant()}";
+
+        var scriptJson = ex.Script.ToString(Formatting.None).Replace("{to}", target);
+        var (input, script) = start switch
+        {
+            "xml"  => (XElement.Parse(CanonicalShape.ToXmlDocument(ex.Input)).ToString(),
+                       XElement.Parse(CanonicalShape.ToXmlScript(scriptJson)).ToString()),
+            "yaml" => (CanonicalShape.ToYamlDocument(ex.Input), CanonicalShape.ToYamlDocument(JArray.Parse(scriptJson))),
+            _      => (ex.Input.ToString(Formatting.Indented), JArray.Parse(scriptJson).ToString(Formatting.Indented))
+        };
+
+        try
+        {
+            var converter = new TLio.FormatConverter.Core.FormatConverter();
+            converter.Register(new TLio.FormatConverter.Json.JsonFormatAdapter());
+            converter.Register(new TLio.FormatConverter.Xml.XmlFormatAdapter());
+            converter.Register(new TLio.FormatConverter.Yaml.YamlFormatAdapter());
+
+            var runner = new MultiFormatScriptRunner(converter);
+            runner.RegisterExecutor(Section<JToken>("json", JsonExecutionContext.CreateDefault));
+            runner.RegisterExecutor(Section<XElement>("xml", XmlExecutionContext.CreateWithNativeXPath));
+            runner.RegisterExecutor(Section<YamlNode>("yaml", YamlExecutionContext.CreateDefault));
+
+            var result = runner.Run(start, input, script);
+            if (!result.Success)
+                return new FormatRun(label, input, script, "", "", string.Join("; ", result.Logs.Select(l => l.Message)));
+
+            var normalised = result.FormatId switch
+            {
+                "xml"  => FormatRunners.RenderXmlForComparison(new XmlNodeAdapter().Parse(result.Document)),
+                "yaml" => FormatRunners.RenderYamlForComparison(YamlExecutionContext.CreateDefault().NodeAdapter.Parse(result.Document)),
+                _      => FormatRunners.RenderForComparison(ParseJson(result.Document))
+            };
+            var shown = result.FormatId == "json" ? ParseJson(result.Document).ToString(Formatting.Indented)
+                      : result.FormatId == "xml" ? XElement.Parse(result.Document).ToString()
+                      : result.Document;
+            return new FormatRun(label, input, script, shown, normalised, null, target);
+        }
+        catch (Exception e) { return new FormatRun(label, input, script, "", "", e.Message); }
+    }
+
+    private static ScriptEngineSectionExecutor<TNode> Section<TNode>(
+        string formatId, Func<TLio.Core.Models.ExecutionContext<TNode>> contextFactory)
+    {
+        var options = ParseOptions<TNode>.CreateDefault();
+        var engine = new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider);
+        return new ScriptEngineSectionExecutor<TNode>(formatId, engine, () => contextFactory());
     }
 
     private static FormatRun RunJson(DocExample ex)

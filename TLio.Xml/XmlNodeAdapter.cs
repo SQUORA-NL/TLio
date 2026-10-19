@@ -371,10 +371,17 @@ public class XmlNodeAdapter : INodeAdapter<XElement>
     /// it separates documents that differ only in insignificant whitespace or in whether an
     /// empty element was written <c>&lt;k/&gt;</c> or <c>&lt;k&gt;&lt;/k&gt;</c>.
     /// </summary>
-    public bool DeepEquals(XElement a, XElement b)
-    {
-        if (a.Name != b.Name) return false;
+    public bool DeepEquals(XElement a, XElement b) => SameContent(a, b);
 
+    /// <remarks>
+    /// The two elements' own names are not compared: an element's name is the key it sits under
+    /// in its parent, and in JSON and YAML a value carries no key — <c>$.a</c> holding "p2" equals
+    /// <c>$.id</c> holding "p2". Comparing them here made <c>resolve</c> unable to join
+    /// <c>@.productId</c> to <c>@.id</c>. Names of everything beneath do matter: those are the
+    /// properties of an object.
+    /// </remarks>
+    private static bool SameContent(XElement a, XElement b)
+    {
         var aChildren = a.Elements().ToList();
         var bChildren = b.Elements().ToList();
         if (aChildren.Count != bChildren.Count) return false;
@@ -383,7 +390,8 @@ public class XmlNodeAdapter : INodeAdapter<XElement>
             return string.Equals(a.Value.Trim(), b.Value.Trim(), StringComparison.Ordinal);
 
         for (var i = 0; i < aChildren.Count; i++)
-            if (!DeepEquals(aChildren[i], bChildren[i])) return false;
+            if (aChildren[i].Name != bChildren[i].Name || !SameContent(aChildren[i], bChildren[i]))
+                return false;
 
         return true;
     }

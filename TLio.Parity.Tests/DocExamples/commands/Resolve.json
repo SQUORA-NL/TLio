@@ -1,19 +1,20 @@
 [
   {
-    "title": "look up a label by code",
+    "title": "look up a product name by id",
+    "description": "The order's `productId` is joined to the product's `id`; the names differ on the two sides, and the matched product's `name` is written onto the order. In XML the paths are XPath, but `@.` inside a resolve setting is written the same way in every format.",
     "input": {
-      "lookup": [
+      "products": [
         {
-          "code": "A",
-          "label": "Widget"
+          "id": "p1",
+          "name": "Widget"
         },
         {
-          "code": "B",
-          "label": "Gadget"
+          "id": "p2",
+          "name": "Gadget"
         }
       ],
       "order": {
-        "code": "B"
+        "productId": "p2"
       }
     },
     "script": [
@@ -22,17 +23,17 @@
         "path": "$.order",
         "resolveSettings": [
           {
-            "referencesCollectionPath": "$.lookup[*]",
+            "referencesCollectionPath": "$.products[*]",
             "resolveKeys": [
               {
-                "keyPath": "@.code",
-                "referenceKeyPath": "@.code"
+                "keyPath": "@.productId",
+                "referenceKeyPath": "@.id"
               }
             ],
             "values": [
               {
-                "targetPath": "@.label",
-                "value": "@.label"
+                "targetPath": "@.productName",
+                "value": "@.name"
               }
             ]
           }
@@ -40,21 +41,21 @@
       }
     ],
     "expected": {
-      "lookup": [
+      "products": [
         {
-          "code": "A",
-          "label": "Widget"
+          "id": "p1",
+          "name": "Widget"
         },
         {
-          "code": "B",
-          "label": "Gadget"
+          "id": "p2",
+          "name": "Gadget"
         }
       ],
       "order": {
-        "code": "B",
-        "label": "Gadget"
+        "productId": "p2",
+        "productName": "Gadget"
       }
     },
-    "xmlScript": "<script><resolve path=\"/root/order\"><resolveSettings><item><referencesCollectionPath>/root/lookup/item</referencesCollectionPath><resolveKeys><item><keyPath>@.code</keyPath><referenceKeyPath>@.code</referenceKeyPath></item></resolveKeys><values><item><value>@.label</value><targetPath>@.label</targetPath></item></values></item></resolveSettings></resolve></script>"
+    "xmlScript": "<script><resolve path=\"/root/order\"><resolveSettings><item><referencesCollectionPath>/root/products/item</referencesCollectionPath><resolveKeys><item><keyPath>@.productId</keyPath><referenceKeyPath>@.id</referenceKeyPath></item></resolveKeys><values><item><value>@.name</value><targetPath>@.productName</targetPath></item></values></item></resolveSettings></resolve></script>"
   }
 ]

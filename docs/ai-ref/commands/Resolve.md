@@ -186,7 +186,9 @@ Works with all adapters. Path syntax differs per adapter — see [overview.md](.
 
 Each example is run through the engine in all three formats; the result shown is what came back. Expand a format to see it.
 
-**look up a label by code**
+**look up a product name by id**
+
+The order's `productId` is joined to the product's `id`; the names differ on the two sides, and the matched product's `name` is written onto the order. In XML the paths are XPath, but `@.` inside a resolve setting is written the same way in every format.
 
 <details>
 <summary>JSON</summary>
@@ -195,18 +197,18 @@ Input
 
 ```json
 {
-  "lookup": [
+  "products": [
     {
-      "code": "A",
-      "label": "Widget"
+      "id": "p1",
+      "name": "Widget"
     },
     {
-      "code": "B",
-      "label": "Gadget"
+      "id": "p2",
+      "name": "Gadget"
     }
   ],
   "order": {
-    "code": "B"
+    "productId": "p2"
   }
 }
 ```
@@ -220,17 +222,17 @@ Script
     "path": "$.order",
     "resolveSettings": [
       {
-        "referencesCollectionPath": "$.lookup[*]",
+        "referencesCollectionPath": "$.products[*]",
         "resolveKeys": [
           {
-            "keyPath": "@.code",
-            "referenceKeyPath": "@.code"
+            "keyPath": "@.productId",
+            "referenceKeyPath": "@.id"
           }
         ],
         "values": [
           {
-            "targetPath": "@.label",
-            "value": "@.label"
+            "targetPath": "@.productName",
+            "value": "@.name"
           }
         ]
       }
@@ -243,19 +245,19 @@ Result
 
 ```json
 {
-  "lookup": [
+  "products": [
     {
-      "code": "A",
-      "label": "Widget"
+      "id": "p1",
+      "name": "Widget"
     },
     {
-      "code": "B",
-      "label": "Gadget"
+      "id": "p2",
+      "name": "Gadget"
     }
   ],
   "order": {
-    "code": "B",
-    "label": "Gadget"
+    "productId": "p2",
+    "productName": "Gadget"
   }
 }
 ```
@@ -269,18 +271,18 @@ Input
 
 ```xml
 <root>
-  <lookup>
+  <products>
     <item>
-      <code>A</code>
-      <label>Widget</label>
+      <id>p1</id>
+      <name>Widget</name>
     </item>
     <item>
-      <code>B</code>
-      <label>Gadget</label>
+      <id>p2</id>
+      <name>Gadget</name>
     </item>
-  </lookup>
+  </products>
   <order>
-    <code>B</code>
+    <productId>p2</productId>
   </order>
 </root>
 ```
@@ -292,17 +294,17 @@ Script
   <resolve path="/root/order">
     <resolveSettings>
       <item>
-        <referencesCollectionPath>/root/lookup/item</referencesCollectionPath>
+        <referencesCollectionPath>/root/products/item</referencesCollectionPath>
         <resolveKeys>
           <item>
-            <keyPath>@.code</keyPath>
-            <referenceKeyPath>@.code</referenceKeyPath>
+            <keyPath>@.productId</keyPath>
+            <referenceKeyPath>@.id</referenceKeyPath>
           </item>
         </resolveKeys>
         <values>
           <item>
-            <value>@.label</value>
-            <targetPath>@.label</targetPath>
+            <value>@.name</value>
+            <targetPath>@.productName</targetPath>
           </item>
         </values>
       </item>
@@ -315,19 +317,19 @@ Result
 
 ```xml
 <root>
-  <lookup>
+  <products>
     <item>
-      <code>A</code>
-      <label>Widget</label>
+      <id>p1</id>
+      <name>Widget</name>
     </item>
     <item>
-      <code>B</code>
-      <label>Gadget</label>
+      <id>p2</id>
+      <name>Gadget</name>
     </item>
-  </lookup>
+  </products>
   <order>
-    <code>B</code>
-    <label>Gadget</label>
+    <productId>p2</productId>
+    <productName>Gadget</productName>
   </order>
 </root>
 ```
@@ -340,13 +342,13 @@ Result
 Input
 
 ```yaml
-lookup:
-  - code: A
-    label: Widget
-  - code: B
-    label: Gadget
+products:
+  - id: p1
+    name: Widget
+  - id: p2
+    name: Gadget
 order:
-  code: B
+  productId: p2
 ```
 
 Script
@@ -355,26 +357,26 @@ Script
 - command: resolve
   path: $.order
   resolveSettings:
-    - referencesCollectionPath: '$.lookup[*]'
+    - referencesCollectionPath: '$.products[*]'
       resolveKeys:
-        - keyPath: '@.code'
-          referenceKeyPath: '@.code'
+        - keyPath: '@.productId'
+          referenceKeyPath: '@.id'
       values:
-        - targetPath: '@.label'
-          value: '@.label'
+        - targetPath: '@.productName'
+          value: '@.name'
 ```
 
 Result
 
 ```yaml
-lookup:
-- code: A
-  label: Widget
-- code: B
-  label: Gadget
+products:
+- id: p1
+  name: Widget
+- id: p2
+  name: Gadget
 order:
-  code: B
-  label: Gadget
+  productId: p2
+  productName: Gadget
 ...
 ```
 
