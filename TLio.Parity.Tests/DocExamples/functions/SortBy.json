@@ -1,0 +1,12 @@
+[
+  {
+    "title": "02-coverages-by-premium-descending",
+    "source": "TLio.Functions.Tests/Fixtures/Collections/sortby/02-coverages-by-premium-descending.json",
+    "xmlScript": "<script><put path=\"/root/ranked\"><value>=sortby(/root/coverages, '/premium', 'desc')</value></put></script>"
+  },
+  {
+    "title": "03-missing-key-sorts-last",
+    "source": "TLio.Functions.Tests/Fixtures/Collections/sortby/03-missing-key-sorts-last.json",
+    "xmlScript": "<script><put path=\"/root/ranked\"><value>=sortby(/root/claims, '/amount', 'desc')</value></put></script>"
+  }
+]

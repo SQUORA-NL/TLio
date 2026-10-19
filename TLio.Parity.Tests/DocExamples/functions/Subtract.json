@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-two-scalars",
+    "source": "TLio.Functions.Tests/Fixtures/Math/subtract/01-two-scalars.json"
+  },
+  {
+    "title": "02-array-minus-scalar",
+    "source": "TLio.Functions.Tests/Fixtures/Math/subtract/02-array-minus-scalar.json"
+  }
+]

@@ -1,5 +1,10 @@
 # TLio
 
+[![CI](https://github.com/SQUORA-NL/TLio/actions/workflows/ci.yml/badge.svg)](https://github.com/SQUORA-NL/TLio/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/vpre/TLio.Client?label=TLio.Client)](https://www.nuget.org/packages/TLio.Client)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-ea4aaa)](https://github.com/sponsors/FransVanEk)
+
 **TLio** is a type-agnostic, format-neutral scripting framework for structured data transformation.
 It is the successor to [JLio](https://jlio.online/) and extends the same command/function scripting
 model to JSON, XML, YAML, and any future structured data format.
@@ -34,6 +39,27 @@ The same script, unchanged, runs against XML (`TLio.Xml`) and YAML (`TLio.Yaml`)
 execution context, not the script. Each format adapter's README has this same quick start for
 its own `TNode`.
 
+## Find the right doc
+
+| I want to… | Go to |
+|---|---|
+| Try it in five minutes | [Quick start](#quick-start) |
+| Learn the ideas and write my first scripts | [`docs/ai-ref/guide.md`](docs/ai-ref/guide.md), [`overview.md`](docs/ai-ref/overview.md) |
+| Look up a command or function (with JSON, XML and YAML examples) | [**Reference index**](docs/ai-ref/README.md) |
+| Know how to write paths and `=function()` values | [`notation-reference.md`](docs/ai-ref/notation-reference.md) |
+| Work with XML or YAML instead of JSON | [`adapters/`](docs/ai-ref/adapters/) — start with [`document-shape.md`](docs/ai-ref/adapters/document-shape.md) |
+| Write the *script* in XML or YAML | [`script-notation.md`](docs/ai-ref/adapters/script-notation.md) |
+| Convert between JSON, XML and YAML | [`convert`](docs/ai-ref/commands/Convert.md), [`convertValue`](docs/ai-ref/commands/ConvertValue.md) |
+| Let an AI agent use TLio | [MCP server](TLio.Mcp/README.md), [`TLio_AI_Reference.md`](docs/ai-ref/TLio_AI_Reference.md) |
+| Run it fast and thread-safe | [`performance.md`](docs/ai-ref/performance.md) |
+| See a runnable sample | [TLio-Samples](https://github.com/SQUORA-NL/TLio-Samples) |
+| See what changed, and what to do when upgrading | [**Release notes**](docs/release-notes/README.md) |
+| Contribute | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+Every command and function page has its examples in **JSON, XML and YAML** — collapsed, so you
+open only the format you use. They are generated from the tests and re-checked on every
+`dotnet test`.
+
 ## Design principles
 
 - **Format neutrality** — commands and functions have zero dependency on any specific data library.
@@ -54,17 +80,17 @@ its own `TNode`.
 
 | Command | Purpose |
 |---|---|
-| `add` | Create a property — no-op if it already exists |
-| `set` | Update an existing property — no-op if absent; never creates the path |
-| `put` | Upsert — creates the path if needed, always writes |
-| `remove` | Delete the matched nodes |
-| `rename` | Change a node's **name**, keeping value, children, position and XML attributes |
-| `copy` / `move` | Relocate nodes; `move` deletes the source |
-| `merge` | Deep-merge one sub-tree into another, with array key-matching strategies |
-| `compare` | Classify two values, or produce a full structural diff |
-| `ifElse` / `decisionTable` | Conditional execution — two branches, or a rule table |
+| [`add`](docs/ai-ref/commands/Add.md) | Create a property — no-op if it already exists |
+| [`set`](docs/ai-ref/commands/Set.md) | Update an existing property — no-op if absent; never creates the path |
+| [`put`](docs/ai-ref/commands/Put.md) | Upsert — creates the path if needed, always writes |
+| [`remove`](docs/ai-ref/commands/Remove.md) | Delete the matched nodes |
+| [`rename`](docs/ai-ref/commands/Rename.md) | Change a node's **name**, keeping value, children, position and XML attributes |
+| [`copy`](docs/ai-ref/commands/Copy.md) / [`move`](docs/ai-ref/commands/Move.md) | Relocate nodes; `move` deletes the source |
+| [`merge`](docs/ai-ref/commands/Merge.md) | Deep-merge one sub-tree into another, with array key-matching strategies |
+| [`compare`](docs/ai-ref/commands/Compare.md) | Classify two values, or produce a full structural diff |
+| [`ifElse`](docs/ai-ref/commands/IfElse.md) / [`decisionTable`](docs/ai-ref/commands/DecisionTable.md) | Conditional execution — two branches, or a rule table |
 
-`flatten`, `restore`, `resolve` and `tocsv` come from the ETL pack (`RegisterETL`).
+[`flatten`](docs/ai-ref/commands/Flatten.md), [`restore`](docs/ai-ref/commands/Restore.md), [`resolve`](docs/ai-ref/commands/Resolve.md) and [`tocsv`](docs/ai-ref/commands/ToCsv.md) come from the ETL pack (`RegisterETL`).
 
 Any command also takes an optional `title` and `description` — free text saying what the step is
 for. Nothing reads them at run time; they are there so a script is readable months later.
@@ -82,7 +108,7 @@ independent:
   An expression that cannot be resolved warns and no-ops rather than failing the script. The ETL
   pack commands do not resolve `=indirect()`; compute the path in a preceding step.
 
-Per-command detail is in [`docs/ai-ref/commands/`](docs/ai-ref/commands/); notation rules are in
+Per-command and per-function detail — 20 commands and 100+ functions, each with JSON, XML and YAML examples — is in the [reference index](docs/ai-ref/README.md); notation rules are in
 [`docs/ai-ref/notation-reference.md`](docs/ai-ref/notation-reference.md); throughput,
 thread-safety and precompilation guidance is in
 [`docs/ai-ref/performance.md`](docs/ai-ref/performance.md).
@@ -213,3 +239,16 @@ The framework is fully implemented and in active development (specs 001–019).
 ## Target frameworks
 
 All libraries build for `net8.0`, `net9.0` and `net10.0`, each tested on its own runtime; later runtimes use the `net10.0` build and are checked in CI. .NET 8 and 9 reach end of support on 10 November 2026. See [docs/target-frameworks.md](docs/target-frameworks.md).
+
+## Contributing
+
+Contributions are welcome — read [CONTRIBUTING.md](CONTRIBUTING.md) first, and please follow the
+[Code of Conduct](CODE_OF_CONDUCT.md). Security issues: [SECURITY.md](SECURITY.md).
+
+## Support the project
+
+If TLio saves you time, you can [sponsor its development](https://github.com/sponsors/FransVanEk).
+
+## License
+
+[MIT](LICENSE) © SQUORA

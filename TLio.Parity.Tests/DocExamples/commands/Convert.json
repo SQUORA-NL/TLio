@@ -1,0 +1,51 @@
+[
+  {
+    "title": "convert the whole document",
+    "description": "The same data in each format, converted to the next. Everything before `convert` runs against the old format, everything after against the new one, and the data itself is unchanged. XML is the one asymmetry: its document element has a name, so converting `<root>\u2026</root>` to JSON gives `{\"root\": {\u2026}}`.",
+    "input": {
+      "id": "7",
+      "customer": {
+        "name": "Acme"
+      },
+      "lines": [
+        "a",
+        "b"
+      ]
+    },
+    "script": [
+      {
+        "command": "convert",
+        "to": "{to}"
+      }
+    ],
+    "expected": {
+      "id": "7",
+      "customer": {
+        "name": "Acme"
+      },
+      "lines": [
+        "a",
+        "b"
+      ]
+    },
+    "convertTo": {
+      "json": "yaml",
+      "xml": "json",
+      "yaml": "xml"
+    },
+    "expectedByStart": {
+      "xml": {
+        "root": {
+          "id": "7",
+          "customer": {
+            "name": "Acme"
+          },
+          "lines": [
+            "a",
+            "b"
+          ]
+        }
+      }
+    }
+  }
+]

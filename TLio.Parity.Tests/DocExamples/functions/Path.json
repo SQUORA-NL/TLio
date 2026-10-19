@@ -1,0 +1,24 @@
+[
+  {
+    "title": "record where a value was written",
+    "input": {
+      "user": {
+        "id": 1
+      }
+    },
+    "script": [
+      {
+        "command": "add",
+        "path": "$.user.where",
+        "value": "=path()"
+      }
+    ],
+    "expected": {
+      "user": {
+        "id": 1,
+        "where": "$.user"
+      }
+    },
+    "diverges": "the path is written in the format's own path language."
+  }
+]

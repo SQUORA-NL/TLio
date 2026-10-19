@@ -1,0 +1,14 @@
+[
+  {
+    "title": "04-compare-from-to-path",
+    "source": "TLio.UnitTests/Fixtures/Compare/04-compare-from-to-path/fixture.json"
+  },
+  {
+    "title": "05-compare-object-diff",
+    "source": "TLio.UnitTests/Fixtures/Compare/05-compare-object-diff/fixture.json"
+  },
+  {
+    "title": "06-compare-array-key-matching",
+    "source": "TLio.UnitTests/Fixtures/Compare/06-compare-array-key-matching/fixture.json"
+  }
+]

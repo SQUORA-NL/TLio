@@ -1,0 +1,14 @@
+[
+  {
+    "title": "01-array",
+    "source": "TLio.Functions.Tests/Fixtures/Math/count/01-array.json"
+  },
+  {
+    "title": "03-path-not-found-returns-zero",
+    "source": "TLio.Functions.Tests/Fixtures/Math/count/03-path-not-found-returns-zero.json"
+  },
+  {
+    "title": "04-null-counts-as-one",
+    "source": "TLio.Functions.Tests/Fixtures/Math/count/04-null-counts-as-one.json"
+  }
+]

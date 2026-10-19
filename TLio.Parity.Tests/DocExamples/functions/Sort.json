@@ -1,0 +1,14 @@
+[
+  {
+    "title": "02-numbers-descending",
+    "source": "TLio.Functions.Tests/Fixtures/Collections/sort/02-numbers-descending.json"
+  },
+  {
+    "title": "03-strings-ordinal",
+    "source": "TLio.Functions.Tests/Fixtures/Collections/sort/03-strings-ordinal.json"
+  },
+  {
+    "title": "04-mixed-array-uses-text-order",
+    "source": "TLio.Functions.Tests/Fixtures/Collections/sort/04-mixed-array-uses-text-order.json"
+  }
+]

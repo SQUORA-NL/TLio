@@ -1,0 +1,10 @@
+[
+  {
+    "title": "04-monthly-instalment",
+    "source": "TLio.Functions.Tests/Fixtures/Math/divide/04-monthly-instalment.json"
+  },
+  {
+    "title": "03-array-dividend-summed",
+    "source": "TLio.Functions.Tests/Fixtures/Math/divide/03-array-dividend-summed.json"
+  }
+]

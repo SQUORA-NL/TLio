@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-integer-result",
+    "source": "TLio.Functions.Tests/Fixtures/Math/pow/01-integer-result.json"
+  },
+  {
+    "title": "02-fractional-exponent",
+    "source": "TLio.Functions.Tests/Fixtures/Math/pow/02-fractional-exponent.json"
+  }
+]

@@ -1,0 +1,21 @@
+[
+  {
+    "title": "equal counts",
+    "input": {
+      "a": 3,
+      "b": 3
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=lessOrEqual($.a,$.b)"
+      }
+    ],
+    "expected": {
+      "a": 3,
+      "b": 3,
+      "result": true
+    }
+  }
+]

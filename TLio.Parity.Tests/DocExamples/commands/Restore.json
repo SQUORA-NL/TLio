@@ -1,0 +1,39 @@
+[
+  {
+    "title": "flatten, then restore the original shape",
+    "description": "`flatten` writes its metadata next to the flattened node (the document root by default); `restore` reads it back from there and rebuilds the original structure, including the numeric type of `value`, then removes the metadata. (The property is called `record`, not `item`: in XML an element named `item` reads as an array element.)",
+    "input": {
+      "record": {
+        "name": "test",
+        "value": 42,
+        "nested": {
+          "x": 1
+        }
+      }
+    },
+    "script": [
+      {
+        "command": "flatten",
+        "path": "$.record"
+      },
+      {
+        "command": "restore",
+        "path": "$.record",
+        "restoreSettings": {
+          "metadataPath": "$",
+          "removeMetadata": true
+        }
+      }
+    ],
+    "expected": {
+      "record": {
+        "name": "test",
+        "value": 42,
+        "nested": {
+          "x": 1
+        }
+      }
+    },
+    "xmlScript": "<script><flatten path=\"/root/record\" /><restore path=\"/root/record\"><restoreSettings><metadataPath>/root</metadataPath><removeMetadata>true</removeMetadata></restoreSettings></restore></script>"
+  }
+]

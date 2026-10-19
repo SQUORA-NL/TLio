@@ -1,0 +1,14 @@
+[
+  {
+    "title": "01-add-new-property",
+    "source": "TLio.UnitTests/Fixtures/Add/01-add-new-property/fixture.json"
+  },
+  {
+    "title": "03-add-deep-path",
+    "source": "TLio.UnitTests/Fixtures/Add/03-add-deep-path/fixture.json"
+  },
+  {
+    "title": "10-add-deep-through-null",
+    "source": "TLio.Parity.Tests/Fixtures/Add/10-add-deep-through-null/fixture.json"
+  }
+]

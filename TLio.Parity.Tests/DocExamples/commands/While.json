@@ -1,0 +1,25 @@
+[
+  {
+    "title": "count up to three",
+    "input": {
+      "counter": 0
+    },
+    "script": [
+      {
+        "command": "while",
+        "condition": "=lessThan($.counter,3)",
+        "maxIterations": 10,
+        "commands": [
+          {
+            "command": "set",
+            "path": "$.counter",
+            "value": "=sum($.counter,1)"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "counter": 3
+    }
+  }
+]

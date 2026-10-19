@@ -1,0 +1,40 @@
+[
+  {
+    "title": "Actual/360",
+    "input": {
+      "from": "2025-01-01",
+      "to": "2025-07-01"
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=dayCountFraction($.from,$.to,'A360')"
+      }
+    ],
+    "expected": {
+      "from": "2025-01-01",
+      "to": "2025-07-01",
+      "result": 0.5027777777777778
+    }
+  },
+  {
+    "title": "30E/360",
+    "input": {
+      "from": "2025-01-01",
+      "to": "2025-07-01"
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=dayCountFraction($.from,$.to,'30E360')"
+      }
+    ],
+    "expected": {
+      "from": "2025-01-01",
+      "to": "2025-07-01",
+      "result": 0.5
+    }
+  }
+]

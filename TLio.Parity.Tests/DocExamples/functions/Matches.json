@@ -1,0 +1,36 @@
+[
+  {
+    "title": "pattern matches",
+    "input": {
+      "code": "AB-1234"
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=matches($.code,'^[A-Z]{2}-\\d+$')"
+      }
+    ],
+    "expected": {
+      "code": "AB-1234",
+      "result": true
+    }
+  },
+  {
+    "title": "pattern does not match",
+    "input": {
+      "code": "ab1234"
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=matches($.code,'^[A-Z]{2}-\\d+$')"
+      }
+    ],
+    "expected": {
+      "code": "ab1234",
+      "result": false
+    }
+  }
+]

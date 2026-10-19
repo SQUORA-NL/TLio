@@ -1,0 +1,14 @@
+[
+  {
+    "title": "01-remove-property",
+    "source": "TLio.UnitTests/Fixtures/Remove/01-remove-property/fixture.json"
+  },
+  {
+    "title": "05-remove-missing-is-noop",
+    "source": "TLio.Parity.Tests/Fixtures/Remove/05-remove-missing-is-noop/fixture.json"
+  },
+  {
+    "title": "06-remove-null-node",
+    "source": "TLio.Parity.Tests/Fixtures/Remove/06-remove-null-node/fixture.json"
+  }
+]

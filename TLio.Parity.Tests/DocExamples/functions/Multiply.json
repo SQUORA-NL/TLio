@@ -1,0 +1,10 @@
+[
+  {
+    "title": "03-factor-chain",
+    "source": "TLio.Functions.Tests/Fixtures/Math/multiply/03-factor-chain.json"
+  },
+  {
+    "title": "02-array-product",
+    "source": "TLio.Functions.Tests/Fixtures/Math/multiply/02-array-product.json"
+  }
+]

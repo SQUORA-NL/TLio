@@ -1,0 +1,16 @@
+[
+  {
+    "title": "the result is text (every run differs)",
+    "input": {},
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=isString(=newGuid())"
+      }
+    ],
+    "expected": {
+      "result": true
+    }
+  }
+]

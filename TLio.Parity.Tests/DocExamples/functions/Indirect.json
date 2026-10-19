@@ -1,0 +1,23 @@
+[
+  {
+    "title": "read the path stored in another property",
+    "input": {
+      "pathRef": "$.source",
+      "source": "hello",
+      "target": null
+    },
+    "script": [
+      {
+        "command": "set",
+        "path": "$.target",
+        "value": "=indirect($.pathRef)"
+      }
+    ],
+    "expected": {
+      "pathRef": "$.source",
+      "source": "hello",
+      "target": "hello"
+    },
+    "xmlInput": "<root><pathRef>/root/source</pathRef><source>hello</source><target/></root>"
+  }
+]

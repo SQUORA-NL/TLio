@@ -3,6 +3,14 @@
 Moved out of `CLAUDE.md`, which keeps only what an editor needs on every task.
 Newest first.
 
+- docs-examples: **cross-format examples on every command and function page**, generated and checked by
+  `TLio.Parity.Tests/DocExamples.cs` (`DocsAreUpToDate`, `EveryPageHasExamples`, link check). Examples come from
+  existing fixtures or `DocExamples/*.json`; the engine runs the script as written in each notation. Writing them
+  found a bug: `XmlNodeAdapter.DeepEquals` compared the two elements' *own names*, so `resolve` (and any
+  value comparison) failed in XML whenever the two sides were named differently (`@.productId` vs `@.id`) while
+  JSON and YAML matched. An element's name is its key in the parent, not part of its value; only names beneath
+  the compared elements count now. `ResolveValueParityTests` joins on differently named keys so it cannot return.
+
 - 025-schema-shaping: **`orderBySchema`, `filterBySchema`, `skeleton`** — JLio's JSchema pack without its
   schema library. `TLio.Functions/Schema/`: `SchemaDocument` reads a schema through `INodeAdapter` (so it
   can live in a JSON, XML or YAML document, or arrive as JSON text) into `SchemaNode`s, following local

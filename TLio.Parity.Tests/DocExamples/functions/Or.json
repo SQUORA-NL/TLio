@@ -1,0 +1,40 @@
+[
+  {
+    "title": "one true",
+    "input": {
+      "a": false,
+      "b": true
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=or($.a,$.b)"
+      }
+    ],
+    "expected": {
+      "a": false,
+      "b": true,
+      "result": true
+    }
+  },
+  {
+    "title": "both false",
+    "input": {
+      "a": false,
+      "b": false
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=or($.a,$.b)"
+      }
+    ],
+    "expected": {
+      "a": false,
+      "b": false,
+      "result": false
+    }
+  }
+]

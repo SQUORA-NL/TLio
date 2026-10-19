@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-partial-first-element",
+    "source": "TLio.Functions.Tests/Fixtures/Partial/01-partial-first-element/fixture.json"
+  },
+  {
+    "title": "02-partial-index-2",
+    "source": "TLio.Functions.Tests/Fixtures/Partial/02-partial-index-2/fixture.json"
+  }
+]

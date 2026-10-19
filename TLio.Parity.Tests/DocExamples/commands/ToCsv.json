@@ -1,0 +1,26 @@
+[
+  {
+    "title": "records to CSV",
+    "input": {
+      "records": [
+        {
+          "id": 1,
+          "name": "Ada"
+        },
+        {
+          "id": 2,
+          "name": "Grace"
+        }
+      ]
+    },
+    "script": [
+      {
+        "command": "tocsv",
+        "path": "$.records"
+      }
+    ],
+    "expected": {
+      "records": "id,name\n1,Ada\n2,Grace"
+    }
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-single-criteria",
+    "source": "TLio.Functions.Tests/Fixtures/Math/averageifs/01-single-criteria.json"
+  },
+  {
+    "title": "02-two-criteria",
+    "source": "TLio.Functions.Tests/Fixtures/Math/averageifs/02-two-criteria.json"
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-shape-defaults-and-arrays",
+    "source": "TLio.Functions.Tests/Fixtures/Schema/skeleton/01-shape-defaults-and-arrays.json"
+  },
+  {
+    "title": "04-merge-applies-defaults",
+    "source": "TLio.Functions.Tests/Fixtures/Schema/skeleton/04-merge-applies-defaults.json"
+  }
+]

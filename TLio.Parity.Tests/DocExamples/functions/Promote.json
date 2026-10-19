@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-promote-nested-object",
+    "source": "TLio.Functions.Tests/Fixtures/Promote/01-promote-nested-object/fixture.json"
+  },
+  {
+    "title": "02-promote-with-name",
+    "source": "TLio.Functions.Tests/Fixtures/Promote/02-promote-with-name/fixture.json"
+  }
+]

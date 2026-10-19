@@ -1,0 +1,29 @@
+[
+  {
+    "title": "replace a property with an array",
+    "input": {
+      "widget": {
+        "status": "active",
+        "qty": 1
+      }
+    },
+    "script": [
+      {
+        "command": "setProperties",
+        "path": "$.widget",
+        "properties": [
+          "status"
+        ],
+        "value": "=toArray()"
+      }
+    ],
+    "expected": {
+      "widget": {
+        "status": [
+          "active"
+        ],
+        "qty": 1
+      }
+    }
+  }
+]

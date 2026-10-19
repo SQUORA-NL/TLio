@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-first-non-empty",
+    "source": "TLio.Functions.Tests/Fixtures/Logic/coalesce/01-first-non-empty.json"
+  },
+  {
+    "title": "02-missing-paths-are-skipped",
+    "source": "TLio.Functions.Tests/Fixtures/Logic/coalesce/02-missing-paths-are-skipped.json"
+  }
+]

@@ -1,0 +1,19 @@
+[
+  {
+    "title": "position of a substring",
+    "input": {
+      "text": "Ada Lovelace"
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=indexOf($.text,'Love')"
+      }
+    ],
+    "expected": {
+      "text": "Ada Lovelace",
+      "result": 4
+    }
+  }
+]

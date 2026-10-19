@@ -1,0 +1,16 @@
+[
+  {
+    "title": "the result is text (the clock differs per run)",
+    "input": {},
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=isString(=datetime())"
+      }
+    ],
+    "expected": {
+      "result": true
+    }
+  }
+]

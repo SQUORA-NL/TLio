@@ -1,0 +1,40 @@
+[
+  {
+    "title": "both true",
+    "input": {
+      "a": true,
+      "b": true
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=and($.a,$.b)"
+      }
+    ],
+    "expected": {
+      "a": true,
+      "b": true,
+      "result": true
+    }
+  },
+  {
+    "title": "one false",
+    "input": {
+      "a": true,
+      "b": false
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=and($.a,$.b)"
+      }
+    ],
+    "expected": {
+      "a": true,
+      "b": false,
+      "result": false
+    }
+  }
+]

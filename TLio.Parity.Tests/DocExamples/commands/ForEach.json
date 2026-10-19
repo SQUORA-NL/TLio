@@ -1,0 +1,47 @@
+[
+  {
+    "title": "mark every element",
+    "input": {
+      "items": [
+        {
+          "n": 1
+        },
+        {
+          "n": 2
+        },
+        {
+          "n": 3
+        }
+      ]
+    },
+    "script": [
+      {
+        "command": "forEach",
+        "path": "$.items",
+        "commands": [
+          {
+            "command": "add",
+            "path": "@.seen",
+            "value": true
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "items": [
+        {
+          "n": 1,
+          "seen": true
+        },
+        {
+          "n": 2,
+          "seen": true
+        },
+        {
+          "n": 3,
+          "seen": true
+        }
+      ]
+    }
+  }
+]

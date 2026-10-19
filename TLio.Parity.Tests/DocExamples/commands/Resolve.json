@@ -1,0 +1,61 @@
+[
+  {
+    "title": "look up a product name by id",
+    "description": "The order's `productId` is joined to the product's `id`; the names differ on the two sides, and the matched product's `name` is written onto the order. In XML the paths are XPath, but `@.` inside a resolve setting is written the same way in every format.",
+    "input": {
+      "products": [
+        {
+          "id": "p1",
+          "name": "Widget"
+        },
+        {
+          "id": "p2",
+          "name": "Gadget"
+        }
+      ],
+      "order": {
+        "productId": "p2"
+      }
+    },
+    "script": [
+      {
+        "command": "resolve",
+        "path": "$.order",
+        "resolveSettings": [
+          {
+            "referencesCollectionPath": "$.products[*]",
+            "resolveKeys": [
+              {
+                "keyPath": "@.productId",
+                "referenceKeyPath": "@.id"
+              }
+            ],
+            "values": [
+              {
+                "targetPath": "@.productName",
+                "value": "@.name"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "products": [
+        {
+          "id": "p1",
+          "name": "Widget"
+        },
+        {
+          "id": "p2",
+          "name": "Gadget"
+        }
+      ],
+      "order": {
+        "productId": "p2",
+        "productName": "Gadget"
+      }
+    },
+    "xmlScript": "<script><resolve path=\"/root/order\"><resolveSettings><item><referencesCollectionPath>/root/products/item</referencesCollectionPath><resolveKeys><item><keyPath>@.productId</keyPath><referenceKeyPath>@.id</referenceKeyPath></item></resolveKeys><values><item><value>@.name</value><targetPath>@.productName</targetPath></item></values></item></resolveSettings></resolve></script>"
+  }
+]
