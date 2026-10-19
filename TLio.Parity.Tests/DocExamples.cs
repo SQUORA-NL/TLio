@@ -441,6 +441,28 @@ public sealed class DocExamples
         catch (Exception e) { return new FormatRun("XML", input, script, "", "", e.Message); }
     }
 
+    /// <summary>
+    /// Strings the engine builds (toString of a node, a compare description) end lines with the
+    /// platform newline. YamlDotNet picks a different block style for CRLF text (<c>&gt;+</c>
+    /// instead of <c>&gt;</c>), so a page generated on Windows would differ from one generated
+    /// elsewhere.
+    /// </summary>
+    private static void LineFeedsOnly(YamlNode node)
+    {
+        switch (node)
+        {
+            case YamlScalarNode scalar when scalar.Value is { } v && v.Contains('\r'):
+                scalar.Value = v.Replace("\r\n", "\n");
+                break;
+            case YamlMappingNode map:
+                foreach (var child in map.Children.Values) LineFeedsOnly(child);
+                break;
+            case YamlSequenceNode seq:
+                foreach (var child in seq.Children) LineFeedsOnly(child);
+                break;
+        }
+    }
+
     private static FormatRun RunYaml(DocExample ex)
     {
         var input  = CanonicalShape.ToYamlDocument(ex.Input);
@@ -452,6 +474,7 @@ public sealed class DocExamples
             var adapter = context.NodeAdapter;
             var parser  = new YamlScriptParser<YamlNode>(options.CommandsProvider, options.FunctionsProvider, adapter);
             var result  = parser.ParseScript(script).Execute(adapter.Parse(input), context);
+            LineFeedsOnly(result.Data);
             return new FormatRun("YAML", input, script, adapter.Serialize(result.Data, true),
                 FormatRunners.RenderYamlForComparison(result.Data), null);
         }
