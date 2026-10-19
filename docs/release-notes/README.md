@@ -8,7 +8,8 @@ curated version.
 
 | Release | Date | In one line |
 |---|---|---|
-| [Unreleased](unreleased.md) | — | Schema shaping functions, MCP server fixes, cross-format examples on every page, XML `DeepEquals` fix |
+| [Unreleased](unreleased.md) | — | Changes on `main` since 1.3.0 |
+| [1.3.0](v1.3.0.md) | 2026-10-19 | Schema shaping functions, MCP server fixes, cross-format examples on every page, release notes, XML comparison fix |
 | [1.2.0](v1.2.0.md) | 2026-10-11 | Infix arithmetic in function values |
 | [1.1.0](v1.1.0.md) | 2026-10-08 | `forEach`/`while`, own JSONPath engine, .NET 8/9/10, concurrency fixes |
 | [1.0.2](v1.0.2.md) | 2026-09-25 | Faster, smaller `decisionTable` (`outputPathTemplate`) |
@@ -25,7 +26,7 @@ curated version.
 | 0.9.0 | 17 | 89 | 13 | net10.0 |
 | 1.0.0 – 1.0.2 | 18 | 98 | 13 | net10.0 |
 | 1.1.0 – 1.2.0 | 20 | 99 | 15 | net8.0, net9.0, net10.0 |
-| main | 20 | 102 | 15 | net8.0, net9.0, net10.0 |
+| 1.3.0 – main | 20 | 102 | 15 | net8.0, net9.0, net10.0 |
 
 Counts are the pages under `docs/ai-ref/commands` and `docs/ai-ref/functions` and the projects that
 opt into `IsPackable`, read from each tag.
@@ -34,6 +35,7 @@ opt into `IsPackable`, read from each tag.
 
 | Release | Change | What to do |
 |---|---|---|
+| 1.3.0 | In XML, two values now compare equal when their content is equal even if the elements are named differently (as in JSON and YAML) | A `resolve` or comparison that matched nothing in XML only because key names differed will now match |
 | 1.1.0 | `TLio.Json.SystemText` uses the Newtonsoft path dialect by default; invalid paths throw; `SelectNode` with several matches throws | Opt in to `Rfc9535`/`Extended` if you relied on JsonCons behaviour; handle `JsonPathException` |
 | 1.1.0 | Samples, `docs/samples`, `docs/showcase`, `demo/` left this repository | Use [TLio-Samples](https://github.com/SQUORA-NL/TLio-Samples) |
 | 0.9.0 | Assemblies are strong-named | Recompile anything built against an unsigned TLio |
