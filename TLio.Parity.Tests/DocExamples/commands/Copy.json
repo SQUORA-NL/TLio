@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-copy-property",
+    "source": "TLio.UnitTests/Fixtures/Copy/01-copy-property/fixture.json"
+  },
+  {
+    "title": "02-copy-deep-to-deep",
+    "source": "TLio.UnitTests/Fixtures/Copy/02-copy-deep-to-deep/fixture.json"
+  }
+]

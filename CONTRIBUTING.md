@@ -21,7 +21,7 @@ Use `fetch-depth: 0` / a full clone — the version comes from git tags (MinVer)
 3. Add or update tests. Commands and functions are covered by file-based fixtures (input / script / result);
    behaviour that must hold in every format belongs in `TLio.Parity.Tests`.
 4. `dotnet build -warnaserror` and `dotnet test` must pass — nullable warnings are errors.
-5. Update the docs (`docs/ai-ref/`, the relevant README) when behaviour or the public surface changes.
+5. Update the docs (`docs/ai-ref/`, the relevant README) when behaviour or the public surface changes. The JSON/XML/YAML examples on each command and function page are generated from `TLio.Parity.Tests/DocExamples/` and checked by `dotnet test`; after changing one, run `dotnet test TLio.Parity.Tests --filter "Name~GenerateDocExamples"` and commit the regenerated pages.
 6. If a command or function changes behaviour across formats on purpose, record it in `docs/behaviour-decisions.md`.
 
 ## Project conventions

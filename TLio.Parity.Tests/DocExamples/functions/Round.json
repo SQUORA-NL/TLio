@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-to-integer",
+    "source": "TLio.Functions.Tests/Fixtures/Math/round/01-to-integer.json"
+  },
+  {
+    "title": "02-with-decimals",
+    "source": "TLio.Functions.Tests/Fixtures/Math/round/02-with-decimals.json"
+  }
+]

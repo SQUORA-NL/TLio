@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-fetch-string",
+    "source": "TLio.Functions.Tests/Fixtures/Fetch/01-fetch-string/fixture.json"
+  },
+  {
+    "title": "04-fetch-with-default",
+    "source": "TLio.Functions.Tests/Fixtures/Fetch/04-fetch-with-default/fixture.json"
+  }
+]

@@ -1,0 +1,44 @@
+[
+  {
+    "title": "value in a list",
+    "input": {
+      "status": "open"
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=in($.status,'open','pending')"
+      }
+    ],
+    "expected": {
+      "status": "open",
+      "result": true
+    }
+  },
+  {
+    "title": "value in an array",
+    "input": {
+      "status": "closed",
+      "allowed": [
+        "open",
+        "pending"
+      ]
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=in($.status,$.allowed)"
+      }
+    ],
+    "expected": {
+      "status": "closed",
+      "allowed": [
+        "open",
+        "pending"
+      ],
+      "result": false
+    }
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-set-string",
+    "source": "TLio.UnitTests/Fixtures/Set/01-set-string/fixture.json"
+  },
+  {
+    "title": "07-set-missing-is-noop",
+    "source": "TLio.Parity.Tests/Fixtures/Set/07-set-missing-is-noop/fixture.json"
+  }
+]

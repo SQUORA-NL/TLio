@@ -1,0 +1,97 @@
+[
+  {
+    "title": "merge objects",
+    "input": {
+      "target": {
+        "a": 1
+      },
+      "source": {
+        "b": 2
+      }
+    },
+    "script": [
+      {
+        "command": "merge",
+        "fromPath": "$.source",
+        "toPath": "$.target"
+      }
+    ],
+    "expected": {
+      "target": {
+        "a": 1,
+        "b": 2
+      },
+      "source": {
+        "b": 2
+      }
+    }
+  },
+  {
+    "title": "merge arrays by key",
+    "input": {
+      "target": {
+        "items": [
+          {
+            "id": 1,
+            "v": "old"
+          }
+        ]
+      },
+      "source": {
+        "items": [
+          {
+            "id": 1,
+            "v": "new"
+          },
+          {
+            "id": 2,
+            "v": "added"
+          }
+        ]
+      }
+    },
+    "script": [
+      {
+        "command": "merge",
+        "fromPath": "$.source",
+        "toPath": "$.target",
+        "settings": {
+          "arraySettings": [
+            {
+              "arrayPath": "$.target.items",
+              "keyPaths": [
+                "id"
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "expected": {
+      "target": {
+        "items": [
+          {
+            "id": 1,
+            "v": "new"
+          },
+          {
+            "id": 2,
+            "v": "added"
+          }
+        ]
+      },
+      "source": {
+        "items": [
+          {
+            "id": 1,
+            "v": "new"
+          },
+          {
+            "id": 2,
+            "v": "added"
+          }
+        ]
+      }
+    }
+  }
+]

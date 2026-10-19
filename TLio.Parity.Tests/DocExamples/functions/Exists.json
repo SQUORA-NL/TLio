@@ -1,0 +1,36 @@
+[
+  {
+    "title": "present",
+    "input": {
+      "name": "Ada"
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=exists($.name)"
+      }
+    ],
+    "expected": {
+      "name": "Ada",
+      "result": true
+    }
+  },
+  {
+    "title": "absent",
+    "input": {
+      "name": "Ada"
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=exists($.missing)"
+      }
+    ],
+    "expected": {
+      "name": "Ada",
+      "result": false
+    }
+  }
+]

@@ -1,0 +1,19 @@
+[
+  {
+    "title": "negate",
+    "input": {
+      "a": true
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=not($.a)"
+      }
+    ],
+    "expected": {
+      "a": true,
+      "result": false
+    }
+  }
+]

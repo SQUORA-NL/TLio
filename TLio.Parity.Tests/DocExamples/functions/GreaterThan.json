@@ -1,0 +1,40 @@
+[
+  {
+    "title": "greater",
+    "input": {
+      "a": 5,
+      "b": 3
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=greaterThan($.a,$.b)"
+      }
+    ],
+    "expected": {
+      "a": 5,
+      "b": 3,
+      "result": true
+    }
+  },
+  {
+    "title": "equal is not greater",
+    "input": {
+      "a": 3,
+      "b": 3
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=greaterThan($.a,$.b)"
+      }
+    ],
+    "expected": {
+      "a": 3,
+      "b": 3,
+      "result": false
+    }
+  }
+]

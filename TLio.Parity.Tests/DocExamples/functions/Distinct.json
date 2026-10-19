@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-strings-first-occurrence-wins",
+    "source": "TLio.Functions.Tests/Fixtures/Collections/distinct/01-strings-first-occurrence-wins.json"
+  },
+  {
+    "title": "02-objects-compare-structurally",
+    "source": "TLio.Functions.Tests/Fixtures/Collections/distinct/02-objects-compare-structurally.json"
+  }
+]

@@ -1,0 +1,41 @@
+[
+  {
+    "title": "embedded XML text becomes structure",
+    "input": {
+      "messages": [
+        {
+          "body": "<m><a>1</a></m>"
+        },
+        {
+          "body": "<m><a>2</a></m>"
+        }
+      ]
+    },
+    "script": [
+      {
+        "command": "convertValue",
+        "path": "$.messages[*].body",
+        "from": "xml",
+        "to": "json"
+      }
+    ],
+    "expected": {
+      "messages": [
+        {
+          "body": {
+            "m": {
+              "a": "1"
+            }
+          }
+        },
+        {
+          "body": {
+            "m": {
+              "a": "2"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,40 @@
+[
+  {
+    "title": "equal numbers",
+    "input": {
+      "a": 3,
+      "b": 3
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=equals($.a,$.b)"
+      }
+    ],
+    "expected": {
+      "a": 3,
+      "b": 3,
+      "result": true
+    }
+  },
+  {
+    "title": "different numbers",
+    "input": {
+      "a": 3,
+      "b": 4
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=equals($.a,$.b)"
+      }
+    ],
+    "expected": {
+      "a": 3,
+      "b": 4,
+      "result": false
+    }
+  }
+]

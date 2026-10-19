@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-string",
+    "source": "TLio.Functions.Tests/Fixtures/Text/length/01-string.json"
+  },
+  {
+    "title": "02-array",
+    "source": "TLio.Functions.Tests/Fixtures/Text/length/02-array.json"
+  }
+]

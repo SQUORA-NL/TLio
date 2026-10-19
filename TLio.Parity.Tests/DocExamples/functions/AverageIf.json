@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-numeric-criteria",
+    "source": "TLio.Functions.Tests/Fixtures/Math/averageif/01-numeric-criteria.json"
+  },
+  {
+    "title": "02-with-average-range",
+    "source": "TLio.Functions.Tests/Fixtures/Math/averageif/02-with-average-range.json"
+  }
+]

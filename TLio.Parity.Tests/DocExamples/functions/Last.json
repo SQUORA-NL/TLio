@@ -1,0 +1,10 @@
+[
+  {
+    "title": "01-last-element",
+    "source": "TLio.Functions.Tests/Fixtures/Collections/last/01-last-element.json"
+  },
+  {
+    "title": "02-last-object",
+    "source": "TLio.Functions.Tests/Fixtures/Collections/last/02-last-object.json"
+  }
+]

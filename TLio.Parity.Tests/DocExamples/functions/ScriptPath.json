@@ -1,0 +1,19 @@
+[
+  {
+    "title": "the path of the node being written",
+    "input": {
+      "result": null
+    },
+    "script": [
+      {
+        "command": "set",
+        "path": "$.result",
+        "value": "=scriptpath()"
+      }
+    ],
+    "expected": {
+      "result": "$"
+    },
+    "diverges": "the path is written in the format's own path language."
+  }
+]

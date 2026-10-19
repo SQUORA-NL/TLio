@@ -1,0 +1,14 @@
+[
+  {
+    "title": "01-whole-match",
+    "source": "TLio.Functions.Tests/Fixtures/Text/regexextract/01-whole-match.json"
+  },
+  {
+    "title": "02-capture-group",
+    "source": "TLio.Functions.Tests/Fixtures/Text/regexextract/02-capture-group.json"
+  },
+  {
+    "title": "03-no-match-empty-string",
+    "source": "TLio.Functions.Tests/Fixtures/Text/regexextract/03-no-match-empty-string.json"
+  }
+]

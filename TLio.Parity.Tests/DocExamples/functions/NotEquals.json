@@ -1,0 +1,21 @@
+[
+  {
+    "title": "different numbers",
+    "input": {
+      "a": 3,
+      "b": 4
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=notEquals($.a,$.b)"
+      }
+    ],
+    "expected": {
+      "a": 3,
+      "b": 4,
+      "result": true
+    }
+  }
+]

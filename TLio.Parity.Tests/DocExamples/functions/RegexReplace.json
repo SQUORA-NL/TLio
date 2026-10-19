@@ -1,0 +1,14 @@
+[
+  {
+    "title": "02-backreference",
+    "source": "TLio.Functions.Tests/Fixtures/Text/regexreplace/02-backreference.json"
+  },
+  {
+    "title": "01-strip-separators",
+    "source": "TLio.Functions.Tests/Fixtures/Text/regexreplace/01-strip-separators.json"
+  },
+  {
+    "title": "03-no-match-unchanged",
+    "source": "TLio.Functions.Tests/Fixtures/Text/regexreplace/03-no-match-unchanged.json"
+  }
+]

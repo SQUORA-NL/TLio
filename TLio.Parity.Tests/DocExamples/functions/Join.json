@@ -1,0 +1,29 @@
+[
+  {
+    "title": "with a separator",
+    "input": {
+      "arr": [
+        "x",
+        "y",
+        "z"
+      ],
+      "sep": ", "
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=join($.arr,$.sep)"
+      }
+    ],
+    "expected": {
+      "arr": [
+        "x",
+        "y",
+        "z"
+      ],
+      "sep": ", ",
+      "result": "x, y, z"
+    }
+  }
+]

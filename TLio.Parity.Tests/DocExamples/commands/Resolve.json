@@ -1,0 +1,60 @@
+[
+  {
+    "title": "look up a label by code",
+    "input": {
+      "lookup": [
+        {
+          "code": "A",
+          "label": "Widget"
+        },
+        {
+          "code": "B",
+          "label": "Gadget"
+        }
+      ],
+      "order": {
+        "code": "B"
+      }
+    },
+    "script": [
+      {
+        "command": "resolve",
+        "path": "$.order",
+        "resolveSettings": [
+          {
+            "referencesCollectionPath": "$.lookup[*]",
+            "resolveKeys": [
+              {
+                "keyPath": "@.code",
+                "referenceKeyPath": "@.code"
+              }
+            ],
+            "values": [
+              {
+                "targetPath": "@.label",
+                "value": "@.label"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "lookup": [
+        {
+          "code": "A",
+          "label": "Widget"
+        },
+        {
+          "code": "B",
+          "label": "Gadget"
+        }
+      ],
+      "order": {
+        "code": "B",
+        "label": "Gadget"
+      }
+    },
+    "xmlScript": "<script><resolve path=\"/root/order\"><resolveSettings><item><referencesCollectionPath>/root/lookup/item</referencesCollectionPath><resolveKeys><item><keyPath>@.code</keyPath><referenceKeyPath>@.code</referenceKeyPath></item></resolveKeys><values><item><value>@.label</value><targetPath>@.label</targetPath></item></values></item></resolveSettings></resolve></script>"
+  }
+]

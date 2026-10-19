@@ -1,0 +1,10 @@
+[
+  {
+    "title": "03-array",
+    "source": "TLio.Functions.Tests/Fixtures/Math/sum/03-array.json"
+  },
+  {
+    "title": "06-array-with-null-element",
+    "source": "TLio.Functions.Tests/Fixtures/Math/sum/06-array-with-null-element.json"
+  }
+]

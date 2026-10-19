@@ -1,0 +1,76 @@
+[
+  {
+    "title": "matching kind",
+    "input": {
+      "s": "text",
+      "n": 42,
+      "b": true,
+      "o": {
+        "k": 1
+      },
+      "a": [
+        1,
+        2
+      ],
+      "z": null
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=isArray($.a)"
+      }
+    ],
+    "expected": {
+      "s": "text",
+      "n": 42,
+      "b": true,
+      "o": {
+        "k": 1
+      },
+      "a": [
+        1,
+        2
+      ],
+      "z": null,
+      "result": true
+    }
+  },
+  {
+    "title": "other kind",
+    "input": {
+      "s": "text",
+      "n": 42,
+      "b": true,
+      "o": {
+        "k": 1
+      },
+      "a": [
+        1,
+        2
+      ],
+      "z": null
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.result",
+        "value": "=isArray($.n)"
+      }
+    ],
+    "expected": {
+      "s": "text",
+      "n": 42,
+      "b": true,
+      "o": {
+        "k": 1
+      },
+      "a": [
+        1,
+        2
+      ],
+      "z": null,
+      "result": false
+    }
+  }
+]

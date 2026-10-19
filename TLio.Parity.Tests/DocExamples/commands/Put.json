@@ -1,0 +1,14 @@
+[
+  {
+    "title": "03-put-deep-path",
+    "source": "TLio.UnitTests/Fixtures/Put/03-put-deep-path/fixture.json"
+  },
+  {
+    "title": "02-put-update-existing",
+    "source": "TLio.UnitTests/Fixtures/Put/02-put-update-existing/fixture.json"
+  },
+  {
+    "title": "06-put-into-null-node",
+    "source": "TLio.Parity.Tests/Fixtures/Put/06-put-into-null-node/fixture.json"
+  }
+]

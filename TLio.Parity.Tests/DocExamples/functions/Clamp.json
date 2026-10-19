@@ -1,0 +1,10 @@
+[
+  {
+    "title": "03-above-high",
+    "source": "TLio.Functions.Tests/Fixtures/Math/clamp/03-above-high.json"
+  },
+  {
+    "title": "04-bound-is-inclusive",
+    "source": "TLio.Functions.Tests/Fixtures/Math/clamp/04-bound-is-inclusive.json"
+  }
+]
