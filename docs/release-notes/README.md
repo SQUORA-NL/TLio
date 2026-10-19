@@ -8,7 +8,8 @@ curated version.
 
 | Release | Date | In one line |
 |---|---|---|
-| [Unreleased](unreleased.md) | — | Changes on `main` since 1.3.0 |
+| [Unreleased](unreleased.md) | — | Changes on `main` since 1.4.0 |
+| [1.4.0](v1.4.0.md) | 2026-10-19 | `add` appends to arrays, `copy` to the root replaces, wildcard / bracket-name / union path fixes |
 | [1.3.0](v1.3.0.md) | 2026-10-19 | Schema shaping functions, MCP server fixes, cross-format examples on every page, release notes, XML comparison fix |
 | [1.2.0](v1.2.0.md) | 2026-10-11 | Infix arithmetic in function values |
 | [1.1.0](v1.1.0.md) | 2026-10-08 | `forEach`/`while`, own JSONPath engine, .NET 8/9/10, concurrency fixes |
@@ -35,6 +36,8 @@ opt into `IsPackable`, read from each tag.
 
 | Release | Change | What to do |
 |---|---|---|
+| 1.4.0 | `add` on an existing array appends instead of skipping, so re-running a script appends again | Use `put` or `set` where the array should be set, not extended |
+| 1.4.0 | `copy` to `$` replaces the root with the copied content instead of merging into it | Use `merge` where the existing root properties must survive |
 | 1.3.0 | In XML, two values now compare equal when their content is equal even if the elements are named differently (as in JSON and YAML) | A `resolve` or comparison that matched nothing in XML only because key names differed will now match |
 | 1.1.0 | `TLio.Json.SystemText` uses the Newtonsoft path dialect by default; invalid paths throw; `SelectNode` with several matches throws | Opt in to `Rfc9535`/`Extended` if you relied on JsonCons behaviour; handle `JsonPathException` |
 | 1.1.0 | Samples, `docs/samples`, `docs/showcase`, `demo/` left this repository | Use [TLio-Samples](https://github.com/SQUORA-NL/TLio-Samples) |

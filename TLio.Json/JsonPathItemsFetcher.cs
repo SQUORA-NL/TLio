@@ -359,6 +359,12 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
     /// </summary>
     public (string parentPath, string leafName) SplitParentAndLeaf(string path)
     {
+        // A trailing bracket-quoted name — $['f']['tags'], $.a['b.c'] — is the leaf whatever
+        // came before it. Splitting on '.' alone left $['f']['tags'] as one element, and the
+        // single-element branch below stripped its outer brackets to the "name" f']['tags.
+        if (TrySplitTrailingBracketName(path, out var bracketParent, out var bracketName))
+            return (bracketParent, bracketName);
+
         var split = new JsonSplittedPath(path);
 
         if (split.Elements.Count <= 1)
@@ -381,6 +387,26 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
             leafName = leafName.Substring(2, leafName.Length - 4);
 
         return (parentElements, leafName);
+    }
+
+    private static bool TrySplitTrailingBracketName(string path, out string parent, out string name)
+    {
+        parent = name = string.Empty;
+        if (path.Length < 5) return false;
+
+        var quote = path[^2];
+        if ((quote != '\'' && quote != '"') || path[^1] != ']') return false;
+
+        var open = path.LastIndexOf("[" + quote, path.Length - 3, StringComparison.Ordinal);
+        if (open <= 0) return false;
+
+        var inner = path.Substring(open + 2, path.Length - open - 4);
+        // A quote inside is a union ['a','b'] or an escape — not one plain name.
+        if (inner.Length == 0 || inner.Contains(quote)) return false;
+
+        parent = path.Substring(0, open);
+        name = inner;
+        return true;
     }
 
     // ── Indirect-path resolution ──────────────────────────────────────────────

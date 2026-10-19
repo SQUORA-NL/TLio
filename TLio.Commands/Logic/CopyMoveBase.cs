@@ -83,29 +83,21 @@ public abstract class CopyMoveBase<TNode> : CommandBase<TNode>
         // Special case: destination is root
         if (resolvedToPath == context.ItemsFetcher.RootPathIndicator)
         {
-            if (IsMove)
+            // The destination matches the origin: the root becomes the source node's content, for
+            // copy as much as for move. Existing root properties are cleared first, then the
+            // clone is merged into the emptied root.
+            foreach (var source in sources)
             {
-                // Move-to-root: replace the entire root content with the source node's content.
-                // Clear all existing root properties first, then merge the clone in.
-                foreach (var source in sources)
-                {
-                    var cloned = context.NodeAdapter.DeepClone(source);
-                    foreach (var propName in context.NodeAdapter.GetPropertyNames(dataContext).ToList())
-                        context.NodeAdapter.RemoveProperty(dataContext, propName);
-                    context.NodeAdapter.DeepMergeInto(cloned, dataContext);
-                }
-            }
-            else
-            {
-                // Copy-to-root: merge source content into root (additive, keeps existing properties).
-                foreach (var source in sources)
-                    context.NodeAdapter.DeepMergeInto(context.NodeAdapter.DeepClone(source), dataContext);
+                var cloned = context.NodeAdapter.DeepClone(source);
+                foreach (var propName in context.NodeAdapter.GetPropertyNames(dataContext).ToList())
+                    context.NodeAdapter.RemoveProperty(dataContext, propName);
+                context.NodeAdapter.DeepMergeInto(cloned, dataContext);
             }
 
-            context.LogInfo(CoreConstants.CommandExecution, $"{CommandName}: merged {sources.Count} node(s) into root");
+            context.LogInfo(CoreConstants.CommandExecution, $"{CommandName}: replaced the root with {sources.Count} node(s)");
             context.TraceCollector?.Record(new TraceEntry(
                 CommandName, $"{FromPath} → $", TraceOutcome.Success, sources.Count,
-                $"{CommandName}: merged {sources.Count} node(s) from '{FromPath}' into root."));
+                $"{CommandName}: replaced the root with {sources.Count} node(s) from '{FromPath}'."));
             return TLioExecutionResult<TNode>.Successful(dataContext);
         }
 

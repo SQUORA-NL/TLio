@@ -1,0 +1,40 @@
+{
+  "why": "An array path that selects several arrays used to throw 'Path returned multiple tokens'. Each matched array gets the element at its own next free position.",
+  "input": {
+    "rows": [
+      {
+        "t": [
+          1
+        ]
+      },
+      {
+        "t": [
+          2
+        ]
+      }
+    ]
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.rows[*].t[1]",
+      "value": 9
+    }
+  ],
+  "result": {
+    "rows": [
+      {
+        "t": [
+          1,
+          9
+        ]
+      },
+      {
+        "t": [
+          2,
+          9
+        ]
+      }
+    ]
+  }
+}

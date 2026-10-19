@@ -35,6 +35,15 @@ public class Add<TNode> : PropertyChangeCommand<TNode>
         if (context.NodeAdapter.IsObject(targetNode) &&
             context.NodeAdapter.HasProperty(targetNode, propertyName))
         {
+            // A property that is already an array is the target: the value is appended, as
+            // JLio's Add does, whether the array was named by the path or through 'property'.
+            if (context.NodeAdapter.GetProperty(targetNode, propertyName) is { } existing &&
+                context.NodeAdapter.IsArray(existing))
+            {
+                context.NodeAdapter.AppendToArray(existing, value);
+                return;
+            }
+
             // JLio Add logs a warning and skips when property already exists
             context.LogWarning(TLio.Core.CoreConstants.CommandExecution,
                 $"{CommandName}: property '{propertyName}' already exists, skipping");
@@ -42,6 +51,19 @@ public class Add<TNode> : PropertyChangeCommand<TNode>
         }
 
         AddProperty(propertyName, targetNode, value, context);
+    }
+
+    /// <summary>
+    /// A <c>$..name</c> leaf matched an existing node. An array is appended to; anything else is
+    /// left alone, the same rule add applies to a property that is already present.
+    /// </summary>
+    protected override void ApplyValueToRecursiveMatch(TNode target, TNode value, IExecutionContext<TNode> context)
+    {
+        if (context.NodeAdapter.IsArray(target))
+            context.NodeAdapter.AppendToArray(target, value);
+        else
+            context.LogWarning(TLio.Core.CoreConstants.CommandExecution,
+                $"{CommandName}: '{Path}' already exists, skipping");
     }
 
     /// <summary>

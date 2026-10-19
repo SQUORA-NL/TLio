@@ -135,7 +135,18 @@ public interface IItemsFetcher<TNode>
     {
         if (string.IsNullOrEmpty(path) || IsLeafArrayIndex(path)) return false;
 
+        // $['f','items'] — a union of names names every one of them, not a property called "f','items".
+        if (path.EndsWith("]", StringComparison.Ordinal) &&
+            (path.Contains("','", StringComparison.Ordinal) || path.Contains("\",\"", StringComparison.Ordinal)))
+            return true;
+
         var (_, leaf) = SplitParentAndLeaf(path);
+
+        // $.f.* — every child of f. The bare wildcard has no brackets to look for below.
+        // Only in the $-rooted languages: XPath's /order/* is refused on purpose (it is not an
+        // element name), see XmlSetMissingPathTests.
+        if (leaf == "*" && RootPathIndicator == "$") return true;
+
         if (!leaf.EndsWith(ArrayCloseChar, StringComparison.Ordinal)) return false;
 
         var open = leaf.IndexOf(ArrayOpenChar, StringComparison.Ordinal);

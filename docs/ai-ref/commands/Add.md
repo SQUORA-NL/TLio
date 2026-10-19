@@ -429,7 +429,7 @@ In XML the subscript sits on the item step and counts from one, so the first ele
 |---|---|---|---|
 | Field absent | **Creates** it | Noop (logs warning) | **Creates** it |
 | Field present | **Noop** (skips) | **Updates** it | **Updates** it |
-| Array target | Appends | Replaces element | Replaces whole array |
+| Array target (named by `path`, by `property`, or matched by `$..name`) | Appends | Replaces element | Replaces whole array |
 | Idempotent re-run | Safe — never overwrites | Safe — only touches existing | Safe — always writes latest value |
 | Use when | Create-only | Update-only (field guaranteed present) | Upsert / unsure |
 

@@ -1,0 +1,30 @@
+{
+  "why": "Naming an existing array through 'property' targets that array, the same as naming it in the path: add appends to it, as JLio's Add does.",
+  "input": {
+    "filtered": {
+      "tags": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  "script": [
+    {
+      "command": "add",
+      "path": "$.filtered",
+      "property": "tags",
+      "value": 4
+    }
+  ],
+  "result": {
+    "filtered": {
+      "tags": [
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  }
+}

@@ -1,12 +1,12 @@
 # Unreleased
 
-Changes on `main` since [1.3.0](v1.3.0.md). Add a line here for anything a user would notice; the
+Changes on `main` since [1.4.0](v1.4.0.md). Add a line here for anything a user would notice; the
 next tag turns this page into that release's notes (see
 [How releases are cut](README.md#how-releases-are-cut)).
 
 ## At a glance
 
-| | 1.3.0 | main |
+| | 1.4.0 | main |
 |---|---|---|
 | Documented commands | 20 | 20 |
 | Documented functions | 102 | 102 |
@@ -25,4 +25,4 @@ Nothing yet.
 
 None.
 
-Previous: [1.3.0](v1.3.0.md)
+Previous: [1.4.0](v1.4.0.md)
