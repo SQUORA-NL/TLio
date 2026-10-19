@@ -95,11 +95,22 @@ public sealed class DocExamples
             var (block, errors) = Render(examples);
             problems.AddRange(errors.Select(e => $"{kind}/{name}: {e}"));
 
-            if (Splice(File.ReadAllText(page), block) != File.ReadAllText(page).Replace("\r\n", "\n"))
-                problems.Add($"{kind}/{name}: page is stale — run the GenerateDocExamples test");
+            var onDisk = File.ReadAllText(page).Replace("\r\n", "\n");
+            var expected = Splice(onDisk, block);
+            if (expected != onDisk)
+                problems.Add($"{kind}/{name}: page is stale — run the GenerateDocExamples test\n{FirstDifference(onDisk, expected)}");
         }
 
         Assert.That(problems, Is.Empty, string.Join("\n", problems));
+    }
+
+    /// <summary>Where a stale page first differs, so a failure on a machine you cannot reach is still readable.</summary>
+    private static string FirstDifference(string onDisk, string expected)
+    {
+        var i = 0;
+        while (i < onDisk.Length && i < expected.Length && onDisk[i] == expected[i]) i++;
+        string Around(string t) => t.Substring(Math.Max(0, i - 40), Math.Min(120, t.Length - Math.Max(0, i - 40))).Replace("\r", "<CR>").Replace("\n", "<LF>");
+        return $"    first difference at {i}:\n      on disk:  {Around(onDisk)}\n      expected: {Around(expected)}";
     }
 
     [Test, Explicit("Rewrites docs/ai-ref pages")]
