@@ -320,7 +320,7 @@ public sealed class DocExamples
         }
 
         // XElement.ToString() and toCsv use the platform newline; a page is always LF.
-        return (sb.ToString().Replace("\r\n", "\n"), errors);
+        return (Lf(sb.ToString().Replace("\r\n", "\n")), errors);
     }
 
     // ── Runs: the displayed text is the text that is executed ────────────────
