@@ -53,6 +53,7 @@ its own `TNode`.
 | Let an AI agent use TLio | [MCP server](TLio.Mcp/README.md), [`TLio_AI_Reference.md`](docs/ai-ref/TLio_AI_Reference.md) |
 | Run it fast and thread-safe | [`performance.md`](docs/ai-ref/performance.md) |
 | See a runnable sample | [TLio-Samples](https://github.com/SQUORA-NL/TLio-Samples) |
+| See what changed, and what to do when upgrading | [**Release notes**](docs/release-notes/README.md) |
 | Contribute | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 Every command and function page has its examples in **JSON, XML and YAML** — collapsed, so you

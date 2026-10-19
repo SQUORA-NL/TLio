@@ -146,7 +146,10 @@ public sealed class DocExamples
         var index = Path.Combine(root!, "docs", "ai-ref", "README.md");
 
         // Every link in the two entry points must point at a file that exists.
-        foreach (var doc in new[] { index, Path.Combine(root!, "README.md") })
+        var documents = new List<string> { index, Path.Combine(root!, "README.md"), Path.Combine(root!, "CONTRIBUTING.md") };
+        documents.AddRange(Directory.GetFiles(Path.Combine(root!, "docs", "release-notes"), "*.md"));
+
+        foreach (var doc in documents)
         {
             var text = File.ReadAllText(doc);
             foreach (Match m in Regex.Matches(text, @"\]\(([^)\s#]+)(#[^)]*)?\)"))

@@ -64,6 +64,7 @@ see [notation-reference.md §3b](notation-reference.md).
 | Throughput, thread-safety, precompilation | [performance.md](performance.md) |
 | Why compiled scripts are safe to share | [concurrency-investigation.md](concurrency-investigation.md) |
 | Deliberate cross-format differences | [../behaviour-decisions.md](../behaviour-decisions.md) |
+| What changed in each release | [../release-notes/README.md](../release-notes/README.md) |
 
 ## Where the examples come from
 

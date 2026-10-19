@@ -136,3 +136,9 @@ from a hardcoded `0.1.0-preview.{run_number}` in the publish workflow, which kep
 after `v0.8.0` was released — so those previews sort *below* the stable release rather than
 above it. They are left in place; everything from `0.9.0-preview.*` onward follows the rules
 above.
+
+## Release notes
+
+Each release has a curated page under [`release-notes/`](release-notes/README.md). Cutting a release
+includes turning `release-notes/unreleased.md` into that release's page; see
+[How releases are cut](release-notes/README.md#how-releases-are-cut).
