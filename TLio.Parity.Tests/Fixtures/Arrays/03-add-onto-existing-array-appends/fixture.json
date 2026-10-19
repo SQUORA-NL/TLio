@@ -1,5 +1,5 @@
 {
-  "why": "add refuses to overwrite an existing property, an array included. Appending is what copy into an array does \u2014 see Copy/05.",
+  "why": "A path that names an existing array is the target: add appends to it, as JLio's Add does. add still never overwrites a scalar or an object, and naming the array through 'property' leaves it alone.",
   "input": {
     "items": [
       {
@@ -20,6 +20,9 @@
     "items": [
       {
         "n": 1
+      },
+      {
+        "n": 2
       }
     ]
   }

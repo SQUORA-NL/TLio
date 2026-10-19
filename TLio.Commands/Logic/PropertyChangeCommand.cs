@@ -167,7 +167,7 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
                 var valueResult = Value!.GetValue(context.CurrentNode ?? target, dataContext, context);
                 if (!valueResult.Success) { MarkFailed(); continue; }
                 var computedValue = valueResult.Data.First ?? context.NodeAdapter.CreateNull();
-                ReplaceKeepingCurrentNodeInSync(target, computedValue, context);
+                ApplyValueToRecursiveMatch(target, computedValue, context);
             }
             return;
         }
@@ -326,6 +326,31 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
             return;
 
         var adapter = context.NodeAdapter;
+
+        // An array path that itself selects several nodes ($.items[*].t[1]) has no single array
+        // to look at: each match gets the element when that is its next free position.
+        var arrays = context.ItemsFetcher.SelectNodes(arrayPath, dataContext);
+        if (arrays.Count > 1)
+        {
+            var appended = false;
+            foreach (var candidate in arrays)
+            {
+                if (!adapter.IsArray(candidate) || adapter.GetArrayLength(candidate) != index) continue;
+
+                var perArray = Value!.GetValue(context.CurrentNode ?? candidate, dataContext, context);
+                if (!perArray.Success)
+                {
+                    MarkFailed();
+                    continue;
+                }
+                adapter.AppendToArray(candidate, perArray.Data.First ?? adapter.CreateNull());
+                appended = true;
+            }
+            if (!appended)
+                WarnNoIndex(context, path, "no matched array has that as its next free position");
+            return;
+        }
+
         var array = context.ItemsFetcher.SelectNode(arrayPath, dataContext);
 
         if (array is null)
@@ -436,6 +461,13 @@ public abstract class PropertyChangeCommand<TNode> : CommandBase<TNode>
     /// every ordinary <c>$.</c> path, which is always re-resolved fresh against the (mutated)
     /// document rather than held as a node reference.
     /// </summary>
+    /// <summary>
+    /// What a command does to a node a recursive-descent leaf (<c>$..name</c>) matched. Put and
+    /// set replace it; add overrides this because add never overwrites what is there.
+    /// </summary>
+    protected virtual void ApplyValueToRecursiveMatch(TNode target, TNode value, IExecutionContext<TNode> context)
+        => ReplaceKeepingCurrentNodeInSync(target, value, context);
+
     private static void ReplaceKeepingCurrentNodeInSync(TNode target, TNode value, IExecutionContext<TNode> context)
     {
         var wasCurrentNode = context.CurrentNode is not null &&

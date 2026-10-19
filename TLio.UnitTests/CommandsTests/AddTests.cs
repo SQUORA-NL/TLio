@@ -162,4 +162,50 @@ public class AddTests
         Assert.That(result.Data.SelectToken("$.demo")?.Type, Is.Not.EqualTo(JTokenType.Null));
         Assert.That(result.Data.SelectToken("$.this.is.a.long.path.with.a.date")?.Type, Is.Not.EqualTo(JTokenType.Null));
     }
+
+    [Test]
+    public void PathToExistingArray_AppendsValue()
+    {
+        var doc = JToken.Parse("{\"filtered\":{\"tags\":[1,2,3]}}");
+        var result = new Add<JToken>("$.filtered.tags", new FixedValue<JToken>(new JValue(4))).Execute(doc, executeOptions);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(JToken.DeepEquals(doc.SelectToken("$.filtered.tags"), JToken.Parse("[1,2,3,4]")), Is.True);
+    }
+
+    [Test]
+    public void PropertyNamingExistingArray_AppendsValue()
+    {
+        var doc = JToken.Parse("{\"filtered\":{\"tags\":[1,2,3]}}");
+        new Add<JToken>("$.filtered", "tags", new FixedValue<JToken>(new JValue(4))).Execute(doc, executeOptions);
+
+        Assert.That(JToken.DeepEquals(doc.SelectToken("$.filtered.tags"), JToken.Parse("[1,2,3,4]")), Is.True);
+    }
+
+    [Test]
+    public void RecursiveDescentOntoArrays_AppendsInsteadOfReplacing()
+    {
+        var doc = JToken.Parse("{\"a\":{\"t\":[1]},\"b\":{\"t\":[2]}}");
+        new Add<JToken>("$..t", new FixedValue<JToken>(new JValue(7))).Execute(doc, executeOptions);
+
+        Assert.That(JToken.DeepEquals(doc, JToken.Parse("{\"a\":{\"t\":[1,7]},\"b\":{\"t\":[2,7]}}")), Is.True);
+    }
+
+    [Test]
+    public void RecursiveDescentOntoScalar_DoesNotOverwrite()
+    {
+        var doc = JToken.Parse("{\"a\":{\"n\":1}}");
+        new Add<JToken>("$..n", new FixedValue<JToken>(new JValue(9))).Execute(doc, executeOptions);
+
+        Assert.That(doc.SelectToken("$.a.n")!.Value<int>(), Is.EqualTo(1));
+    }
+
+    [Test]
+    public void PathToExistingScalar_StillSkips()
+    {
+        var doc = JToken.Parse("{\"a\":1}");
+        new Add<JToken>("$.a", new FixedValue<JToken>(new JValue(2))).Execute(doc, executeOptions);
+
+        Assert.That(doc["a"]!.Value<int>(), Is.EqualTo(1));
+    }
 }

@@ -146,17 +146,17 @@ public class CopyMoveBaseTests
     // ── 3. Root destination ────────────────────────────────────────────────────
 
     [Test]
-    public void Copy_ToRoot_MergesSourceIntoRootAdditively()
+    public void Copy_ToRoot_ReplacesRootWithTheSource()
     {
-        // Root already has "existing"; copying an object with "added" should add it
-        // without removing "existing".
+        // The destination matches the origin, as JLio's copy does: "existing" is gone and the
+        // root now holds exactly what was copied. The source stays where it was only in the
+        // sense that its content is now the root.
         var data = JToken.Parse("{ \"existing\": 1, \"payload\": { \"added\": 99 } }");
 
         var result = new Copy<JToken>("$.payload", "$").Execute(data, _context);
 
         Assert.That(result.Success, Is.True);
-        Assert.That(data.SelectToken("$.existing")?.Value<int>(), Is.EqualTo(1));
-        Assert.That(data.SelectToken("$.added")?.Value<int>(), Is.EqualTo(99));
+        Assert.That(JToken.DeepEquals(data, JToken.Parse("{ \"added\": 99 }")), Is.True);
     }
 
     [Test]
