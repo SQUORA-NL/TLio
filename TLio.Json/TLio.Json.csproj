@@ -14,4 +14,9 @@
     <ProjectReference Include="..\TLio.Core\TLio.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- One internal helper, compiled into each assembly that needs it rather than made public. -->
+    <Compile Include="..\TLio.Core\Internal\PooledStringWriter.cs" Link="Internal\PooledStringWriter.cs" />
+  </ItemGroup>
+
 </Project>
