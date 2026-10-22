@@ -187,7 +187,7 @@ one that's cheap enough to:
   which runs a script under Workstation and Server GC in separate processes and prints runs/s,
   gen 2 count and GC pause share (`--big-share P` for a mixed small/big workload). With 14 threads
   Server GC was 6–14× faster for a many-command script at any document size, 2.9× faster for a
-  tiny convert-only run, and 0.6–0.9× (slower) for large convert-only runs — documented as a
+  tiny convert-only run, and 0.6–0.9× (slower, and 5× more memory) for large convert-only runs — documented as a
   decision table, not as "enable it": `docs/ai-ref/performance.md` §5.
 
 ## Versioning

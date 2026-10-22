@@ -111,7 +111,7 @@ independent:
 Per-command and per-function detail — 20 commands and 100+ functions, each with JSON, XML and YAML examples — is in the [reference index](docs/ai-ref/README.md); notation rules are in
 [`docs/ai-ref/notation-reference.md`](docs/ai-ref/notation-reference.md); throughput,
 thread-safety and precompilation guidance, and which garbage-collector mode to run a service in
-(it changed throughput up to 14× on a real script), is in
+(it changed throughput by 6–14× on a real script, and memory in either direction), is in
 [`docs/ai-ref/performance.md`](docs/ai-ref/performance.md).
 
 ## Projects

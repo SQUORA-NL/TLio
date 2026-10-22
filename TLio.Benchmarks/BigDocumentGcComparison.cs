@@ -76,7 +76,7 @@ internal static class BigDocumentGcComparison
         Console.WriteLine($"{IntOption(args, "--big-share", 100)}% big documents ({BlobCount} x {BlobChars:N0} base64 chars), {threads} threads, " +
                           $"{seconds}s per measurement, {Environment.ProcessorCount} cores");
         Console.WriteLine();
-        Console.WriteLine($"{"GC mode",-12} {"threads",8} {"runs/s",9} {"gen2",6} {"paused",8} {"alloc/run",11} {"peak RSS",10}");
+        Console.WriteLine($"{"GC mode",-12} {"threads",8} {"runs/s",9} {"gen2",6} {"paused",8} {"alloc/run",11} {"peak mem",10}");
 
         foreach (var (label, server) in new[] { ("Workstation", "0"), ("Server", "1") })
         {
@@ -135,6 +135,23 @@ internal static class BigDocumentGcComparison
         var clock = Stopwatch.StartNew();
         var until = TimeSpan.FromSeconds(seconds);
 
+        // Process.PeakWorkingSet64 reads 0 on some platforms (macOS), so memory is sampled: the
+        // largest working set and the largest amount the GC had committed, whichever is bigger.
+        long peakBytes = 0;
+        var sampling = true;
+        var sampler = new Thread(() =>
+        {
+            using var self = Process.GetCurrentProcess();
+            while (Volatile.Read(ref sampling))
+            {
+                self.Refresh();
+                var now = Math.Max(self.WorkingSet64, GC.GetGCMemoryInfo().TotalCommittedBytes);
+                if (now > peakBytes) peakBytes = now;
+                Thread.Sleep(50);
+            }
+        }) { IsBackground = true };
+        sampler.Start();
+
         var workers = Enumerable.Range(0, threads).Select(index => new Thread(() =>
         {
             long mine = 0;
@@ -149,11 +166,13 @@ internal static class BigDocumentGcComparison
         foreach (var w in workers) w.Start();
         foreach (var w in workers) w.Join();
         clock.Stop();
+        Volatile.Write(ref sampling, false);
+        sampler.Join();
 
         var wall = clock.Elapsed;
         var pausedShare = (GC.GetTotalPauseDuration() - paused).TotalMilliseconds / wall.TotalMilliseconds;
         var perRun = (GC.GetTotalAllocatedBytes(precise: true) - allocated) / Math.Max(1, runs) / 1_048_576.0;
-        Console.WriteLine($"RESULT {runs / wall.TotalSeconds:F0} {GC.CollectionCount(2) - gen2} {pausedShare:P0} {perRun:F1}MB {Process.GetCurrentProcess().PeakWorkingSet64 / 1_048_576}MB");
+        Console.WriteLine($"RESULT {runs / wall.TotalSeconds:F0} {GC.CollectionCount(2) - gen2} {pausedShare:P0} {perRun:F1}MB {peakBytes / 1_048_576}MB");
 
         // The numbers are only worth printing if the child really ran in the mode it was asked for.
         return GCSettings.IsServerGC == (Environment.GetEnvironmentVariable("DOTNET_gcServer") == "1") ? 0 : 2;
