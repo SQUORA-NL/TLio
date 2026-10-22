@@ -76,7 +76,7 @@ internal static class BigDocumentGcComparison
         Console.WriteLine($"{IntOption(args, "--big-share", 100)}% big documents ({BlobCount} x {BlobChars:N0} base64 chars), {threads} threads, " +
                           $"{seconds}s per measurement, {Environment.ProcessorCount} cores");
         Console.WriteLine();
-        Console.WriteLine($"{"GC mode",-12} {"threads",8} {"runs/s",9} {"gen2",6} {"paused",8} {"alloc/run",11}");
+        Console.WriteLine($"{"GC mode",-12} {"threads",8} {"runs/s",9} {"gen2",6} {"paused",8} {"alloc/run",11} {"peak RSS",10}");
 
         foreach (var (label, server) in new[] { ("Workstation", "0"), ("Server", "1") })
         {
@@ -107,7 +107,7 @@ internal static class BigDocumentGcComparison
                     return 1;
                 }
                 var p = line["RESULT ".Length..].Split(' ');
-                Console.WriteLine($"{label,-12} {t,8} {p[0],9} {p[1],6} {p[2],8} {p[3],11}");
+                Console.WriteLine($"{label,-12} {t,8} {p[0],9} {p[1],6} {p[2],8} {p[3],11} {p[4],10}");
             }
         }
         return 0;
@@ -153,7 +153,7 @@ internal static class BigDocumentGcComparison
         var wall = clock.Elapsed;
         var pausedShare = (GC.GetTotalPauseDuration() - paused).TotalMilliseconds / wall.TotalMilliseconds;
         var perRun = (GC.GetTotalAllocatedBytes(precise: true) - allocated) / Math.Max(1, runs) / 1_048_576.0;
-        Console.WriteLine($"RESULT {runs / wall.TotalSeconds:F0} {GC.CollectionCount(2) - gen2} {pausedShare:P0} {perRun:F1}MB");
+        Console.WriteLine($"RESULT {runs / wall.TotalSeconds:F0} {GC.CollectionCount(2) - gen2} {pausedShare:P0} {perRun:F1}MB {Process.GetCurrentProcess().PeakWorkingSet64 / 1_048_576}MB");
 
         // The numbers are only worth printing if the child really ran in the mode it was asked for.
         return GCSettings.IsServerGC == (Environment.GetEnvironmentVariable("DOTNET_gcServer") == "1") ? 0 : 2;

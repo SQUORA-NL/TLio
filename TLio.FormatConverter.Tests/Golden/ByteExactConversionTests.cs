@@ -215,10 +215,17 @@ public sealed class ByteExactConversionTests
 
     private sealed record Recorded(int Length, string Sha256, string? Text);
 
-    private static Recorded Record(string output) => new(
-        output.Length,
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(output))).ToLowerInvariant(),
-        output.Length <= FullTextLimit ? output : null);
+    // XmlWriter writes a line break inside text as Environment.NewLine (\r\n on Windows) — that is
+    // the platform's own choice, not the converter's, and it was identical before this test
+    // existed. Compared as \n so one recording holds on every OS; every other byte is exact.
+    private static Recorded Record(string output)
+    {
+        output = output.Replace("\r\n", "\n");
+        return new(
+            output.Length,
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(output))).ToLowerInvariant(),
+            output.Length <= FullTextLimit ? output : null);
+    }
 
     private static readonly JsonSerializerOptions Pretty = new()
     {
