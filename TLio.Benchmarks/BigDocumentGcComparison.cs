@@ -31,7 +31,10 @@ namespace TLio.Benchmarks;
 /// provoke full collections that pause every thread — the "gen2" and "paused" columns show it.
 ///
 /// Run: <c>dotnet run -c Release --project TLio.Benchmarks -- --big-document</c>
-/// Options: <c>--seconds N</c> per measurement (default 10), <c>--threads N</c> (default: cores).
+/// Options: <c>--seconds N</c> per measurement (default 10), <c>--threads N</c> (default: cores),
+/// <c>--big-share P</c> percent of runs that get the big document (default 100; 0 = only small,
+/// 10 = a mixed workload), <c>--small-input file</c> the small document of a mixed workload
+/// (default: the same order with tiny strings), <c>--script</c>/<c>--input</c>/<c>--from</c> your own.
 /// </summary>
 internal static class BigDocumentGcComparison
 {
@@ -70,7 +73,7 @@ internal static class BigDocumentGcComparison
 
     private static int Parent(string[] args, int seconds, int threads)
     {
-        Console.WriteLine($"Big document, {BlobCount} x {BlobChars:N0} base64 chars, {threads} threads, " +
+        Console.WriteLine($"{IntOption(args, "--big-share", 100)}% big documents ({BlobCount} x {BlobChars:N0} base64 chars), {threads} threads, " +
                           $"{seconds}s per measurement, {Environment.ProcessorCount} cores");
         Console.WriteLine();
         Console.WriteLine($"{"GC mode",-12} {"threads",8} {"runs/s",9} {"gen2",6} {"paused",8} {"alloc/run",11}");
@@ -90,7 +93,7 @@ internal static class BigDocumentGcComparison
                 info.ArgumentList.Add(ChildMarker);
                 info.ArgumentList.Add("--seconds"); info.ArgumentList.Add(seconds.ToString());
                 info.ArgumentList.Add("--threads"); info.ArgumentList.Add(t.ToString());
-                foreach (var name in new[] { "--script", "--input", "--from" })
+                foreach (var name in new[] { "--script", "--input", "--small-input", "--from", "--big-share" })
                     if (StringOption(args, name) is { } value) { info.ArgumentList.Add(name); info.ArgumentList.Add(value); }
                 info.Environment["DOTNET_gcServer"] = server;
                 info.Environment["DOTNET_gcConcurrent"] = "1";
@@ -115,10 +118,14 @@ internal static class BigDocumentGcComparison
         var scriptFile = StringOption(args, "--script");
         var inputFile = StringOption(args, "--input");
         var from = StringOption(args, "--from") ?? (inputFile is null ? "xml" : "json");
-        var input = inputFile is null ? OrderXml() : File.ReadAllText(inputFile);
+        var input = inputFile is null ? OrderXml(BlobChars) : File.ReadAllText(inputFile);
+        // The small document of a mixed workload: your own file, or the same order with tiny strings.
+        var smallFile = StringOption(args, "--small-input");
+        var small = smallFile is not null ? File.ReadAllText(smallFile) : inputFile is null ? OrderXml(16) : input;
+        var bigShare = IntOption(args, "--big-share", 100);
         var runner = BuildRunner();
         var compiled = runner.Compile(from, scriptFile is null ? Script : File.ReadAllText(scriptFile));
-        for (var i = 0; i < 20; i++) compiled.Run(input); // JIT and tiering settle before anything is timed
+        for (var i = 0; i < 20; i++) { compiled.Run(input); compiled.Run(small); } // JIT and tiering settle before anything is timed
 
         GC.Collect();
         var gen2 = GC.CollectionCount(2);
@@ -128,12 +135,13 @@ internal static class BigDocumentGcComparison
         var clock = Stopwatch.StartNew();
         var until = TimeSpan.FromSeconds(seconds);
 
-        var workers = Enumerable.Range(0, threads).Select(_ => new Thread(() =>
+        var workers = Enumerable.Range(0, threads).Select(index => new Thread(() =>
         {
             long mine = 0;
             while (clock.Elapsed < until)
             {
-                compiled.Run(input);
+                // A fixed, evenly spread pattern: bigShare of every 100 runs get the big document.
+                compiled.Run((mine * 37 + index * 11) % 100 < bigShare ? input : small);
                 mine++;
             }
             Interlocked.Add(ref runs, mine);
@@ -164,13 +172,13 @@ internal static class BigDocumentGcComparison
         return runner;
     }
 
-    private static string OrderXml()
+    private static string OrderXml(int blobChars)
     {
         var rnd = new Random(1);
         var sb = new StringBuilder("<order><id>42</id><customer><name>Ann</name></customer><files>");
         for (var i = 0; i < BlobCount; i++)
         {
-            var bytes = new byte[BlobChars / 4 * 3];
+            var bytes = new byte[blobChars / 4 * 3];
             rnd.NextBytes(bytes);
             sb.Append($"<file><name>f{i}</name><content>{Convert.ToBase64String(bytes)}</content></file>");
         }
