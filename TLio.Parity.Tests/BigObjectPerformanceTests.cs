@@ -268,7 +268,9 @@ public class BigObjectPerformanceTests
         // The document is parsed, converted and serialised once; the 199 extra commands are
         // microseconds each. Were a command to pay for the document, 200 of them would cost
         // 200x the single one — here they must cost under twice as much.
-        Assert.That(tMany / tOne, Is.LessThan(2.0),
+        // Measured 1.2-2.0 (CI runners pay 5-35 µs per command). A command that paid for the
+        // document would cost ~5 ms, making 200 of them ~200x the single one, so 5 still catches it.
+        Assert.That(tMany / tOne, Is.LessThan(5.0),
             "extra commands in the same section must not each pay for the size of the document");
     }
 
@@ -291,10 +293,15 @@ public class BigObjectPerformanceTests
 
         long Allocated(string script)
         {
-            runner.Run("json", json, script);                       // warm up
-            var before = GC.GetAllocatedBytesForCurrentThread();
-            runner.Run("json", json, script);
-            return GC.GetAllocatedBytesForCurrentThread() - before;
+            for (var i = 0; i < 5; i++) runner.Run("json", json, script);   // warm up: JIT and tiering allocate too
+            var least = long.MaxValue;
+            for (var i = 0; i < 5; i++)
+            {
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                runner.Run("json", json, script);
+                least = Math.Min(least, GC.GetAllocatedBytesForCurrentThread() - before);
+            }
+            return least;
         }
 
         var one = Allocated(Script(1));
