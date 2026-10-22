@@ -115,6 +115,77 @@ All three use a warmup pass + forced GC + measure pattern, and thresholds are se
 the measured value on a developer machine — they exist to catch regressions, not to claim a
 specific number is guaranteed on every machine.
 
+## 5. Documents with large strings, and the garbage collector
+
+A document that carries a few very large string values — base64-encoded files of a few hundred KB
+each is the case that was measured — does **not** make individual commands slower. A command
+touches the nodes its path selects, never the whole tree, so `put`, `copy`, `fetch`, wildcards and
+functions cost the same on a document with 900 KB of base64 as on one without
+(`BigObjectPerformanceTests` in `TLio.Parity.Tests` asserts this for every command and function
+class, on Newtonsoft and System.Text.Json).
+
+What grows with the strings is the work *around* the commands: parsing the document, converting
+between formats, and serializing the result. Each of those allocates a string about the size of
+the document, and a string over ~85 KB goes on the large object heap, which is only reclaimed by
+a full (gen 2) collection. With many executions running at once those collections pause every
+thread. So the symptom is that *everything* gets slower under load, with no single command to
+blame.
+
+**What to do, in order:**
+
+1. **Parse once per run.** A script that crosses a format boundary pays one parse and one
+   serialize per section; put edits together rather than splitting them across `convert`s.
+2. **Compile the script once** (§2), so only the document is parsed per run.
+3. **Choose the GC mode by measuring — Server GC is not always the faster one.** Workstation GC is
+   the default for a library host; Server GC gives each core its own heap and collects in
+   parallel. Measured with the harness below on a 14-core Apple M4 Pro, 14 threads, Release:
+
+   | Workload | Workstation GC | Server GC |
+   |---|---|---|
+   | A real 69-command script, JSON → XML, 600 KB input with base64 files | **304 runs/s** (69% of wall time paused; slower than one thread: 348) | **1 803 runs/s** (12% paused) |
+   | Only `convert` + a few edits on a 900 KB XML order (14.5 MB allocated per run) | **1 507 runs/s** | 963–1 266 runs/s |
+
+   A script with many commands produces a lot of small garbage; under Workstation GC every thread
+   shares one heap and one collector, and that is where the time goes, so Server GC helps a great
+   deal. A run that is mostly one big parse-convert-serialize is bound by memory traffic, and
+   there Server GC's larger allocation budgets did not pay. Your document, script and core mix
+   decide — run the harness on yours. Numbers move with the machine; the *shape* of the
+   difference is the useful part.
+4. **Allocation per run is the lever that helps in both modes.** TLio converts and serializes
+   through pooled buffers and writes XML without building a DOM when no namespaces are involved;
+   `BringingInABigDocument_AllocatesABoundedMultipleOfItsSize` keeps that from regressing.
+
+**Turning Server GC on** (it is a process-wide setting of the host, not of TLio):
+
+```xml
+<!-- the host's .csproj -->
+<PropertyGroup>
+  <ServerGarbageCollection>true</ServerGarbageCollection>
+  <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+</PropertyGroup>
+```
+
+or `DOTNET_gcServer=1` in the environment, or `"System.GC.Server": true` in
+`runtimeconfig.json`. In a container, Server GC sizes itself from the CPU limit the container
+sees; check it after changing the limit. It also uses more memory than Workstation GC.
+
+**Measuring it on your own document and script**
+
+```sh
+# the built-in order: 3 x 300 000 base64 characters, convert + a few edits
+dotnet run -c Release --project TLio.Benchmarks -- --big-document
+
+# your script and document (any notation, any format)
+dotnet run -c Release --project TLio.Benchmarks -- --big-document \
+    --script my-script.json --input my-input.json --from json --seconds 20
+```
+
+It starts one process per GC mode (so the mode is really the one printed), once on a single thread
+and once on every core (`--threads N` to change), and prints runs per second, gen 2 collections,
+the share of wall time spent paused in GC, and megabytes allocated per run. A large gen 2 count
+with a high paused share is the signature described above. Start from
+`TLio.Benchmarks/BigDocumentGcComparison.cs`.
+
 ---
 
 See also: [overview.md](overview.md) for adapter selection, [TLio_AI_Reference.md](TLio_AI_Reference.md)

@@ -181,6 +181,14 @@ one that's cheap enough to:
   job as its own child process, which doesn't reliably inherit an env var from the launching
   shell. Run: `dotnet run -c Release --project TLio.Benchmarks -- --filter '*'`.
 
+- **Big documents and the GC mode** — `TLio.Parity.Tests/BigObjectPerformanceTests.cs` (per-command
+  cost independent of string size; allocation per conversion bounded) and
+  `dotnet run -c Release --project TLio.Benchmarks -- --big-document [--script f --input f --from json]`,
+  which runs a script under Workstation and Server GC in separate processes and prints runs/s,
+  gen 2 count and GC pause share. Server GC is a large win for a many-command script (measured
+  ~6×) and a loss for a pure convert (~0.7×) — so it is documented as "measure", not "enable":
+  `docs/ai-ref/performance.md` §5.
+
 ## Versioning
 
 The git tag is the version. No version number is written down in this repository — MinVer reads
