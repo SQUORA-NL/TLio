@@ -222,6 +222,17 @@ public sealed class XmlFormatAdapter : IFormatAdapter
 
     private static (string text, bool isCdata) GetTextContent(XmlElement element)
     {
+        // One text node is the common case, and the one that matters for size: a StringBuilder
+        // would copy it twice (into its chunks, then into the result) for nothing.
+        if (element.ChildNodes.Count == 1)
+        {
+            switch (element.FirstChild)
+            {
+                case XmlCDataSection cdata: return (cdata.Value ?? string.Empty, true);
+                case XmlText text: return (text.Data, false);
+            }
+        }
+
         var hasCdata = false;
         var parts = new System.Text.StringBuilder();
         foreach (XmlNode child in element.ChildNodes)

@@ -542,7 +542,12 @@ public class SystemTextJsonNodeAdapter : INodeAdapter<JsonNode>
     public string Serialize(JsonNode node, bool pretty = false) =>
         NullSlots.IsPlaceholder(node)
             ? "null"
-            : node.ToJsonString(new JsonSerializerOptions { WriteIndented = pretty });
+            : node.ToJsonString(pretty ? Indented : Compact);
+
+    // Built once. A new JsonSerializerOptions per call is not cached by System.Text.Json, so each
+    // Serialize paid for a fresh options object and its converter lookups.
+    private static readonly JsonSerializerOptions Compact = new() { WriteIndented = false };
+    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
     // ── Private helpers ───────────────────────────────────────────────────────
 

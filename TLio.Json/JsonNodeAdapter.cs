@@ -344,7 +344,31 @@ public class JsonNodeAdapter : INodeAdapter<JToken>
 
     // ── Serialisation ─────────────────────────────────────────────────────────
 
-    public JToken Parse(string content) => JToken.Parse(content);
+    /// <summary>
+    /// Same result as <c>JToken.Parse</c>, read through a reader whose character buffers come from
+    /// <see cref="System.Buffers.ArrayPool{T}"/>. Without a pool the reader grows the buffer holding a long string
+    /// by doubling and abandons each step: parsing a document with three 300 KB strings allocated
+    /// about six times its own size, nearly all of it on the large object heap — which is what
+    /// turns a big document into frequent full collections for every thread in the process.
+    /// </summary>
+    public JToken Parse(string content)
+    {
+        using var reader = new Newtonsoft.Json.JsonTextReader(new StringReader(content)) { ArrayPool = CharPool.Instance };
+        var token = JToken.ReadFrom(reader);
+        while (reader.Read())
+        {
+            if (reader.TokenType != Newtonsoft.Json.JsonToken.Comment)
+                throw new Newtonsoft.Json.JsonReaderException("Additional text found in JSON string after parsing content.");
+        }
+        return token;
+    }
+
+    private sealed class CharPool : Newtonsoft.Json.IArrayPool<char>
+    {
+        public static readonly CharPool Instance = new();
+        public char[] Rent(int minimumLength) => System.Buffers.ArrayPool<char>.Shared.Rent(minimumLength);
+        public void Return(char[]? array) { if (array != null) System.Buffers.ArrayPool<char>.Shared.Return(array); }
+    }
 
     public string Serialize(JToken node, bool pretty = false) =>
         node.ToString(pretty ? Newtonsoft.Json.Formatting.Indented : Newtonsoft.Json.Formatting.None);

@@ -50,11 +50,14 @@ public sealed class JsonFormatAdapter : IFormatAdapter
     {
         try
         {
-            var buffer = new MemoryStream();
+            // Decoded straight from the writer's buffer: a MemoryStream plus ToArray() made one
+            // more full copy of the document, which for a document with large strings is a
+            // large-object-heap allocation per conversion.
+            var buffer = new System.Buffers.ArrayBufferWriter<byte>();
             using var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = false });
             WriteNode(writer, root, settings, isRoot: true);
             writer.Flush();
-            return Encoding.UTF8.GetString(buffer.ToArray());
+            return Encoding.UTF8.GetString(buffer.WrittenSpan);
         }
         catch (Exception ex) when (ex is not FormatParseException)
         {
