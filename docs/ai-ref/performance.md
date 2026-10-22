@@ -115,6 +115,138 @@ All three use a warmup pass + forced GC + measure pattern, and thresholds are se
 the measured value on a developer machine — they exist to catch regressions, not to claim a
 specific number is guaranteed on every machine.
 
+## 5. Choosing settings for your workload: large documents and the garbage collector
+
+TLio is a library; the garbage-collector (GC) mode is a setting of the *host process* you run it
+in, and it is the single biggest throughput lever when many executions run at once. This section
+says what to set, for which kind of client, and how to check it on your own data.
+
+### 5.1 The short version
+
+| Your client | Set | Why |
+|---|---|---|
+| A service (web API, worker, queue consumer) running **several scripts at the same time** — scripts of more than a handful of commands, any document size, small, large or mixed | **Server GC**, concurrent GC on | Measured 6–14× more throughput on a real 69-command script at 14 threads; Workstation GC *lost* throughput when threads were added. Memory: Server GC used about 2× more with large documents, but about **4–5× less** with small ones (§5.3) |
+| A service that runs **only a few commands per script, but on large documents** (conversion pipelines: `convert` plus a couple of edits on documents of hundreds of KB) | **Workstation GC** (the default) | 1.1–1.6× faster **and about 5× less memory** (0.7 GB against 3.6 GB at 14 threads). One big parse-convert-serialize run is limited by memory traffic, not by collector contention |
+| A service that runs **only a few commands per script on small documents** (≈1 KB) | **Server GC** | 2.9× at 14 threads |
+| **One thread** at a time (CLI tool, batch job, desktop app, a service handling one request at once) | Leave the **default** | Single-thread throughput was equal for convert-only and 10–30 % *higher* under Server GC for the real script, while Server GC used about 2–2.7× the memory (252–394 MB against 105–193 MB) — not a reason to switch by itself |
+| Tests, tools, anything short-lived | Default | |
+
+If you cannot tell which row you are in, run the harness in §5.4 with your own script and
+document — it takes a minute and prints the answer for your machine.
+
+### 5.2 Why: what is and is not slow with big documents
+
+A document that carries a few very large string values — base64-encoded files of a few hundred KB
+each is the case that was measured — does **not** make individual commands slower. A command
+touches the nodes its path selects, never the whole tree, so `put`, `copy`, `fetch`, wildcards and
+functions cost the same on a document with 900 KB of base64 as on one without
+(`BigObjectPerformanceTests` in `TLio.Parity.Tests` asserts this for every command and function
+class, on Newtonsoft and System.Text.Json).
+
+What grows with the strings is the work *around* the commands: parsing the document, converting
+between formats, and serializing the result. Each allocates a string about the size of the
+document; a string over ~85 KB lands on the large object heap, which is only reclaimed by a full
+(gen 2) collection. And separately from document size, every command execution produces small
+garbage (nodes, path results, logging). With many threads running at once, Workstation GC has one
+heap and one collector for all of them, and the time goes into collections that pause every
+thread. So the symptom is that *everything* slows down under load, with no single command to
+blame.
+
+### 5.3 What was measured
+
+14-core Apple M4 Pro (mixed performance and efficiency cores), Release build, 8–10 s per cell,
+runs per second. "Real script" is a 69-command JSON → XML script on a 615 KB document with three
+base64 files; its "small" document is the same document without the files (245 KB). "Convert
+only" is `convert` + four edits on an XML order (3 × 300 000 base64 characters; small = ~1 KB).
+
+| Workload | Big share | 1 thread, Workstation | 1 thread, Server | **14 threads, Workstation** | **14 threads, Server** | Server ÷ Workstation (14) | Peak memory, 14 threads: Workstation / Server |
+|---|---|---|---|---|---|---|---|
+| Real script | 100 % | 348 | 392 | 304 (69 % GC pause) | 1 803 (12 %) | **5.9×** | 1.05 GB / 2.15 GB |
+| Real script | 10 % | 492 | 651 | 350 (67 %) | 4 209 (17 %) | **12×** | not measured |
+| Real script | 0 % | 637 | 786 | 372–383 (72–73 %) | 2 158–5 411 (8–18 %) | **5.6–14×** | **4.4–4.8 GB / 0.97 GB** |
+| Convert only | 100 % | 178 | 173 | 1 507 (20 %) | 963–1 266 (4 %) | 0.64–0.84× | **0.71 GB / 3.6 GB** |
+| Convert only | 10 % | 1 644 | 1 574 | 11 906 (27 %) | 10 544 (5 %) | 0.89× | not measured |
+| Convert only | 0 % | 53 563 | 51 207 | 104 891 (37 %) | 299 097 (17 %) | 2.9× | not measured |
+
+Read it like this:
+
+- **Workstation GC on the real script got slower with more threads** (14 threads: 304–383 runs/s,
+  against 348–637 on one thread), with 67–73 % of wall time spent paused. Server GC scaled
+  (14 threads: 1 803–5 411). The range is run-to-run noise at 14 threads — one small-only run
+  gave 2 158, two others 5 011 and 5 411 — but Workstation never came near any of them.
+- **Memory goes both ways.** On the real script with *small* documents Workstation GC at 14
+  threads grew to 4.4–4.8 GB, because the collector could not keep up with the garbage the
+  threads made; Server GC held 0.97 GB. With *large* documents, and for the large convert-only run,
+  Server GC used 2× and 5× more (its per-core heaps and larger allocation budgets). Memory is
+  the working set sampled every 50 ms.
+- The deciding factor is **what a run is made of**, not how big the document is: a script with
+  many commands makes small garbage everywhere (Server GC wins at every document size); a run
+  that is mostly one large parse-convert-serialize makes large strings (Workstation GC held up
+  better).
+- Not measured: thread counts between 1 and the core count, other machines, memory in a
+  container with a memory limit.
+  Numbers move with the hardware; the *shape* is the useful part.
+
+### 5.4 Measure it on your own script and document
+
+```sh
+# the built-in order: 3 x 300 000 base64 characters, convert + a few edits
+dotnet run -c Release --project TLio.Benchmarks -- --big-document
+
+# your script and document (any notation, any format)
+dotnet run -c Release --project TLio.Benchmarks -- --big-document \
+    --script my-script.json --input my-big-input.json --from json --seconds 20
+
+# a mixed workload: 10 % of runs get the big document, the rest a small one
+dotnet run -c Release --project TLio.Benchmarks -- --big-document \
+    --script my-script.json --input my-big-input.json --small-input my-small-input.json \
+    --from json --big-share 10
+```
+
+It starts one process per GC mode (so the mode printed is the mode that ran), once on a single
+thread and once on every core (`--threads N` to match the concurrency your service really has),
+and prints runs per second, gen 2 collections, the share of wall time spent paused in GC, and
+megabytes allocated per run. **A high paused share with many threads, and Workstation getting
+slower as threads are added, is the signature of the problem above.** Run it on the hardware you
+deploy to, not a laptop.
+
+### 5.5 Setting it
+
+It is a property of the host process:
+
+```xml
+<!-- the host's .csproj -->
+<PropertyGroup>
+  <ServerGarbageCollection>true</ServerGarbageCollection>
+  <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+</PropertyGroup>
+```
+
+or `DOTNET_gcServer=1` in the environment, or `"System.GC.Server": true` in `runtimeconfig.json`.
+Check at start-up that it took effect: `System.Runtime.GCSettings.IsServerGC`.
+
+Server GC's memory use depends on the workload (§5.3: 5× more for large conversions, 4–5× less
+for a many-command script on small documents), so check the peak on your own workload; in a
+container it sizes itself from the CPU limit the container reports — re-check after changing the limit.
+
+### 5.6 What else helps, in order
+
+1. **Compile the script once** (§2) and send a warm-up request before taking traffic, so only the
+   document is parsed per run.
+2. **Keep format boundaries to the ones you need.** A script that crosses a boundary pays a
+   parse and a serialize per section; put edits together rather than splitting them across
+   `convert`s.
+3. **Do not carry content the script never reads.** With the base64 content of the real document
+   replaced by a placeholder, the same script ran roughly 40 % faster at 14 threads under
+   Workstation GC (about 240 against 170 runs/s, measured before the changes below). If a file
+   only travels through, consider keeping it beside the document and re-attaching it afterwards.
+4. **One execution context per run, never a shared input node** (§1) — sharing is a correctness
+   bug first and a contention source second.
+5. **Allocation per run** is the lever that helps in both GC modes. TLio converts and serializes
+   through pooled buffers and writes XML without building a DOM when no namespaces are
+   involved; `BringingInABigDocument_AllocatesABoundedMultipleOfItsSize` keeps that from
+   regressing.
+
 ---
 
 See also: [overview.md](overview.md) for adapter selection, [TLio_AI_Reference.md](TLio_AI_Reference.md)

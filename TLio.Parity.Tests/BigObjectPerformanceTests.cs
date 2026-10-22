@@ -331,15 +331,22 @@ public class BigObjectPerformanceTests
 
         long Allocated(Action action)
         {
-            action();                                                   // warm up
-            var before = GC.GetAllocatedBytesForCurrentThread();
-            action();
-            return GC.GetAllocatedBytesForCurrentThread() - before;
+            for (var i = 0; i < 5; i++) action();                       // warm up: JIT, and pooled buffers filling
+            var least = long.MaxValue;
+            for (var i = 0; i < 5; i++)
+            {
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                action();
+                least = Math.Min(least, GC.GetAllocatedBytesForCurrentThread() - before);
+            }
+            return least;
         }
 
         var stages = new (string Name, long Bytes, double MaxTimesDocument)[]
         {
             ("xml -> json",              Allocated(() => converter.Convert("xml", xml, "json", settings)),     6),   // measured 4.4
+            ("json -> xml",              Allocated(() => converter.Convert("json", json, "xml", settings)),     3),   // 2.0 (was 3.0 before the pooled writers)
+            ("Newtonsoft parse+serialize", Allocated(() => new JsonNodeAdapter().Serialize(new JsonNodeAdapter().Parse(json))), 3.5), // 2.0
             ("Newtonsoft parse",         Allocated(() => new JsonNodeAdapter().Parse(json)),                    2),   // 1.0
             ("System.Text.Json parse",   Allocated(() => new SystemTextJsonNodeAdapter().Parse(json)),          2),   // 0.5
         };

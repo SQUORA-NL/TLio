@@ -1,4 +1,5 @@
 using System.Xml;
+using TLio.Core.Internal;
 using TLio.FormatConverter.Core;
 using TLio.FormatConverter.Core.Exceptions;
 using TLio.FormatConverter.Core.Model;
@@ -40,20 +41,37 @@ public sealed class XmlFormatAdapter : IFormatAdapter
     {
         try
         {
-            var doc = new XmlDocument();
             // If the root is an unnamed container with a single named child and no metadata,
             // use the child directly as the XML root element (preserves element names across JSON/YAML).
             var actualRoot = root is ObjectNode { Name: null } u && u.Children.Count == 1 && u.Metadata.Count == 0
                 ? u.Children[0]
                 : root;
+
+            // Without namespaces the document can be written as it is read, with no DOM in between.
+            // Namespaces stay on the DOM path below: which declarations an XmlDocument emits, and
+            // where, is behaviour the output depends on and a hand-written writer would have to
+            // reproduce byte for byte.
+            if (!NeedsDocument(actualRoot, settings, null))
+            {
+                try { return WriteStreaming(actualRoot, settings); }
+                catch (Exception)
+                {
+                    // Whatever went wrong, say it the way the DOM does: it words an illegal name
+                    // differently from XmlWriter, and its message is what callers have seen.
+                    // Nothing but the failure path pays for the second walk.
+                }
+            }
+
+            var doc = new XmlDocument();
             var element = BuildElement(doc, actualRoot, settings, null);
             doc.AppendChild(element);
 
-            var sb = new System.Text.StringBuilder();
+            using var text = new PooledStringWriter();
             var writerSettings = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false };
-            using var writer = XmlWriter.Create(sb, writerSettings);
+            using var writer = XmlWriter.Create(text, writerSettings);
             doc.Save(writer);
-            return sb.ToString();
+            writer.Flush();
+            return text.ToString();
         }
         catch (Exception ex) when (ex is not FormatParseException)
         {
@@ -292,6 +310,191 @@ public sealed class XmlFormatAdapter : IFormatAdapter
             System.Globalization.CultureInfo.InvariantCulture, out _))
             return ScalarType.Decimal;
         return ScalarType.String;
+    }
+
+    // ── FromIM, written straight to a writer ─────────────────────────────────
+
+    /// <summary>
+    /// Whether anything in this tree involves a namespace: a declaration, a prefixed name, or
+    /// <c>xsi:nil</c>. Conservative on purpose — a name that merely contains a colon counts, even
+    /// where sanitising would remove it — because a false "yes" only costs the DOM path.
+    /// </summary>
+    private static bool NeedsDocument(IntermediateNode node, ConversionSettings settings, string? fallbackName)
+    {
+        if (settings.NullRepresentation == NullRepresentation.XsiNil) return true;
+        if ((node.Name ?? fallbackName ?? "root").Contains(':')) return true;
+
+        foreach (var key in node.Metadata.Keys)
+        {
+            if (MetadataConvention.IsNamespaceKey(key, settings)) return true;
+            if (MetadataConvention.IsAttributeKey(key, settings) && key.Contains(':')) return true;
+        }
+
+        switch (node)
+        {
+            case ObjectNode obj:
+                foreach (var child in obj.Children)
+                {
+                    if (child is ArrayNode repeated && settings.ArrayHandling == ArrayHandling.Repeated)
+                    {
+                        if ((repeated.Name ?? settings.ArrayItemName).Contains(':')) return true;
+                        foreach (var item in repeated.Items)
+                            if (ItemNeedsDocument(item, settings)) return true;
+                    }
+                    else if (NeedsDocument(child, settings, null)) return true;
+                }
+                return false;
+
+            case ArrayNode arr:
+                var itemName = ItemNameFor(arr, settings);
+                if (itemName.Contains(':')) return true;
+                foreach (var item in arr.Items)
+                    if (NeedsDocument(item, settings, itemName)) return true;
+                return false;
+
+            case MixedContentNode mixed:
+                foreach (var part in mixed.Content)
+                    if (part is ChildNode cn && NeedsDocument(cn.Node, settings, null)) return true;
+                return false;
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>An item written under a repeated-array wrapper: its attributes, then its content.</summary>
+    private static bool ItemNeedsDocument(IntermediateNode item, ConversionSettings settings)
+    {
+        foreach (var key in item.Metadata.Keys)
+        {
+            if (MetadataConvention.IsNamespaceKey(key, settings)) return true;
+            if (MetadataConvention.IsAttributeKey(key, settings) && key.Contains(':')) return true;
+        }
+
+        switch (item)
+        {
+            case ObjectNode o:
+                return o.Children.Any(c => NeedsDocument(c, settings, null));
+            case ArrayNode a:
+                var itemName = ItemNameFor(a, settings);
+                return itemName.Contains(':') || a.Items.Any(n => NeedsDocument(n, settings, itemName));
+            case MixedContentNode m:
+                return m.Content.Any(c => c is ChildNode cn && NeedsDocument(cn.Node, settings, null));
+            default:
+                return false;
+        }
+    }
+
+    private static string WriteStreaming(IntermediateNode root, ConversionSettings settings)
+    {
+        using var text = new PooledStringWriter();
+        var writerSettings = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false };
+        using var writer = XmlWriter.Create(text, writerSettings);
+        WriteElement(writer, root, settings, null);
+        writer.Flush();
+        return text.ToString();
+    }
+
+    /// <summary>The same walk as <see cref="BuildElement"/>, in the same order, writing instead of building.</summary>
+    private static void WriteElement(XmlWriter writer, IntermediateNode node, ConversionSettings settings, string? fallbackName)
+    {
+        writer.WriteStartElement(XmlName(node.Name ?? fallbackName ?? "root", settings));
+        WriteAttributes(writer, node.Metadata, settings);
+
+        switch (node)
+        {
+            case ObjectNode obj:
+                foreach (var child in obj.Children)
+                {
+                    if (settings.ArrayHandling == ArrayHandling.Repeated && child is ArrayNode repeated)
+                    {
+                        foreach (var item in repeated.Items)
+                        {
+                            writer.WriteStartElement(XmlName(repeated.Name ?? settings.ArrayItemName, settings));
+                            WriteAttributes(writer, item.Metadata, settings);
+                            WriteChildContent(writer, item, settings);
+                            writer.WriteEndElement();
+                        }
+                    }
+                    else
+                    {
+                        WriteElement(writer, child, settings, null);
+                    }
+                }
+                break;
+
+            case ArrayNode arr:
+                var itemName = ItemNameFor(arr, settings);
+                foreach (var item in arr.Items)
+                    WriteElement(writer, item, settings, itemName);
+                break;
+
+            case ScalarNode scalar:
+                WriteScalarContent(writer, scalar);
+                break;
+
+            case MixedContentNode mixed:
+                foreach (var item in mixed.Content)
+                {
+                    switch (item)
+                    {
+                        case TextRun tr:
+                            writer.WriteString(tr.Text);
+                            break;
+                        case ChildNode cn:
+                            WriteElement(writer, cn.Node, settings, null);
+                            break;
+                    }
+                }
+                break;
+        }
+
+        writer.WriteEndElement();
+    }
+
+    private static void WriteChildContent(XmlWriter writer, IntermediateNode item, ConversionSettings settings)
+    {
+        switch (item)
+        {
+            case ScalarNode s:
+                WriteScalarContent(writer, s);
+                break;
+            case ObjectNode o:
+                foreach (var c in o.Children)
+                    WriteElement(writer, c, settings, null);
+                break;
+            case ArrayNode a:
+                var itemName = ItemNameFor(a, settings);
+                foreach (var nested in a.Items)
+                    WriteElement(writer, nested, settings, itemName);
+                break;
+            case MixedContentNode m:
+                foreach (var ci in m.Content)
+                {
+                    if (ci is TextRun tr) writer.WriteString(tr.Text);
+                    else if (ci is ChildNode cn) WriteElement(writer, cn.Node, settings, null);
+                }
+                break;
+        }
+    }
+
+    private static void WriteScalarContent(XmlWriter writer, ScalarNode scalar)
+    {
+        if (scalar.Type == ScalarType.Null) return;
+
+        if (scalar.Metadata.TryGetValue(NodeMetadata.CdataKey, out var cdataFlag) && cdataFlag == "true")
+            writer.WriteCData(scalar.RawValue ?? string.Empty);
+        else
+            writer.WriteString(scalar.RawValue ?? string.Empty);
+    }
+
+    private static void WriteAttributes(XmlWriter writer, NodeMetadata metadata, ConversionSettings settings)
+    {
+        foreach (var kv in metadata)
+        {
+            if (MetadataConvention.IsAttributeKey(kv.Key, settings))
+                writer.WriteAttributeString(kv.Key[settings.AttributePrefix.Length..], kv.Value);
+        }
     }
 
     // ── FromIM helpers ───────────────────────────────────────────────────────

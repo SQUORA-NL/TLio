@@ -370,6 +370,22 @@ public class JsonNodeAdapter : INodeAdapter<JToken>
         public void Return(char[]? array) { if (array != null) System.Buffers.ArrayPool<char>.Shared.Return(array); }
     }
 
-    public string Serialize(JToken node, bool pretty = false) =>
-        node.ToString(pretty ? Newtonsoft.Json.Formatting.Indented : Newtonsoft.Json.Formatting.None);
+    /// <summary>
+    /// Same text as <c>JToken.ToString(formatting)</c>, collected in one pooled buffer instead of a
+    /// <see cref="System.Text.StringBuilder"/> whose chunks are copied into the result.
+    /// </summary>
+    public string Serialize(JToken node, bool pretty = false)
+    {
+        using var text = new TLio.Core.Internal.PooledStringWriter();
+        using (var writer = new Newtonsoft.Json.JsonTextWriter(text)
+        {
+            Formatting = pretty ? Newtonsoft.Json.Formatting.Indented : Newtonsoft.Json.Formatting.None,
+            CloseOutput = false,
+        })
+        {
+            node.WriteTo(writer);
+        }
+
+        return text.ToString();
+    }
 }

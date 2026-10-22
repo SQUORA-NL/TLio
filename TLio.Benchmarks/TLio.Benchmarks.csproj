@@ -19,6 +19,9 @@
     <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
     <ProjectReference Include="..\TLio.Client\TLio.Client.csproj" />
     <ProjectReference Include="..\TLio.Json\TLio.Json.csproj" />
+    <ProjectReference Include="..\TLio.Xml\TLio.Xml.csproj" />
+    <ProjectReference Include="..\TLio.Yaml\TLio.Yaml.csproj" />
+    <ProjectReference Include="..\TLio.FormatConverter\TLio.FormatConverter.csproj" />
     <ProjectReference Include="..\TLio.Extensions.Looping\TLio.Extensions.Looping.csproj" />
     <ProjectReference Include="..\TLio.Extensions.Math\TLio.Extensions.Math.csproj" />
     <ProjectReference Include="..\TLio.Extensions.Text\TLio.Extensions.Text.csproj" />
