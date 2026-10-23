@@ -1,0 +1,28 @@
+{
+  "input": {
+    "agreement": [
+      {
+        "party": [
+          { "refKey": "k1", "firstName": "Ada" },
+          { "refKey": "k2", "firstName": "Grace" }
+        ],
+        "policy": [ { "party": [ { "entityType": "insured", "partyRef": ["k1"] }, { "entityType": "policyHolder", "partyRef": ["k2"] } ] } ]
+      }
+    ]
+  },
+  "script": [
+    { "command": "put", "path": "$.holder", "value": "=resolve($.agreement[0].party[*], 'refKey', =fetch($.agreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0]), 'firstName')" }
+  ],
+  "result": {
+    "agreement": [
+      {
+        "party": [
+          { "refKey": "k1", "firstName": "Ada" },
+          { "refKey": "k2", "firstName": "Grace" }
+        ],
+        "policy": [ { "party": [ { "entityType": "insured", "partyRef": ["k1"] }, { "entityType": "policyHolder", "partyRef": ["k2"] } ] } ]
+      }
+    ],
+    "holder": "Grace"
+  }
+}

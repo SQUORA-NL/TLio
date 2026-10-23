@@ -105,6 +105,7 @@ public class ParseOptions<TNode>
         options.FunctionsProvider.Register("sort",           () => new Sort<TNode>());
         options.FunctionsProvider.Register("sortby",         () => new SortBy<TNode>());
         options.FunctionsProvider.Register("last",           () => new Last<TNode>());
+        options.FunctionsProvider.Register("resolve",        () => new ResolveFunction<TNode>());
 
         // Schema shaping — orders, filters and blanks a document by a JSON Schema's *shape*.
         // Built in rather than a pack: no schema library is involved, only the schema read as a

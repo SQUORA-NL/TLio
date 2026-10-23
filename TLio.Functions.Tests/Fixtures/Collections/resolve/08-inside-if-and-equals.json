@@ -1,0 +1,14 @@
+{
+  "input": {
+    "party": [ { "refKey": "p1", "gender": "M" }, { "refKey": "p2", "gender": "F" } ]
+  },
+  "script": [
+    { "command": "put", "path": "$.title", "value": "=if(equals(resolve($.party, 'refKey', 'p1', 'gender'), 'M'), 'Mr', 'Mrs')" },
+    { "command": "put", "path": "$.title2", "value": "=if(equals(resolve($.party, 'refKey', 'p2', 'gender'), 'M'), 'Mr', 'Mrs')" }
+  ],
+  "result": {
+    "party": [ { "refKey": "p1", "gender": "M" }, { "refKey": "p2", "gender": "F" } ],
+    "title": "Mr",
+    "title2": "Mrs"
+  }
+}

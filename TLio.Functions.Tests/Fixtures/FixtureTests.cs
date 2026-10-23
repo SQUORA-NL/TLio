@@ -77,6 +77,10 @@ public class FixtureTests
     public void Collections_Last(JToken input, string script, JToken expected)
         => RunFixture(input, script, expected);
 
+    [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Collections/resolve" })]
+    public void Collections_Resolve(JToken input, string script, JToken expected)
+        => RunFixture(input, script, expected);
+
     [TestCaseSource(typeof(FixtureTheoryLoader), nameof(FixtureTheoryLoader.LoadSingle), new object[] { "Schema/orderbyschema" })]
     public void Schema_OrderBySchema(JToken input, string script, JToken expected)
         => RunOrderedFixture(input, script, expected);
