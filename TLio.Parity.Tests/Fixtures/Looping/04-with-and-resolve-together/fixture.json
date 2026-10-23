@@ -1,0 +1,27 @@
+{
+  "input": {
+    "policy": { "holder": "p2", "plan": "gold" },
+    "party": [
+      { "refKey": "p1", "firstName": "Ada" },
+      { "refKey": "p2", "firstName": "Grace" }
+    ]
+  },
+  "script": [
+    {
+      "command": "with",
+      "path": "$.policy",
+      "commands": [
+        { "command": "put", "path": "$.out.plan", "value": "=fetch(@.plan)" },
+        { "command": "put", "path": "$.out.holder", "value": "=resolve($.party, 'refKey', =fetch(@.holder), 'firstName')" }
+      ]
+    }
+  ],
+  "result": {
+    "policy": { "holder": "p2", "plan": "gold" },
+    "party": [
+      { "refKey": "p1", "firstName": "Ada" },
+      { "refKey": "p2", "firstName": "Grace" }
+    ],
+    "out": { "plan": "gold", "holder": "Grace" }
+  }
+}

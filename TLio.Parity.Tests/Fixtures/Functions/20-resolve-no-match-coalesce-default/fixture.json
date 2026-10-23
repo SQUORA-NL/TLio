@@ -1,0 +1,18 @@
+{
+  "input": {
+    "party": [
+      { "refKey": "p1", "firstName": "Ada" }
+    ]
+  },
+  "script": [
+    { "command": "put", "path": "$.who", "value": "=coalesce(resolve($.party, 'refKey', 'zzz', 'firstName'), 'unknown')" },
+    { "command": "put", "path": "$.known", "value": "=coalesce(resolve($.party, 'refKey', 'p1', 'firstName'), 'unknown')" }
+  ],
+  "result": {
+    "party": [
+      { "refKey": "p1", "firstName": "Ada" }
+    ],
+    "who": "unknown",
+    "known": "Ada"
+  }
+}

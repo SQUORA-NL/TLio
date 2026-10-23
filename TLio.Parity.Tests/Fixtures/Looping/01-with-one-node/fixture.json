@@ -1,0 +1,20 @@
+{
+  "input": {
+    "person": { "name": "Ada", "city": "Delft" }
+  },
+  "script": [
+    {
+      "command": "with",
+      "path": "$.person",
+      "commands": [
+        { "command": "put", "path": "$.out.name", "value": "=fetch(@.name)" },
+        { "command": "put", "path": "$.out.city", "value": "=fetch(@.city)" },
+        { "command": "add", "path": "@.seen", "value": true }
+      ]
+    }
+  ],
+  "result": {
+    "person": { "name": "Ada", "city": "Delft", "seen": true },
+    "out": { "name": "Ada", "city": "Delft" }
+  }
+}

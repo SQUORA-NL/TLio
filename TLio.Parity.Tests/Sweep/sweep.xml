@@ -593,6 +593,9 @@
   <put path="/root/core/last">
     <value>=last(/root/tags/item)</value>
   </put>
+  <put path="/root/core/resolve">
+    <value>=resolve(/root/people/item,'id','p2','score')</value>
+  </put>
   <put path="/root/core/distinct">
     <value>=distinct(/root/dupes)</value>
   </put>
@@ -648,4 +651,9 @@
       </set>
     </commands>
   </while>
+  <with path="/root/loop">
+    <commands>
+      <add path="./withVisited"><value>true</value></add>
+    </commands>
+  </with>
 </script>

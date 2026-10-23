@@ -1,0 +1,20 @@
+{
+  "why": "A nested returnField is written in the document's own path language (contact.mail here, contact/mail in XML); the XML spelling is covered in TLio.Xml.Tests.",
+  "formats": ["json", "yaml"],
+  "input": {
+    "party": [
+      { "refKey": "p1", "contact": { "mail": "ada@x.nl" } },
+      { "refKey": "p2", "contact": { "mail": "grace@x.nl" } }
+    ]
+  },
+  "script": [
+    { "command": "put", "path": "$.mail", "value": "=resolve($.party, 'refKey', 'p1', 'contact.mail')" }
+  ],
+  "result": {
+    "party": [
+      { "refKey": "p1", "contact": { "mail": "ada@x.nl" } },
+      { "refKey": "p2", "contact": { "mail": "grace@x.nl" } }
+    ],
+    "mail": "ada@x.nl"
+  }
+}

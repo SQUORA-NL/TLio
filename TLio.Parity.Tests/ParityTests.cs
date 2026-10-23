@@ -36,6 +36,7 @@ public class ParityTests
     [TestCaseSource(nameof(JsonCases), new object[] { "Arrays" })]
     [TestCaseSource(nameof(JsonCases), new object[] { "Structure" })]
     [TestCaseSource(nameof(JsonCases), new object[] { "Functions" })]
+    [TestCaseSource(nameof(JsonCases), new object[] { "Looping" })]
     public void Json(ParityFixture fixture) => Run(fixture, FormatRunners.RunJson, "JSON");
 
     // ── XML ───────────────────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ public class ParityTests
     [TestCaseSource(nameof(XmlCases), new object[] { "Arrays" })]
     [TestCaseSource(nameof(XmlCases), new object[] { "Structure" })]
     [TestCaseSource(nameof(XmlCases), new object[] { "Functions" })]
+    [TestCaseSource(nameof(XmlCases), new object[] { "Looping" })]
     public void Xml(ParityFixture fixture) => Run(fixture, FormatRunners.RunXml, "XML");
 
     // ── YAML ──────────────────────────────────────────────────────────────────
@@ -70,6 +72,7 @@ public class ParityTests
     [TestCaseSource(nameof(YamlCases), new object[] { "Arrays" })]
     [TestCaseSource(nameof(YamlCases), new object[] { "Structure" })]
     [TestCaseSource(nameof(YamlCases), new object[] { "Functions" })]
+    [TestCaseSource(nameof(YamlCases), new object[] { "Looping" })]
     public void Yaml(ParityFixture fixture) => Run(fixture, FormatRunners.RunYaml, "YAML");
 
     // ── Sources ───────────────────────────────────────────────────────────────
