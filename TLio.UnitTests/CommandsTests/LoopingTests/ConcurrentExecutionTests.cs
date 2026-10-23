@@ -76,4 +76,63 @@ public class ConcurrentExecutionTests
             Assert.That(results[i], Is.EqualTo(expected), $"run {i} was corrupted by a concurrent execution");
         }
     }
+
+    /// <summary>
+    /// <c>with</c> sets <c>CurrentNode</c> around its nested script. That has to live on the
+    /// per-execution context, not on the shared command: if it leaked, one run's nested
+    /// <c>@.name</c> would read another run's node.
+    /// </summary>
+    [Test]
+    public void CompiledWithScript_DoesNotLeakCurrentNodeBetweenConcurrentExecutions()
+    {
+        var options = ParseOptions<JToken>.CreateDefault();
+        options.CommandsProvider.RegisterLooping<JToken>();
+        var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+        var adapter = JsonExecutionContext.CreateDefault().NodeAdapter;
+
+        var compiled = engine.Compile("""
+            [ { "command": "with", "path": "$.person", "commands": [
+                  { "command": "add", "path": "$.out.name", "value": "=fetch(@.name)" },
+                  { "command": "with", "path": "@.address", "commands": [
+                      { "command": "add", "path": "$.out.city", "value": "@.city" } ] },
+                  { "command": "forEach", "path": "@.tags", "commands": [
+                      { "command": "add", "path": "@.owner", "value": "=fetch($.person.name)" } ] },
+                  { "command": "add", "path": "$.out.again", "value": "@.name" }
+              ] } ]
+            """, adapter);
+
+        const int concurrentRuns = 64;
+        var results = new string[concurrentRuns];
+        var leaked = new object?[concurrentRuns];
+        var errors = new Exception?[concurrentRuns];
+
+        Parallel.For(0, concurrentRuns, i =>
+        {
+            try
+            {
+                var input = JToken.Parse($$"""
+                    { "person": { "name": "run{{i}}", "address": { "city": "city{{i}}" },
+                                  "tags": [ {"t":1}, {"t":2} ] } }
+                    """);
+                var context = JsonExecutionContext.CreateDefault();
+                var result = compiled.Execute(input, context);
+                leaked[i] = context.CurrentNode;
+                results[i] = result.Success
+                    ? result.Data.ToString(Newtonsoft.Json.Formatting.None)
+                    : "FAILED: " + string.Join(" | ", context.GetLogEntries().Select(e => e.Message));
+            }
+            catch (Exception ex)
+            {
+                errors[i] = ex;
+            }
+        });
+
+        Assert.That(errors, Has.All.Null, "No execution should throw.");
+        Assert.That(leaked, Has.All.Null, "CurrentNode must be restored after every execution.");
+        for (var i = 0; i < concurrentRuns; i++)
+        {
+            var expected = $$$"""{"person":{"name":"run{{{i}}}","address":{"city":"city{{{i}}}"},"tags":[{"t":1,"owner":"run{{{i}}}"},{"t":2,"owner":"run{{{i}}}"}]},"out":{"name":"run{{{i}}}","city":"city{{{i}}}","again":"run{{{i}}}"}}""";
+            Assert.That(results[i], Is.EqualTo(expected), $"run {i} was corrupted by a concurrent execution");
+        }
+    }
 }

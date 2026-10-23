@@ -146,4 +146,4 @@ Logs go to **stderr**; stdout is reserved for the protocol, so nothing you add s
 
 - Command and function reference served by the tools: [`docs/ai-ref`](../docs/ai-ref/)
 - Notation (JSON / XML / YAML scripts): [`docs/ai-ref/notation-reference.md`](../docs/ai-ref/notation-reference.md)
-- Looping commands: [`forEach`](../docs/ai-ref/commands/ForEach.md), [`while`](../docs/ai-ref/commands/While.md)
+- Looping commands: [`forEach`](../docs/ai-ref/commands/ForEach.md), [`while`](../docs/ai-ref/commands/While.md), [`with`](../docs/ai-ref/commands/With.md)

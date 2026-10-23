@@ -11,7 +11,7 @@ namespace TLio.Extensions.Looping;
 ///   ParseOptions&lt;JToken&gt;.CreateDefault().CommandsProvider.RegisterLooping&lt;JToken&gt;();
 /// </code>
 ///
-/// Registers: forEach, while.
+/// Registers: forEach, while, with.
 /// </summary>
 public static class RegisterLoopingPack
 {
@@ -20,6 +20,7 @@ public static class RegisterLoopingPack
     {
         registrar.Register("forEach", () => new ForEach<TNode>());
         registrar.Register("while", () => new While<TNode>());
+        registrar.Register("with", () => new With<TNode>());
         return registrar;
     }
 }

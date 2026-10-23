@@ -1,0 +1,16 @@
+{
+  "input": {
+    "party": [ { "refKey": 7, "firstName": "Seven" }, { "refKey": "8", "firstName": "Eight" } ],
+    "wanted": { "a": "7", "b": 8 }
+  },
+  "script": [
+    { "command": "put", "path": "$.byText", "value": "=resolve($.party, 'refKey', =fetch($.wanted.a), 'firstName')" },
+    { "command": "put", "path": "$.byNumber", "value": "=resolve($.party, 'refKey', =fetch($.wanted.b), 'firstName')" }
+  ],
+  "result": {
+    "party": [ { "refKey": 7, "firstName": "Seven" }, { "refKey": "8", "firstName": "Eight" } ],
+    "wanted": { "a": "7", "b": 8 },
+    "byText": "Seven",
+    "byNumber": "Eight"
+  }
+}

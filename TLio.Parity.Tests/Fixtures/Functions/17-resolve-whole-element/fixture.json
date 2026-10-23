@@ -1,0 +1,24 @@
+{
+  "input": {
+    "party": [
+      { "refKey": "p1", "firstName": "Ada" },
+      { "refKey": "p2", "firstName": "Grace" }
+    ],
+    "policy": { "holder": "p2" }
+  },
+  "script": [
+    {
+      "command": "put",
+      "path": "$.found",
+      "value": "=resolve($.party[*], 'refKey', =fetch($.policy.holder))"
+    }
+  ],
+  "result": {
+    "party": [
+      { "refKey": "p1", "firstName": "Ada" },
+      { "refKey": "p2", "firstName": "Grace" }
+    ],
+    "policy": { "holder": "p2" },
+    "found": { "refKey": "p2", "firstName": "Grace" }
+  }
+}

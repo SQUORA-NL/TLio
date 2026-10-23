@@ -140,7 +140,7 @@ thread-safety and precompilation guidance, and which garbage-collector mode to r
 | Project | Purpose |
 |---|---|
 | `TLio.Extensions.ETL` | ETL commands: flatten, restore, resolve, tocsv |
-| `TLio.Extensions.Looping` | Loop commands: `forEach` (once per array element, `@` addresses the element) and `while` (repeat while a condition holds, `maxIterations` required). Register with `RegisterLooping<TNode>()` — format-agnostic, works on JSON, XML and YAML |
+| `TLio.Extensions.Looping` | Loop commands: `forEach` (once per array element, `@` addresses the element) `while` (repeat while a condition holds, `maxIterations` required) and `with` (select one node once, `@` addresses it). Register with `RegisterLooping<TNode>()` — format-agnostic, works on JSON, XML and YAML |
 | `TLio.Extensions.Math` | 27 math functions: abs, avg, calculate, ceiling, clamp, count, divide, floor, max, median, min, modulo, multiply, pow, round, sign, sqrt, subtract, sum and the conditional aggregates (sumIf(s), countIf(s), averageIf(s), maxIfs, minIfs) |
 | `TLio.Extensions.Text` | 26 text functions: concat, contains, endsWith, format, indexOf, isEmpty, join, length, newGuid, padLeft/Right, parse, regexExtract, regexReplace, replace, right, split, startsWith, substring, toFixed, toLower, toString, toUpper, trim, trimStart/End |
 | `TLio.Extensions.TimeDate` | 12 date functions: avgDate, dateAdd, dateCompare, dateDiff, datePart, endOfMonth, formatDate, isDateBetween, maxDate, minDate, parseDate, startOfMonth (`datetime` is core, not in this pack) |

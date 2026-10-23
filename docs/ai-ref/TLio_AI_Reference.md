@@ -95,7 +95,7 @@ options.CommandsProvider.RegisterETL<JToken>();
 
 ### Looping Extension Pack
 
-`forEach` and `while` are in `TLio.Extensions.Looping` and are not in `CreateDefault()`.
+`forEach`, `while` and `with` are in `TLio.Extensions.Looping` and are not in `CreateDefault()`.
 Register explicitly (add `using TLio.Extensions.Looping;`):
 
 ```csharp
@@ -105,8 +105,11 @@ options.CommandsProvider.RegisterLooping<JToken>();
 `forEach` runs a nested script once per array element, with `@` / `@.field` addressing the
 element; `while` repeats a nested script while a condition holds and **requires**
 `maxIterations`. Both work on JSON, XML and YAML. The MCP server (`TLio.Mcp`) registers this
-pack already. Full pages: [commands/ForEach.md](commands/ForEach.md),
-[commands/While.md](commands/While.md).
+pack already. `with` selects **one** node (first match) and runs a nested script with `@`
+addressing it — use it when many commands read the same related record. Full pages:
+[commands/ForEach.md](commands/ForEach.md), [commands/While.md](commands/While.md),
+[commands/With.md](commands/With.md). To look up one value by key inside an expression, see
+the `resolve` function: [functions/Resolve.md](functions/Resolve.md).
 
 ### Text Extension Pack
 
@@ -132,7 +135,7 @@ options.FunctionsProvider.RegisterMath<JToken>();
 options.FunctionsProvider.RegisterTimeDate<JToken>();
 ```
 
-`if`, `coalesce`, `between`, `distinct`, `sort`, `sortBy`, `last`, `orderBySchema`, `filterBySchema` and
+`if`, `coalesce`, `between`, `distinct`, `sort`, `sortBy`, `last`, `resolve`, `orderBySchema`, `filterBySchema` and
 `skeleton` need no registration —
 they are built in, like the other predicates and path functions.
 
@@ -194,6 +197,7 @@ Paths after a `convert` speak the new format's path language. See
 |------|---------|------|
 | Run the same steps for every element of an array | `forEach` | Looping pack required; `@` / `@.field` address the current element |
 | Repeat while a computed condition holds | `while` | Looping pack required; `maxIterations` is mandatory |
+| Several commands on fields of one related record | `with` | Looping pack required; path evaluated once, first match only, `@` / `@.field` address it |
 | Same write to every element, no per-element logic | A wildcard path (`$.items[*].x`) on `set` / `put` | No loop needed |
 
 ### ETL and serialization
@@ -334,6 +338,7 @@ differs from a JavaScript `||`.
 | Order scalars | `sort` | `asc` (default) / `desc`; stable. Numeric **only** when every element is numeric, otherwise ordinal string order |
 | Order objects by a field | `sortBy` | Key is a plain property chain (`'premium'`, `'$.rating.factor'`), **not** a path expression — no wildcards or predicates. Missing keys sort last in both directions |
 | Last match of a path | `last` | `partial` counts from the front only |
+| One element (or one field of it) by key | `resolve` | `=resolve($.party,'refKey',<key>[,'firstName'])` — first match wins, keys compare like `equals`, fails when nothing matches (wrap in `coalesce` for a default). Returns one node, not a collection. Not the ETL `resolve` command |
 
 These return a **collection**, so the containing command is normally a `put` to an array path.
 They are new capability rather than shorthand: before them, de-duplicating required `merge` with
@@ -908,6 +913,24 @@ to every element (use a wildcard path) or a condition-driven repeat (use `while`
 { "command": "while", "condition": "=lessThan($.n, 3)", "maxIterations": 10, "commands": [
     { "command": "set", "path": "$.n", "value": "=sum($.n, 1)" } ] }
 ```
+
+---
+
+### with
+
+> Evaluates a path **once** and runs a nested script with `@` addressing the selected node —
+> `forEach` for one node. No match: warning, block skipped. Several: first used, warning.
+> Looping pack (`RegisterLooping`). Full page: [commands/With.md](commands/With.md).
+
+```json
+{ "command": "with", "path": "$.party[?(@.refKey == $.policy.holderRef)]", "commands": [
+    { "command": "add", "path": "$.out.name", "value": "=fetch(@.firstName)" },
+    { "command": "add", "path": "$.out.city", "value": "=fetch(@.address[0].city)" } ] }
+```
+
+**When to use**: many commands read fields of the same related record found by a long path.
+**Not for**: several nodes (`forEach`) or one field (`resolve()` / `fetch`). In XML write
+`=fetch(./name)` (a bare `./name` value is literal text) and select a uniquely named element.
 
 ---
 
@@ -1908,6 +1931,7 @@ Input: `{ "name": "  Alice" }` → `"name": "Alice"`
 | set | Update-only; noop if field absent | ✅ | `.Set(v).OnPath(p)` | built-in |
 | setProperties | Run a value against a named/found selection under one or more objects — the only way to write through an object-key wildcard | ✅ | — | built-in |
 | tocsv | Export array to CSV string | ❌ | — | ETL |
+| with | Run nested commands on one node selected once (`@`); `forEach` for one node | ❌ (path: `=indirect()`) | — | Looping |
 
 `convert`/`convertValue` are the two FormatConverter commands — see
 [commands/Convert.md](commands/Convert.md) and [commands/ConvertValue.md](commands/ConvertValue.md).
@@ -1992,6 +2016,7 @@ or `sweep.xml` — fixing that means re-recording the sweep (`dotnet test TLio.P
 | sort | `=sort(array)` / `=sort(array,dir)` | Order scalars, stable | built-in |
 | sortBy | `=sortby(array,keyPath)` / `=sortby(array,keyPath,dir)` | Order objects by a field | built-in |
 | last | `=last(path)` | Last match of a path | built-in |
+| resolve | `=resolve(collectionPath,keyField,key[,returnField])` | One element (or field of it) by key; first match, fails if none | built-in |
 | orderBySchema | `=orderBySchema(schema,data)` / `=orderBySchema(schema,data,'discriminate')` | Reorder properties to schema order | built-in |
 | filterBySchema | `=filterBySchema(schema,data [,'discriminate'] [,'keepAdditional'])` | Keep only what the schema describes | built-in |
 | skeleton | `=skeleton(schema)` | Empty document a schema describes | built-in |

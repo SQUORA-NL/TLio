@@ -948,6 +948,11 @@
   },
   {
     "command": "put",
+    "path": "$.core.resolve",
+    "value": "=resolve($.people[*],'id','p2','score')"
+  },
+  {
+    "command": "put",
     "path": "$.core.distinct",
     "value": "=distinct($.dupes)"
   },
@@ -1033,6 +1038,17 @@
         "command": "set",
         "path": "$.loop.whileCounter",
         "value": "=sum($.loop.whileCounter,1)"
+      }
+    ]
+  },
+  {
+    "command": "with",
+    "path": "$.loop",
+    "commands": [
+      {
+        "command": "add",
+        "path": "@.withVisited",
+        "value": true
       }
     ]
   }

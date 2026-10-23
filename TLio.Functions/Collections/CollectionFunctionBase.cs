@@ -178,7 +178,7 @@ public abstract class CollectionFunctionBase<TNode> : FunctionBase<TNode>
     /// subscript, wildcard, predicate or recursive descent is rejected outright rather than
     /// quietly handed to a fetcher that would answer differently per format.
     /// </summary>
-    protected static bool TrySplitKeyPath(string keyPath, IItemsFetcher<TNode> fetcher, out string[] segments)
+    protected internal static bool TrySplitKeyPath(string keyPath, IItemsFetcher<TNode> fetcher, out string[] segments)
     {
         segments = Array.Empty<string>();
 
@@ -209,7 +209,7 @@ public abstract class CollectionFunctionBase<TNode> : FunctionBase<TNode>
     /// Walk a property chain from <paramref name="element"/>. Returns false when any step is
     /// missing — that is an answer about this element, not an error about the script.
     /// </summary>
-    protected static bool TryWalk(TNode element, string[] segments, INodeAdapter<TNode> adapter, out TNode value)
+    protected internal static bool TryWalk(TNode element, string[] segments, INodeAdapter<TNode> adapter, out TNode value)
     {
         var current = element;
         foreach (var segment in segments)

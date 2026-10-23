@@ -1,0 +1,19 @@
+{
+  "input": {
+    "person": { "name": "Ada" }
+  },
+  "script": [
+    {
+      "command": "with",
+      "path": "$.nobody",
+      "commands": [
+        { "command": "put", "path": "$.skipped", "value": "yes" }
+      ]
+    },
+    { "command": "put", "path": "$.after", "value": "ran" }
+  ],
+  "result": {
+    "person": { "name": "Ada" },
+    "after": "ran"
+  }
+}

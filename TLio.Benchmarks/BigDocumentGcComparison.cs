@@ -3,6 +3,7 @@ using System.Runtime;
 using System.Text;
 using TLio.Client;
 using TLio.Core.Models;
+using TLio.Extensions.Looping;
 using TLio.FormatConverter;
 using TLio.FormatConverter.Json;
 using TLio.FormatConverter.Xml;
@@ -207,6 +208,8 @@ internal static class BigDocumentGcComparison
     private static ScriptEngineSectionExecutor<T> Section<T>(string id, Func<ExecutionContext<T>> context)
     {
         var o = ParseOptions<T>.CreateDefault();
+        // Looping is opt-in; without it a script using forEach / while / with is rejected.
+        o.CommandsProvider.RegisterLooping<T>();
         return new ScriptEngineSectionExecutor<T>(id, new ScriptEngine<T>(o.CommandsProvider, o.FunctionsProvider), () => context());
     }
 

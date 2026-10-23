@@ -3,6 +3,11 @@
 > Looks up matching entries in a reference collection and writes derived values to
 > the target document. Supports relative `@.property` paths for writing results.
 
+> Looking for one value inside an expression (`=resolve($.party, 'refKey', 'p2', 'firstName')`)?
+> That is the [`resolve` *function*](../functions/Resolve.md). This command writes derived values
+> into **every** target row; the function fetches **one** value. To select one record and use
+> many of its fields, see [`with`](With.md).
+
 > **ETL extension**: requires `options.CommandsProvider.RegisterETL<TNode>()` in addition
 > to `ParseOptions<TNode>.CreateDefault()`.
 

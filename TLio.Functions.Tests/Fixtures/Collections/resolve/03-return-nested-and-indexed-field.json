@@ -1,0 +1,18 @@
+{
+  "input": {
+    "party": [
+      { "refKey": "p1", "address": [ { "city": "Utrecht" }, { "city": "Delft" } ], "contact": { "mail": "a@x.nl" } }
+    ]
+  },
+  "script": [
+    { "command": "put", "path": "$.city", "value": "=resolve($.party, 'refKey', 'p1', 'address[1].city')" },
+    { "command": "put", "path": "$.mail", "value": "=resolve($.party, 'refKey', 'p1', 'contact.mail')" }
+  ],
+  "result": {
+    "party": [
+      { "refKey": "p1", "address": [ { "city": "Utrecht" }, { "city": "Delft" } ], "contact": { "mail": "a@x.nl" } }
+    ],
+    "city": "Delft",
+    "mail": "a@x.nl"
+  }
+}

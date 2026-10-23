@@ -56,8 +56,9 @@ object, removes a node, runs several commands.
 | Run steps once per array element | `forEach` | `@` / `@.field` address the element; update in place with `set path="@"` |
 | Repeat while a condition holds | `while` | `maxIterations` is required |
 | One identical write to every element | `set` / `put` with a wildcard path | No loop needed |
+| Several fields from one related record | `with` | Evaluates the path once; `@.field` reads the record. First match only |
 
-`forEach` and `while` come from the Looping pack — registered in the MCP server, but a host
+`forEach`, `while` and `with` come from the Looping pack — registered in the MCP server, but a host
 application must call `RegisterLooping<TNode>()`.
 
 ### Combining data
@@ -219,6 +220,7 @@ birthdays passed, not `days/365.25`.
 | Order scalars | `sort` | `asc`/`desc`; numeric only when *every* element is numeric |
 | Order objects by a field | `sortBy` | key is a plain property chain, not a path expression |
 | Last match of a path | `last` | `partial` counts from the front only |
+| One element (or field of it) by key | `resolve` | `=resolve($.party,'refKey',<key>,'firstName')`; first match wins; fails if none (wrap in `coalesce`). Not the ETL `resolve` command |
 
 ### Shaping to a JSON Schema
 

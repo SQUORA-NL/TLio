@@ -1,0 +1,18 @@
+{
+  "input": {
+    "party": [
+      { "refKey": "p1", "firstName": "Ada" },
+      { "refKey": "p2", "firstName": "Grace" }
+    ]
+  },
+  "script": [
+    { "command": "put", "path": "$.name", "value": "=resolve($.party, 'refKey', 'p2', 'firstName')" }
+  ],
+  "result": {
+    "party": [
+      { "refKey": "p1", "firstName": "Ada" },
+      { "refKey": "p2", "firstName": "Grace" }
+    ],
+    "name": "Grace"
+  }
+}

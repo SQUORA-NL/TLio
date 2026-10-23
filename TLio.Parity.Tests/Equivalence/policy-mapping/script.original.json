@@ -1,0 +1,367 @@
+[
+  {
+    "command": "add",
+    "path": "$.soap.header.version",
+    "value": "1.2"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.header.environment",
+    "value": "ACC"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.channel",
+    "value": "API"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.language",
+    "value": "nl-NL"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.documentType",
+    "value": "LIFE"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.source",
+    "value": "BROKER"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.processing.mode",
+    "value": "batch"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.processing.priority",
+    "value": "normal"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.header.messageId",
+    "value": "=fetch($.header.messageId)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.header.created",
+    "value": "=fetch($.header.created)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.header.sender",
+    "value": "=fetch($.header.sender)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.agreementNumber",
+    "value": "=fetch($.masterAgreement[0].agreementNumber)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.productCode",
+    "value": "=fetch($.masterAgreement[0].productCode)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.startDate",
+    "value": "=fetch($.masterAgreement[0].startDate)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.policyNumber",
+    "value": "=fetch($.masterAgreement[0].policy[0].policyNumber)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.startDate",
+    "value": "=fetch($.masterAgreement[0].policy[0].startDate)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.endDate",
+    "value": "=fetch($.masterAgreement[0].policy[0].endDate)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.paymentFrequency",
+    "value": "=fetch($.masterAgreement[0].policy[0].paymentFrequency)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.currency",
+    "value": "=fetch($.masterAgreement[0].policy[0].currency)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.mainCoverage.code",
+    "value": "=fetch($.masterAgreement[0].coverage[0].code)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.mainCoverage.sumInsured",
+    "value": "=fetch($.masterAgreement[0].coverage[0].sumInsured)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.mainCoverage.premium",
+    "value": "=fetch($.masterAgreement[0].coverage[0].premium)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.secondCoverage.code",
+    "value": "=fetch($.masterAgreement[0].coverage[1].code)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.secondCoverage.sumInsured",
+    "value": "=fetch($.masterAgreement[0].coverage[1].sumInsured)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policy.secondCoverage.premium",
+    "value": "=fetch($.masterAgreement[0].coverage[1].premium)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.beneficiaryName",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].beneficiaryRef)].lastName)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.beneficiaryEmail",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].beneficiaryRef)].email)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.payerName",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].payerRef)].lastName)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.firstName",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].firstName)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.lastName",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].lastName)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.initials",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].initials)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.gender",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].gender)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.birthDate",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].birthDate)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.nationality",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].nationality)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.email",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].email)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.phone",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].phone)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.street",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].address[0].street)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.houseNumber",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].address[0].houseNumber)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.postalCode",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].address[0].postalCode)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.city",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].address[0].city)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.policyHolder.country",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].address[0].country)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.firstName",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].firstName)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.lastName",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].lastName)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.initials",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].initials)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.gender",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].gender)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.birthDate",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].birthDate)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.nationality",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].nationality)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.email",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].email)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.phone",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].phone)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.street",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].address[0].street)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.houseNumber",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].address[0].houseNumber)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.postalCode",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].address[0].postalCode)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.city",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].address[0].city)"
+  },
+  {
+    "command": "add",
+    "path": "$.soap.body.insuredPerson.country",
+    "value": "=fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].address[0].country)"
+  },
+  {
+    "command": "ifElse",
+    "condition": "=equals(fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])].gender),'M')",
+    "ifScript": [
+      {
+        "command": "add",
+        "path": "$.soap.body.policyHolder.title",
+        "value": "Mr"
+      }
+    ],
+    "elseScript": [
+      {
+        "command": "add",
+        "path": "$.soap.body.policyHolder.title",
+        "value": "Mrs"
+      }
+    ]
+  },
+  {
+    "command": "ifElse",
+    "condition": "=equals(fetch($.masterAgreement[0].party[?(@.refKey == $.masterAgreement[0].policy[0].party[?(@.entityType=='insuredPerson')].partyRef[0])].gender),'M')",
+    "ifScript": [
+      {
+        "command": "add",
+        "path": "$.soap.body.insuredPerson.title",
+        "value": "Mr"
+      }
+    ],
+    "elseScript": [
+      {
+        "command": "add",
+        "path": "$.soap.body.insuredPerson.title",
+        "value": "Mrs"
+      }
+    ]
+  },
+  {
+    "command": "move",
+    "fromPath": "$.masterAgreement[0].remarks",
+    "toPath": "$.soap.body.remarks"
+  },
+  {
+    "command": "move",
+    "fromPath": "$.masterAgreement[0].coverage",
+    "toPath": "$.soap.body.coverage"
+  },
+  {
+    "command": "move",
+    "fromPath": "$.extra.reference",
+    "toPath": "$.soap.body.reference"
+  },
+  {
+    "command": "move",
+    "fromPath": "$.extra.flags",
+    "toPath": "$.soap.body.flags"
+  },
+  {
+    "command": "remove",
+    "path": "$.masterAgreement"
+  },
+  {
+    "command": "remove",
+    "path": "$.attachments"
+  },
+  {
+    "command": "remove",
+    "path": "$.audit"
+  },
+  {
+    "command": "remove",
+    "path": "$.internalNotes"
+  },
+  {
+    "command": "remove",
+    "path": "$.routing"
+  },
+  {
+    "command": "remove",
+    "path": "$.header"
+  },
+  {
+    "command": "remove",
+    "path": "$.sourceSystem"
+  },
+  {
+    "command": "remove",
+    "path": "$.extra"
+  },
+  {
+    "command": "convert",
+    "to": "xml",
+    "settings": {
+      "arrayHandling": "repeated"
+    }
+  }
+]

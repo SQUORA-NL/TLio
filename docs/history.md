@@ -3,6 +3,21 @@
 Moved out of `CLAUDE.md`, which keeps only what an editor needs on every task.
 Newest first.
 
+- with-and-resolve: **`with` command** (`TLio.Extensions.Looping/With.cs`) and **`resolve()` function**
+  (`TLio.Functions/Collections/Resolve.cs`). Born from a 69-command JSON → SOAP mapping that repeated one nested
+  filter (`party[?(@.refKey == policy[0].party[?(@.entityType=='policyHolder')].partyRef[0])]`) 28 times. `with`
+  evaluates a path once and sets `CurrentNode` for the nested script (the `forEach` pattern, restored in
+  `finally`; no state on the command). `resolve` is a plain linear lookup, deliberately **not cached** — the
+  document changes between calls. Decisions: a failed `resolve` fails like `fetch` (a failing argument fails the
+  command, document untouched) rather than returning null; `returnField` that is a plain name chain is walked
+  through `INodeAdapter` because the XML fetchers' `GetPath` has no sibling positions, so a path-based
+  `./field` on one of several same-named `<item>`s resolves against the first (pre-existing; affects `forEach`
+  and `with` on XML array items, documented in `commands/With.md`). Name clash with the ETL `resolve` *command* is
+  only documentary — separate registries; the two pages cross-link. Proof of equivalence:
+  `TLio.Parity.Tests/WithResolveEquivalenceTests` (byte-identical XML, original vs rewritten). Measured on that
+  fixture: ~0.81× time and −24 % allocation single-threaded (BenchmarkDotNet), 1.2–1.35× runs/s single-thread and
+  1.5× at 14 threads under Server GC (`--big-document`). `TLio.Benchmarks --big-document` now registers Looping.
+
 - docs-examples: **cross-format examples on every command and function page**, generated and checked by
   `TLio.Parity.Tests/DocExamples.cs` (`DocsAreUpToDate`, `EveryPageHasExamples`, link check). Examples come from
   existing fixtures or `DocExamples/*.json`; the engine runs the script as written in each notation. Writing them

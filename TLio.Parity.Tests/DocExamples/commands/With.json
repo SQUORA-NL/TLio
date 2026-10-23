@@ -1,0 +1,49 @@
+[
+  {
+    "title": "select a record once, write several fields from it",
+    "input": {
+      "person": { "name": "Ada", "city": "Delft" }
+    },
+    "script": [
+      {
+        "command": "with",
+        "path": "$.person",
+        "commands": [
+          { "command": "put", "path": "$.out.name", "value": "=fetch(@.name)" },
+          { "command": "put", "path": "$.out.city", "value": "=fetch(@.city)" },
+          { "command": "add", "path": "@.seen", "value": true }
+        ]
+      }
+    ],
+    "expected": {
+      "person": { "name": "Ada", "city": "Delft", "seen": true },
+      "out": { "name": "Ada", "city": "Delft" }
+    }
+  },
+  {
+    "title": "nested with: the inner @ is the inner node",
+    "input": {
+      "person": { "name": "Ada", "address": { "city": "Delft" } }
+    },
+    "script": [
+      {
+        "command": "with",
+        "path": "$.person",
+        "commands": [
+          {
+            "command": "with",
+            "path": "@.address",
+            "commands": [
+              { "command": "put", "path": "$.out.city", "value": "=fetch(@.city)" }
+            ]
+          },
+          { "command": "put", "path": "$.out.name", "value": "=fetch(@.name)" }
+        ]
+      }
+    ],
+    "expected": {
+      "person": { "name": "Ada", "address": { "city": "Delft" } },
+      "out": { "city": "Delft", "name": "Ada" }
+    }
+  }
+]
