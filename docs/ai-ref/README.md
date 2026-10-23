@@ -27,7 +27,7 @@ Writing the *script* itself in JSON, XML or YAML: [adapters/script-notation.md](
 | Write | [add](commands/Add.md) · [set](commands/Set.md) · [put](commands/Put.md) · [remove](commands/Remove.md) · [rename](commands/Rename.md) · [setProperties](commands/SetProperties.md) |
 | Move data | [copy](commands/Copy.md) · [move](commands/Move.md) · [merge](commands/Merge.md) |
 | Decide | [ifElse](commands/IfElse.md) · [decisionTable](commands/DecisionTable.md) · [compare](commands/Compare.md) |
-| Loop (`RegisterLooping`) | [forEach](commands/ForEach.md) · [while](commands/While.md) |
+| Loop (`RegisterLooping`) | [forEach](commands/ForEach.md) · [while](commands/While.md) · [with](commands/With.md) |
 | Reshape (ETL pack) | [flatten](commands/Flatten.md) · [restore](commands/Restore.md) · [resolve](commands/Resolve.md) · [toCsv](commands/ToCsv.md) |
 | Change format | [convert](commands/Convert.md) (whole document) · [convertValue](commands/ConvertValue.md) (one value) |
 
@@ -48,7 +48,7 @@ Not sure which write command? [add vs set vs put](commands/Add.md#comparison-add
 | Text tests | [contains](functions/Contains.md) · [startsWith](functions/StartsWith.md) · [endsWith](functions/EndsWith.md) |
 | Regular expressions | [regexExtract](functions/RegexExtract.md) · [regexReplace](functions/RegexReplace.md) |
 | Dates | [datetime](functions/Datetime.md) · [parseDate](functions/ParseDate.md) · [formatDate](functions/FormatDate.md) · [dateAdd](functions/DateAdd.md) · [dateDiff](functions/DateDiff.md) · [datePart](functions/DatePart.md) · [dateCompare](functions/DateCompare.md) · [isDateBetween](functions/IsDateBetween.md) · [startOfMonth](functions/StartOfMonth.md) · [endOfMonth](functions/EndOfMonth.md) · [minDate](functions/MinDate.md) · [maxDate](functions/MaxDate.md) · [avgDate](functions/AvgDate.md) · [dayCountFraction](functions/DayCountFraction.md) |
-| Reading the document | [fetch](functions/Fetch.md) · [indirect](functions/Indirect.md) · [last](functions/Last.md) · [partial](functions/Partial.md) · [path](functions/Path.md) · [scriptPath](functions/ScriptPath.md) |
+| Reading the document | [fetch](functions/Fetch.md) · [indirect](functions/Indirect.md) · [last](functions/Last.md) · [partial](functions/Partial.md) · [path](functions/Path.md) · [resolve](functions/Resolve.md) (lookup by key) · [scriptPath](functions/ScriptPath.md) |
 | Shaping values | [toString](functions/ToString.md) · [toArray](functions/ToArray.md) · [parse](functions/Parse.md) · [promote](functions/Promote.md) · [newGuid](functions/NewGuid.md) |
 | Arrays | [distinct](functions/Distinct.md) · [sort](functions/Sort.md) · [sortBy](functions/SortBy.md) |
 | JSON Schema shape | [orderBySchema](functions/OrderBySchema.md) · [filterBySchema](functions/FilterBySchema.md) · [skeleton](functions/Skeleton.md) |

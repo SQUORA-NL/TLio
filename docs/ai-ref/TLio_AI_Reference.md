@@ -105,8 +105,11 @@ options.CommandsProvider.RegisterLooping<JToken>();
 `forEach` runs a nested script once per array element, with `@` / `@.field` addressing the
 element; `while` repeats a nested script while a condition holds and **requires**
 `maxIterations`. Both work on JSON, XML and YAML. The MCP server (`TLio.Mcp`) registers this
-pack already. Full pages: [commands/ForEach.md](commands/ForEach.md),
-[commands/While.md](commands/While.md).
+pack already. `with` selects **one** node (first match) and runs a nested script with `@`
+addressing it — use it when many commands read the same related record. Full pages:
+[commands/ForEach.md](commands/ForEach.md), [commands/While.md](commands/While.md),
+[commands/With.md](commands/With.md). To look up one value by key inside an expression, see
+the `resolve` function: [functions/Resolve.md](functions/Resolve.md).
 
 ### Text Extension Pack
 

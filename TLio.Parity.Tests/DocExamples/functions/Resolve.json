@@ -1,0 +1,46 @@
+[
+  {
+    "title": "a field of the element with a given key",
+    "input": {
+      "party": [
+        { "refKey": "p1", "firstName": "Ada" },
+        { "refKey": "p2", "firstName": "Grace" }
+      ],
+      "policy": { "holder": "p2" }
+    },
+    "script": [
+      {
+        "command": "put",
+        "path": "$.holderName",
+        "value": "=resolve($.party, 'refKey', =fetch($.policy.holder), 'firstName')"
+      }
+    ],
+    "expected": {
+      "party": [
+        { "refKey": "p1", "firstName": "Ada" },
+        { "refKey": "p2", "firstName": "Grace" }
+      ],
+      "policy": { "holder": "p2" },
+      "holderName": "Grace"
+    }
+  },
+  {
+    "title": "the whole element, and a default when nothing matches",
+    "input": {
+      "party": [
+        { "refKey": "p1", "firstName": "Ada" }
+      ]
+    },
+    "script": [
+      { "command": "put", "path": "$.found", "value": "=resolve($.party[*], 'refKey', 'p1')" },
+      { "command": "put", "path": "$.who", "value": "=coalesce(resolve($.party, 'refKey', 'zzz', 'firstName'), 'unknown')" }
+    ],
+    "expected": {
+      "party": [
+        { "refKey": "p1", "firstName": "Ada" }
+      ],
+      "found": { "refKey": "p1", "firstName": "Ada" },
+      "who": "unknown"
+    }
+  }
+]

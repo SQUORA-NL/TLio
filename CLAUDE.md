@@ -303,6 +303,12 @@ rejected. Wildcard paths flatten (`$.items[*].p * 2` is one number). Rules: `doc
 The full log, including the design notes behind each entry (the `@` resolution and its
 concurrency bug, `setProperties`, the format converter), is in `docs/history.md`. Highlights:
 
+- with-and-resolve: `with` command (Looping pack; evaluate a path once, `@` addresses the node, `CurrentNode`
+  restored like `forEach`) and `resolve()` function (lookup by key, uncached, `TLio.Functions/Collections`).
+  `TLio.Parity.Tests/WithResolveEquivalenceTests` holds original vs rewritten policy mapping to byte-identical
+  XML. Not the ETL `resolve` *command* — the pages cross-link. XML slash/native paths carry no sibling
+  positions: `with`/`forEach` on one of several same-named `<item>`s reads the first.
+
 - schema-shaping (025): `orderBySchema`, `filterBySchema`, `skeleton` — built in, read a JSON Schema's shape
   (not a validator, no schema library). `'discriminate'` picks the `oneOf` branch from a `const`/`enum` tag.
   See `specs/025-schema-shaping/spec.md`.
