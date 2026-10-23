@@ -1,0 +1,158 @@
+{
+  "header": {
+    "messageId": "MSG-0001",
+    "created": "2024-05-01T10:00:00",
+    "sender": "Example Broker BV"
+  },
+  "masterAgreement": [
+    {
+      "agreementNumber": "MA-1001",
+      "productCode": "LIFE-01",
+      "startDate": "2024-06-01",
+      "remarks": {
+        "text": "Reviewed by an invented person"
+      },
+      "coverage": [
+        {
+          "code": "DEATH",
+          "sumInsured": 250000,
+          "premium": 12.5
+        },
+        {
+          "code": "DISABILITY",
+          "sumInsured": 80000,
+          "premium": 7.25
+        }
+      ],
+      "party": [
+        {
+          "refKey": "k1",
+          "firstName": "Ada",
+          "lastName": "Lovelace",
+          "initials": "A.",
+          "gender": "F",
+          "birthDate": "1985-12-10",
+          "nationality": "GB",
+          "email": "ada@example.test",
+          "phone": "+31 6 1111 1111",
+          "address": [
+            {
+              "street": "Analytical Lane",
+              "houseNumber": "12",
+              "postalCode": "1011AB",
+              "city": "Amsterdam",
+              "country": "NL"
+            }
+          ]
+        },
+        {
+          "refKey": "k2",
+          "firstName": "Grace",
+          "lastName": "Hopper",
+          "initials": "G.M.",
+          "gender": "F",
+          "birthDate": "1979-12-09",
+          "nationality": "US",
+          "email": "grace@example.test",
+          "phone": "+31 6 2222 2222",
+          "address": [
+            {
+              "street": "Compiler Street",
+              "houseNumber": "7",
+              "postalCode": "3511CD",
+              "city": "Utrecht",
+              "country": "NL"
+            }
+          ]
+        },
+        {
+          "refKey": "k3",
+          "firstName": "Alan",
+          "lastName": "Turing",
+          "initials": "A.M.",
+          "gender": "M",
+          "birthDate": "1982-06-23",
+          "nationality": "GB",
+          "email": "alan@example.test",
+          "phone": "+31 6 3333 3333",
+          "address": [
+            {
+              "street": "Enigma Road",
+              "houseNumber": "41",
+              "postalCode": "2511EF",
+              "city": "Den Haag",
+              "country": "NL"
+            }
+          ]
+        },
+        {
+          "refKey": "k4",
+          "firstName": "Edsger",
+          "lastName": "Dijkstra",
+          "initials": "E.W.",
+          "gender": "M",
+          "birthDate": "1976-05-11",
+          "nationality": "NL",
+          "email": "edsger@example.test",
+          "phone": "+31 6 4444 4444",
+          "address": [
+            {
+              "street": "Semaphore Plein",
+              "houseNumber": "3",
+              "postalCode": "5611GH",
+              "city": "Eindhoven",
+              "country": "NL"
+            }
+          ]
+        }
+      ],
+      "policy": [
+        {
+          "policyNumber": "P-2024-0001",
+          "startDate": "2024-06-01",
+          "endDate": "2044-06-01",
+          "paymentFrequency": "monthly",
+          "currency": "EUR",
+          "beneficiaryRef": "k3",
+          "payerRef": "k4",
+          "party": [
+            {
+              "entityType": "insuredPerson",
+              "partyRef": [
+                "k1"
+              ]
+            },
+            {
+              "entityType": "policyHolder",
+              "partyRef": [
+                "k2"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "attachments": [
+    {
+      "name": "contract.pdf",
+      "size": 12345
+    }
+  ],
+  "audit": {
+    "user": "svc-import",
+    "at": "2024-05-01T10:00:01"
+  },
+  "internalNotes": "not for export",
+  "routing": {
+    "queue": "q1"
+  },
+  "sourceSystem": "legacy",
+  "extra": {
+    "reference": "REF-77",
+    "flags": {
+      "fast": true,
+      "secure": false
+    }
+  }
+}

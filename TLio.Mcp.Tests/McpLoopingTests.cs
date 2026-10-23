@@ -69,6 +69,44 @@ public sealed class McpLoopingTests
     }
 
     [Test]
+    public void With_RunsTheNestedScriptOnTheSelectedNode()
+    {
+        const string doc = """{"party":[{"name":"Ada"},{"name":"Grace"}]}""";
+        const string script = """
+            [{"command":"with","path":"$.party[1]","commands":[
+              {"command":"put","path":"$.picked","value":"=fetch(@.name)"}
+            ]}]
+            """;
+
+        var result = (ExecuteResult)_execution.Execute(doc, "json", script);
+
+        Assert.That(result.Success, Is.True, result.Output);
+        Assert.That((string?)JObject.Parse(result.Output)["picked"], Is.EqualTo("Grace"));
+    }
+
+    [Test]
+    public void Resolve_LooksUpAnElementByKey()
+    {
+        const string doc = """{"party":[{"k":"a","n":"Ada"},{"k":"b","n":"Grace"}]}""";
+        const string script = """[{"command":"put","path":"$.who","value":"=resolve($.party,'k','b','n')"}]""";
+
+        var result = (ExecuteResult)_execution.Execute(doc, "json", script);
+
+        Assert.That(result.Success, Is.True, result.Output);
+        Assert.That((string?)JObject.Parse(result.Output)["who"], Is.EqualTo("Grace"));
+    }
+
+    [Test]
+    public void Describe_With_IsACommand_AndResolveIsAFunctionWhenAsked()
+    {
+        Assert.That((string?)JObject.FromObject(_discovery.Describe("with"))["type"], Is.EqualTo("command"));
+
+        var resolve = JObject.FromObject(_discovery.Describe("resolve", "function"));
+        Assert.That((string?)resolve["type"], Is.EqualTo("function"));
+        Assert.That((string?)resolve["content"], Does.Contain("collectionPath"));
+    }
+
+    [Test]
     public void Describe_ReportsCamelCaseCommandsAsCommands()
     {
         var json = JObject.FromObject(_discovery.Describe("forEach"));
@@ -79,6 +117,6 @@ public sealed class McpLoopingTests
     public void LoopingCommands_AreListedForDiscovery()
     {
         var json = Newtonsoft.Json.JsonConvert.SerializeObject(_discovery.ListCommands());
-        Assert.That(json, Does.Contain("ForEach").And.Contain("While"));
+        Assert.That(json, Does.Contain("ForEach").And.Contain("While").And.Contain("With"));
     }
 }
