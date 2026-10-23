@@ -291,27 +291,38 @@ public class BigObjectPerformanceTests
         string Script(int commands) => "[" + string.Join(",", Enumerable.Range(0, commands).Select(i =>
             $$"""{"command":"put","path":"$.order.p{{i}}","value":"=fetch($.order.customer.name)"}""")) + "]";
 
-        long Allocated(string script)
+        // What 62 more commands cost is a per-command constant (script text, log lines, trace) that
+        // differs by platform and runtime — 6 KB each on one machine, 23 KB on a macOS CI runner —
+        // so an absolute bound is brittle. Measure the same 62 commands on a tiny document and
+        // bound only the difference: that is the part that grows with the size of the document.
+        var small = OrderJson(10);
+
+        long ExtraCost(string doc)
         {
-            for (var i = 0; i < 5; i++) runner.Run("json", json, script);   // warm up: JIT and tiering allocate too
-            var least = long.MaxValue;
-            for (var i = 0; i < 5; i++)
+            long Run(string script)
             {
-                var before = GC.GetAllocatedBytesForCurrentThread();
-                runner.Run("json", json, script);
-                least = Math.Min(least, GC.GetAllocatedBytesForCurrentThread() - before);
+                for (var i = 0; i < 5; i++) runner.Run("json", doc, script);
+                var least = long.MaxValue;
+                for (var i = 0; i < 5; i++)
+                {
+                    var before = GC.GetAllocatedBytesForCurrentThread();
+                    runner.Run("json", doc, script);
+                    least = Math.Min(least, GC.GetAllocatedBytesForCurrentThread() - before);
+                }
+                return least;
             }
-            return least;
+
+            return Run(Script(63)) - Run(Script(1));
         }
 
-        var one = Allocated(Script(1));
-        var sixtyThree = Allocated(Script(63));
-        TestContext.WriteLine($"document {documentBytes / 1048576.0:F1} MB; 1 command allocates {one / 1048576.0:F1} MB, " +
-                              $"63 commands {sixtyThree / 1048576.0:F1} MB (+{(sixtyThree - one) / 1024.0:F0} KB for 62 more)");
+        var extraBig = ExtraCost(json);
+        var extraSmall = ExtraCost(small);
+        TestContext.WriteLine($"document {documentBytes / 1048576.0:F1} MB; 62 more commands allocate " +
+                              $"+{extraBig / 1024.0:F0} KB on it, +{extraSmall / 1024.0:F0} KB on a tiny one");
 
-        Assert.That(sixtyThree - one, Is.LessThan(documentBytes / 2),
-            "62 more commands cost ~6 KB each (script text, log lines). One copy of the document per " +
-            "command would be 62 x its size; even a single copy among them is over this bound.");
+        Assert.That(extraBig - extraSmall, Is.LessThan(documentBytes / 2),
+            "62 more commands must cost the same on a big document as on a tiny one. One copy of the " +
+            "document per command would be 62 x its size; even a single copy among them is over this bound.");
     }
 
     /// <summary>

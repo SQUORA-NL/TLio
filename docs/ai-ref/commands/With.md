@@ -44,6 +44,24 @@ Inside the block `@` works exactly as in `forEach`: `path: "@.field"`, `path: "@
 `=fetch(@.field)`, `=if(equals(fetch(@.gender),'M'),…)`. A bare `=fetch(@)` is unsupported for the reason
 given in [ForEach.md](ForEach.md#at-addresses-the-current-element). Paths that are not `@`-relative (`$.out.x`) still address the whole document.
 
+## Nesting: `@` is shadowed, climb with `<--`
+
+There is one `@`. Inside a nested `forEach` or `with`, it means the **innermost** node, and the outer
+one is not reachable as `@`. To reach the node an outer `with` selected from inside a `forEach` over
+one of its arrays, step up from the element with the parent token:
+
+```json
+{ "command": "with", "path": "$.team", "commands": [
+    { "command": "forEach", "path": "@.members", "commands": [
+        { "command": "add", "path": "@.owner", "value": "=fetch(@.<--.name)" } ] } ] }
+```
+
+In JSON/YAML the parent step is semantic: an array element's parent is the object that owns the
+array, so one `<--` from a member is the team (`@.<--.<--` goes one object higher). Otherwise use an
+absolute path, or copy the value into a scratch field before entering the inner block. This only
+climbs *ancestors*; a node that is not an ancestor of the current one (the outer `forEach` element
+when you are inside a `with` on a different branch) needs an absolute path.
+
 ## Formats
 
 Works with all adapters; the path speaks the document's path language. XML notes:
