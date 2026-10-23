@@ -161,6 +161,22 @@ public class WithTests
     }
 
     [Test]
+    public void ForEach_InsideWith_CanReachTheWithNodeThroughParentNavigation()
+    {
+        // The parent step is semantic: an array element's parent is the object owning the
+        // array, so one "<--" from a member is the team.
+        var r = Run("""
+            [ { "command": "with", "path": "$.team", "commands": [
+                  { "command": "forEach", "path": "@.members", "commands": [
+                      { "command": "add", "path": "@.owner", "value": "=fetch(@.<--.name)" } ] } ] } ]
+            """, """{"team":{"name":"Core","members":[{"n":1},{"n":2}]}}""");
+
+        Assert.That(r.Success, Is.True);
+        Assert.That(r.Data.SelectToken("$.team.members[0].owner")!.Value<string>(), Is.EqualTo("Core"));
+        Assert.That(r.Data.SelectToken("$.team.members[1].owner")!.Value<string>(), Is.EqualTo("Core"));
+    }
+
+    [Test]
     public void IndirectPath_IsResolvedBeforeSelecting()
     {
         var r = Run("""
