@@ -152,7 +152,7 @@ public class PackRegistrationTests
             JsonExecutionContext.CreateDefault());
         Assert.That(result.Success, Is.True);
         Assert.That(result.Data!.ToString(Newtonsoft.Json.Formatting.None),
-            Is.EqualTo("""{"input":"<input><field>1</field></input>"}"""));
+            Is.EqualTo("""{"input":"<root><field>1</field></root>"}"""));
     }
 
     [Test]
@@ -177,6 +177,6 @@ public class PackRegistrationTests
         var result = engine.Execute(ConvertValueScript, doc, context);
         Assert.That(result.Success, Is.True);
         var text = FormatRunners.RenderYamlForComparison(result.Data!);
-        Assert.That(text, Does.Contain("<input>").And.Contain("<field>1</field>"));
+        Assert.That(text, Does.Contain("<root>").And.Contain("<field>1</field>"));
     }
 }

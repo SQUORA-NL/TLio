@@ -57,7 +57,8 @@ public sealed class ConvertValueTests
         var (data, _, success) = Run(json, script);
 
         Assert.That(success, Is.True);
-        Assert.That(data["payload"]!["order"]!["sku"]!.Value<string>(), Is.EqualTo("A1"));
+        Assert.That(data["payload"]!["sku"]!.Value<string>(), Is.EqualTo("A1"),
+            "the XML root holds the value; it is not part of it");
         Assert.That(data["id"]!.Value<string>(), Is.EqualTo("1"), "the rest of the document is untouched");
     }
 
@@ -86,7 +87,8 @@ public sealed class ConvertValueTests
 
         Assert.That(success, Is.True);
         Assert.That(data["order"]!.Type, Is.EqualTo(JTokenType.String));
-        Assert.That(data["order"]!.Value<string>(), Is.EqualTo("<order><sku>A1</sku></order>"));
+        Assert.That(data["order"]!.Value<string>(), Is.EqualTo("<root><sku>A1</sku></root>"),
+            "XML needs a root, so the value goes under one; the node's own name is not the value");
     }
 
     [Test]
@@ -113,8 +115,9 @@ public sealed class ConvertValueTests
         var (data, _, success) = Run(json, script);
 
         Assert.That(success, Is.True);
-        Assert.That(data["order"]!["order"]!["sku"]!.Value<string>(), Is.EqualTo("A1"),
-            "the serialised subtree carries its own element name, which re-parsing restores");
+        Assert.That(data["order"]!.ToString(Newtonsoft.Json.Formatting.None),
+            Is.EqualTo("""{"sku":"A1","qty":"2"}"""),
+            "there and back returns the value itself, with no extra level of nesting");
     }
 
     // ── several at once ──────────────────────────────────────────────────────
@@ -128,7 +131,7 @@ public sealed class ConvertValueTests
         var (data, _, success) = Run(json, script);
 
         Assert.That(success, Is.True);
-        Assert.That(data["messages"]!.Select(m => m["body"]!["m"]!["a"]!.Value<string>()),
+        Assert.That(data["messages"]!.Select(m => m["body"]!["a"]!.Value<string>()),
             Is.EqualTo(new[] { "1", "2" }));
     }
 

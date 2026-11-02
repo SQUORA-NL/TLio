@@ -175,7 +175,8 @@ public sealed class ExecutionToolsConvertTests
         Assert.That(result.Format, Is.EqualTo("json"), "the document itself never changed format");
 
         var output = JToken.Parse(result.Output);
-        Assert.That(output["payload"]!["order"]!["sku"]!.Value<string>(), Is.EqualTo("A1"));
+        Assert.That(output["payload"]!["sku"]!.Value<string>(), Is.EqualTo("A1"),
+            "the XML root holds the value; it is not part of it");
     }
 
     [Test]
@@ -187,7 +188,7 @@ public sealed class ExecutionToolsConvertTests
 
         Assert.That(result.Success, Is.True, string.Join("; ", result.Errors));
         Assert.That(JToken.Parse(result.Output)["order"]!.Value<string>(),
-            Is.EqualTo("<order><sku>A1</sku></order>"));
+            Is.EqualTo("<root><sku>A1</sku></root>"));
     }
 
     [Test]

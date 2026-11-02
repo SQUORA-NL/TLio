@@ -87,6 +87,10 @@ Per-boundary, and they do not carry to the next `convert`: `attributePrefix`, `t
 `namespacePrefix`, `arrayItemName`, `arrayHandling`, `nullRepresentation`, `nameSanitization`,
 `inferTypes`, `cdataAsText`, `flattenAnchors`. Each exists where the formats genuinely disagree.
 
+`convertValue` adds two: `valueOnly` (convert the value without the node's own name, so a value
+written to XML or YAML and read back is exactly what it was) and `rootName` (the root element
+XML needs, `root` by default, dropped again on the way back). `valueOnly` is on by default; `valueOnly: false` restores the 1.5.0 output.
+
 Conversion output is the canonical document shape TLio's own adapters address, so the commands
 after a boundary land where the paths say they do.
 
