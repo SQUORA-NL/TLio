@@ -282,7 +282,8 @@ as the array.
 
 Settings exist where XML leaves the answer open — `attributePrefix`, `textProperty`,
 `namespacePrefix`, `arrayItemName`, `arrayHandling`, `nullRepresentation`, `nameSanitization`,
-`inferTypes`, `cdataAsText`, `flattenAnchors`. `MetadataConvention` in `TLio.FormatConverter.Core` holds
+`inferTypes`, `cdataAsText`, `flattenAnchors`; `convertValue` also has `valueOnly`/`rootName` (round trip
+without the node name gaining a nesting level; off by default). `MetadataConvention` in `TLio.FormatConverter.Core` holds
 the rules JSON and YAML must spell identically; when they were separate, an attribute that survived
 `xml → json` vanished on `xml → yaml`.
 

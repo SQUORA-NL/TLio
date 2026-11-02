@@ -25,6 +25,10 @@ public sealed class FormatConverter
     /// <summary>All format IDs currently registered (unordered).</summary>
     public IReadOnlyList<string> RegisteredFormats => _adapters.Keys.ToList();
 
+    /// <summary>Whether documents in <paramref name="formatId"/> need a root element (see <see cref="IFormatAdapter.HasRootElement"/>).</summary>
+    /// <exception cref="FormatNotRegisteredException">When <paramref name="formatId"/> is not registered.</exception>
+    public bool HasRootElement(string formatId) => Resolve(formatId).HasRootElement;
+
     /// <summary>Parse a format string into an IM tree using the registered adapter.</summary>
     /// <exception cref="FormatNotRegisteredException">When <paramref name="formatId"/> is not registered.</exception>
     public IntermediateNode ToIM(string formatId, string source, ConversionSettings settings)

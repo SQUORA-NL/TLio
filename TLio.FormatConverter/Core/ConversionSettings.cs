@@ -79,6 +79,26 @@ public sealed class ConversionSettings
     /// </summary>
     public NameSanitization NameSanitization { get; init; } = NameSanitization.Sanitize;
 
+    // ── convertValue settings ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// <c>convertValue</c> only: convert the <i>value</i> at the path and nothing else, so that a
+    /// value written out and read back is the value you started with. The node's own property
+    /// name is not part of its value and is left out; when the target format needs a root element
+    /// (XML) the value goes under <see cref="RootName"/>, and when the source is such a format
+    /// that root is taken off again. Without it, the property name becomes the XML root and the
+    /// XML root becomes a property, so every round trip adds a level of nesting.
+    /// Default: <see langword="false"/>, which keeps the original output.
+    /// </summary>
+    public bool ValueOnly { get; init; } = false;
+
+    /// <summary>
+    /// <c>convertValue</c> with <see cref="ValueOnly"/>: the name of the root element a value is
+    /// written under when the target format needs one. It is dropped again on the way back, so
+    /// it never appears in the data. Default: <c>"root"</c>.
+    /// </summary>
+    public string RootName { get; init; } = "root";
+
     // ── YAML settings ─────────────────────────────────────────────────────────
 
     /// <summary>

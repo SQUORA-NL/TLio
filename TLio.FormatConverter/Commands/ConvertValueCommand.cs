@@ -115,6 +115,18 @@ public sealed class ConvertValue<TNode> : CommandBase<TNode>
 
     private bool TryConvert(TNode target, IExecutionContext<TNode> context)
     {
+        if (Settings.ValueOnly)
+        {
+            if (!_converter.HasRootElement(_documentFormatId))
+                return TryConvertValueOnly(target, context);
+
+            // In an XML document a value cannot be told apart from the element that holds it:
+            // the element's name is the only handle there is. Say so, and convert as before.
+            context.LogWarning(CoreConstants.CommandExecution,
+                $"{CommandName}: valueOnly has no effect in a {_documentFormatId} document — " +
+                "an element cannot be separated from its name — so the value is converted with its element");
+        }
+
         var adapter = context.NodeAdapter;
         var sourceFormat = From ?? _documentFormatId;
 
@@ -162,6 +174,97 @@ public sealed class ConvertValue<TNode> : CommandBase<TNode>
         context.LogInfo(CoreConstants.CommandExecution,
             $"{CommandName}: converted '{context.ItemsFetcher.GetPath(replacement)}' from {sourceFormat} to {To}");
         return true;
+    }
+
+    /// <summary>
+    /// <c>valueOnly</c>: convert the value and nothing around it, so that a value written out and
+    /// read back is the value you started with.
+    /// <list type="number">
+    /// <item>Get the value as structure in the document's own format. From text, that means
+    /// reading it into that format and — when the source format has a root element (XML) —
+    /// taking the root off, because the root holds the value and is not part of it.</item>
+    /// <item>Write it out. To the document's own format that is the structure itself. To another
+    /// one it is the serialised value, put under <c>rootName</c> first when the target needs a
+    /// root element.</item>
+    /// </list>
+    /// The node's own property name takes no part in either direction.
+    /// </summary>
+    private bool TryConvertValueOnly(TNode target, IExecutionContext<TNode> context)
+    {
+        var adapter = context.NodeAdapter;
+        var toDocumentFormat = string.Equals(To, _documentFormatId, StringComparison.OrdinalIgnoreCase);
+
+        TNode value;
+        try
+        {
+            if (From is null)
+            {
+                value = target;
+            }
+            else
+            {
+                var text = adapter.TryGetString(target);
+                if (text is null)
+                {
+                    context.LogWarning(CoreConstants.CommandExecution,
+                        $"{CommandName}: the node at '{context.ItemsFetcher.GetPath(target)}' holds no text to read as {From}");
+                    MarkFailed();
+                    return false;
+                }
+
+                var asDocumentFormat = _converter.Convert(From, text, _documentFormatId, Settings);
+                value = adapter.Parse(asDocumentFormat);
+                if (_converter.HasRootElement(From))
+                    value = TakeOffRoot(value, adapter);
+            }
+
+            TNode replacement;
+            if (toDocumentFormat)
+            {
+                // Already structure in the right format. Converting a value to the format it is
+                // in only needs the text read — there is nothing to write.
+                replacement = From is null ? target : value;
+            }
+            else
+            {
+                var source = adapter.Serialize(value);
+                if (_converter.HasRootElement(To!))
+                {
+                    var wrapper = adapter.CreateObject();
+                    adapter.SetProperty(wrapper, Settings.RootName, adapter.DeepClone(value));
+                    source = adapter.Serialize(wrapper);
+                }
+
+                replacement = adapter.CreateString(
+                    _converter.Convert(_documentFormatId, source, To!, Settings));
+            }
+
+            if (!ReferenceEquals(replacement, target) && !adapter.DeepEquals(replacement, target))
+                adapter.Replace(target, replacement);
+        }
+        catch (Exception ex) when (ex is FormatParseException or FormatNotRegisteredException)
+        {
+            context.LogError(CoreConstants.CommandExecution,
+                $"{CommandName}: could not convert '{context.ItemsFetcher.GetPath(target)}' " +
+                $"from {From ?? _documentFormatId} to {To}: {ex.Message}");
+            MarkFailed();
+            return false;
+        }
+
+        context.LogInfo(CoreConstants.CommandExecution,
+            $"{CommandName}: converted the value at '{Path}' from {From ?? _documentFormatId} to {To} (valueOnly)");
+        return true;
+    }
+
+    /// <summary>
+    /// An XML root element read into JSON/YAML is a single property holding the content; the
+    /// content is the value. Anything else is not a root and is left alone.
+    /// </summary>
+    private static TNode TakeOffRoot(TNode node, INodeAdapter<TNode> adapter)
+    {
+        if (!adapter.IsObject(node)) return node;
+        var names = adapter.GetPropertyNames(node).Take(2).ToList();
+        return names.Count == 1 ? adapter.GetProperty(node, names[0]) ?? node : node;
     }
 
     /// <summary>

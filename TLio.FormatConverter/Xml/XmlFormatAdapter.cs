@@ -21,6 +21,9 @@ public sealed class XmlFormatAdapter : IFormatAdapter
     public string FormatId => "xml";
 
     /// <inheritdoc/>
+    public bool HasRootElement => true;
+
+    /// <inheritdoc/>
     public IntermediateNode ToIM(string source, ConversionSettings settings)
     {
         try

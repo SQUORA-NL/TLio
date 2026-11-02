@@ -55,6 +55,8 @@ public static class ConvertSettingsReader
             InferTypes = Bool(lookup, "inferTypes", defaults.InferTypes),
             CdataAsText = Bool(lookup, "cdataAsText", defaults.CdataAsText),
             FlattenAnchors = Bool(lookup, "flattenAnchors", defaults.FlattenAnchors),
+            ValueOnly = Bool(lookup, "valueOnly", defaults.ValueOnly),
+            RootName = Text(lookup, "rootName", defaults.RootName),
             ArrayHandling = Enum(lookup, "arrayHandling", defaults.ArrayHandling),
             NullRepresentation = Enum(lookup, "nullRepresentation", defaults.NullRepresentation),
             NameSanitization = Enum(lookup, "nameSanitization", defaults.NameSanitization),

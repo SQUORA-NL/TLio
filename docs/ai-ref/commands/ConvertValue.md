@@ -51,8 +51,40 @@
 {"id":"1","order":"<order><sku>A1</sku></order>"}
 ```
 
-A subtree is serialised together with the name it is known by, so `$.order` becomes
-`<order>…</order>` rather than its contents with the name dropped.
+By default a subtree is serialised together with the name it is known by, so `$.order` becomes
+`<order>…</order>` rather than its contents with the name dropped. Read back with `from: "xml"`,
+that root becomes a property — so every round trip adds a level of nesting. For a round trip that
+returns exactly what you started with, use `valueOnly`.
+
+## valueOnly — a round trip without change
+
+```json
+{ "command": "convertValue", "path": "$.order", "to": "xml", "settings": { "valueOnly": true } }
+```
+
+With `valueOnly` the command converts the **value** at the path and nothing around it: the node's
+own property name is not part of its value, so it is left out. XML is the one format that cannot
+hold a bare value — a document needs exactly one root element — so going **to** XML the value is
+put under a root (`root`, or `settings.rootName`), and reading **from** XML that root is taken off
+again. The root holds the value; it is never part of it.
+
+```
+{"order":{"sku":"A1","qty":"2"}}
+{"order":"<root><sku>A1</sku><qty>2</qty></root>"}                      to xml
+{"order":{"sku":"A1","qty":"2"}}                                        from xml, to json
+```
+
+| Setting | Default | |
+|---|---|---|
+| `valueOnly` | `false` | Convert the value only. Off keeps the output above, so existing scripts do not change. |
+| `rootName` | `"root"` | The root element a value is written under when the target needs one. Dropped again on the way back. |
+
+Objects, arrays and plain strings all come back unchanged through XML and YAML, however many times
+they go round. Two limits: XML has no types, so a number or boolean returns as text unless the
+reading side sets `inferTypes: true`; and in an **XML document** `valueOnly` has no effect — an
+element cannot be separated from its name — and the command logs a warning and converts as before.
+
+Verified by: `TLio.FormatConverter.Tests/Integration/ConvertValueRoundTripTests.cs`.
 
 ## Structure or text
 
