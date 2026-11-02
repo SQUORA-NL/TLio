@@ -90,7 +90,7 @@ open only the format you use. They are generated from the tests and re-checked o
 | [`compare`](docs/ai-ref/commands/Compare.md) | Classify two values, or produce a full structural diff |
 | [`ifElse`](docs/ai-ref/commands/IfElse.md) / [`decisionTable`](docs/ai-ref/commands/DecisionTable.md) | Conditional execution — two branches, or a rule table |
 
-[`flatten`](docs/ai-ref/commands/Flatten.md), [`restore`](docs/ai-ref/commands/Restore.md), [`resolve`](docs/ai-ref/commands/Resolve.md) and [`tocsv`](docs/ai-ref/commands/ToCsv.md) come from the ETL pack (`RegisterETL`).
+[`flatten`](docs/ai-ref/commands/Flatten.md), [`restore`](docs/ai-ref/commands/Restore.md), [`resolve`](docs/ai-ref/commands/Resolve.md) and [`tocsv`](docs/ai-ref/commands/ToCsv.md) come from the ETL pack (`WithEtl()`).
 
 Any command also takes an optional `title` and `description` — free text saying what the step is
 for. Nothing reads them at run time; they are there so a script is readable months later.
@@ -137,10 +137,23 @@ thread-safety and precompilation guidance, and which garbage-collector mode to r
 
 ### Extension packs
 
+Each pack registers with one call that covers its commands *and* functions, and returns the
+options so calls chain:
+
+```csharp
+var options = ParseOptions<JToken>.CreateDefault()
+    .WithMath().WithText().WithTimeDate().WithEtl().WithLooping()
+    .WithFormatConversion(converter, "json");   // converter + the document's format id are required
+```
+
+A pack you forget is silent: its commands parse as unknown, log a warning, and the script still
+succeeds. The older `Register*` methods (`RegisterMath`, `RegisterETL`, …) keep working; the
+`With*` methods call them.
+
 | Project | Purpose |
 |---|---|
 | `TLio.Extensions.ETL` | ETL commands: flatten, restore, resolve, tocsv |
-| `TLio.Extensions.Looping` | Loop commands: `forEach` (once per array element, `@` addresses the element) `while` (repeat while a condition holds, `maxIterations` required) and `with` (select one node once, `@` addresses it). Register with `RegisterLooping<TNode>()` — format-agnostic, works on JSON, XML and YAML |
+| `TLio.Extensions.Looping` | Loop commands: `forEach` (once per array element, `@` addresses the element) `while` (repeat while a condition holds, `maxIterations` required) and `with` (select one node once, `@` addresses it). Register with `WithLooping()` — format-agnostic, works on JSON, XML and YAML |
 | `TLio.Extensions.Math` | 27 math functions: abs, avg, calculate, ceiling, clamp, count, divide, floor, max, median, min, modulo, multiply, pow, round, sign, sqrt, subtract, sum and the conditional aggregates (sumIf(s), countIf(s), averageIf(s), maxIfs, minIfs) |
 | `TLio.Extensions.Text` | 26 text functions: concat, contains, endsWith, format, indexOf, isEmpty, join, length, newGuid, padLeft/Right, parse, regexExtract, regexReplace, replace, right, split, startsWith, substring, toFixed, toLower, toString, toUpper, trim, trimStart/End |
 | `TLio.Extensions.TimeDate` | 12 date functions: avgDate, dateAdd, dateCompare, dateDiff, datePart, endOfMonth, formatDate, isDateBetween, maxDate, minDate, parseDate, startOfMonth (`datetime` is core, not in this pack) |

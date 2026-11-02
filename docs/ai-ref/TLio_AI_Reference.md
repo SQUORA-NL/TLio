@@ -90,7 +90,7 @@ var result  = engine.Execute(scriptJson, data, JsonExecutionContext.CreateDefaul
 Register explicitly:
 
 ```csharp
-options.CommandsProvider.RegisterETL<JToken>();
+options.WithEtl();
 ```
 
 ### Looping Extension Pack
@@ -99,7 +99,7 @@ options.CommandsProvider.RegisterETL<JToken>();
 Register explicitly (add `using TLio.Extensions.Looping;`):
 
 ```csharp
-options.CommandsProvider.RegisterLooping<JToken>();
+options.WithLooping();
 ```
 
 `forEach` runs a nested script once per array element, with `@` / `@.field` addressing the
@@ -119,9 +119,7 @@ the `resolve` function: [functions/Resolve.md](functions/Resolve.md).
 `toString` are in `TLio.Extensions.Text`. Register explicitly:
 
 ```csharp
-options.FunctionsProvider.RegisterText<JToken>();
-// or JLio-compatible name:
-options.FunctionsProvider.RegisterTextPack<JToken>();
+options.WithText();
 ```
 
 ### Math and TimeDate Extension Packs
@@ -131,8 +129,8 @@ pack; `dateDiff`, `dateAdd`, `datePart`, `formatDate`, `parseDate`, `startOfMont
 `endOfMonth` are in the TimeDate pack.
 
 ```csharp
-options.FunctionsProvider.RegisterMath<JToken>();
-options.FunctionsProvider.RegisterTimeDate<JToken>();
+options.WithMath();
+options.WithTimeDate();
 ```
 
 `if`, `coalesce`, `between`, `distinct`, `sort`, `sortBy`, `last`, `resolve`, `orderBySchema`, `filterBySchema` and

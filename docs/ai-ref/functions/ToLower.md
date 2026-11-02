@@ -46,7 +46,7 @@ Verified by: `TLio.Functions.Tests/Fixtures/Text/tolower/01-basic.json`.
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(
     "[{\"command\":\"add\",\"path\":\"$.lower\",\"value\":\"=toLower($.name)\"}]",

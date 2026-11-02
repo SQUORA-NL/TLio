@@ -23,8 +23,22 @@ namespace TLio.Extensions.Text;
 public static class TextRegistrar
 {
     /// <summary>
+    /// Registers every Text function on <paramref name="target"/> and returns it, so calls chain:
+    /// <c>ParseOptions&lt;JToken&gt;.CreateDefault().WithText().WithMath()</c>. Delegates to
+    /// <see cref="RegisterText{TNode}"/>, which holds the list of what the pack provides.
+    /// </summary>
+    public static TSelf WithText<TNode, TSelf>(this IRegistrationTarget<TNode, TSelf> target)
+        where TSelf : IRegistrationTarget<TNode, TSelf>
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        target.FunctionsRegistrar.RegisterText<TNode>();
+        return target.Self;
+    }
+
+    /// <summary>
     /// Alias for <see cref="RegisterText{TNode}"/> — JLio-compatible method name.
     /// </summary>
+    [Obsolete("Use WithText() (or RegisterText). Text was the only pack with an alias; it is removed in the next major version.")]
     public static IFunctionsProviderRegistrar<TNode> RegisterTextPack<TNode>(
         this IFunctionsProviderRegistrar<TNode> registrar)
         => registrar.RegisterText<TNode>();

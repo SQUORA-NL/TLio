@@ -71,7 +71,7 @@ process-wide cache to prime, unlike `regexReplace`'s use of `Regex.Replace` (see
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(
     "[{\"command\":\"add\",\"path\":\"$.msg\",\"value\":\"=format('Hi {0}, you are {1}', $.name, $.role)\"}]",

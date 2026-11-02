@@ -77,12 +77,24 @@ Text that does not parse yields an empty script carrying the reason in
 
 ## Registering extension packs
 
+Each pack has one method that registers everything it provides — commands *and* functions —
+so you never need to know which provider a pack uses. They return the options, so they chain:
+
 ```csharp
-options.CommandsProvider.RegisterETL<JToken>();       // TLio.Extensions.ETL
-options.FunctionsProvider.RegisterText<JToken>();     // TLio.Extensions.Text
-options.FunctionsProvider.RegisterMath<JToken>();     // TLio.Extensions.Math
-options.FunctionsProvider.RegisterTimeDate<JToken>(); // TLio.Extensions.TimeDate
+var options = ParseOptions<JToken>.CreateDefault()
+    .WithMath()                                  // TLio.Extensions.Math
+    .WithText()                                  // TLio.Extensions.Text
+    .WithTimeDate()                              // TLio.Extensions.TimeDate
+    .WithEtl()                                   // TLio.Extensions.ETL
+    .WithLooping()                               // TLio.Extensions.Looping
+    .WithFormatConversion(converter, "json");    // TLio.FormatConverter
 ```
+
+`WithFormatConversion` takes the converter and the document's format id (`"json"`, `"xml"`,
+`"yaml"`) because they decide whether `convertValue` writes structure or text. A pack you leave
+out is not an error: its commands parse as unknown, which logs a warning and **succeeds**
+without changing the document. The older `options.CommandsProvider.RegisterETL<JToken>()`-style
+methods still work and are what the `With*` methods call.
 
 ## Pick a format adapter
 

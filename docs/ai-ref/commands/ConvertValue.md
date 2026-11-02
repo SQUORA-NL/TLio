@@ -284,7 +284,7 @@ dotnet add package TLio.FormatConverter
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.CommandsProvider.RegisterFormatConversion<JToken>(converter, "json");
+options.WithFormatConversion(converter, "json");
 ```
 
 The format id is the format *this engine's documents* are in — it is what decides whether a

@@ -16,6 +16,18 @@ namespace TLio.Extensions.TimeDate;
 /// </summary>
 public static class RegisterTimeDatePack
 {
+    /// <summary>
+    /// Registers every TimeDate function on <paramref name="target"/> and returns it, so calls
+    /// chain. Delegates to <see cref="RegisterTimeDate{TNode}"/>, which holds the list.
+    /// </summary>
+    public static TSelf WithTimeDate<TNode, TSelf>(this IRegistrationTarget<TNode, TSelf> target)
+        where TSelf : IRegistrationTarget<TNode, TSelf>
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        target.FunctionsRegistrar.RegisterTimeDate<TNode>();
+        return target.Self;
+    }
+
     public static IFunctionsProviderRegistrar<TNode> RegisterTimeDate<TNode>(
         this IFunctionsProviderRegistrar<TNode> registrar)
     {

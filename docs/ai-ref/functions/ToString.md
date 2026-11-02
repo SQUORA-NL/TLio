@@ -49,7 +49,7 @@ Verified by: `TLio.Functions.Tests/Fixtures/Text/tostring/01-object-to-string.js
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(
     "[{\"command\":\"add\",\"path\":\"$.str\",\"value\":\"=toString($.obj)\"}]",

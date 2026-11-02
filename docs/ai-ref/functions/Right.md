@@ -47,7 +47,7 @@ covering the clamp behavior against `"abc"`: `02-count-above-length.json`
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(
     "[{\"command\":\"add\",\"path\":\"$.last4\",\"value\":\"=right($.iban,4)\"}]",

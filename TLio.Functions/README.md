@@ -54,7 +54,7 @@ argument-passing and nesting rules described in the
 They register into the same provider:
 
 ```csharp
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 ```
 
 ## License

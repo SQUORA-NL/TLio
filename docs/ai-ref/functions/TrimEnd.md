@@ -46,7 +46,7 @@ Verified by: `TLio.Functions.Tests/Fixtures/Text/trimend/01-right-only.json`.
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(
     "[{\"command\":\"set\",\"path\":\"$.name\",\"value\":\"=trimEnd($.name)\"}]",

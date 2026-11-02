@@ -23,14 +23,17 @@ var script = """
 """;
 
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());
 // result.Data["fullName"] → "Ada Lovelace"
 ```
 
-`RegisterTextPack<TNode>()` is a JLio-compatible alias for `RegisterText<TNode>()`.
+`options.WithText()` is the one call that registers the whole pack and returns `options`, so it
+chains with the other packs (`.WithMath().WithText()`). `options.FunctionsProvider.RegisterText<TNode>()`
+does the same and still works. `RegisterTextPack<TNode>()`, the JLio-compatible alias, is
+`[Obsolete]` and is removed in the next major version.
 
 ## Functions
 

@@ -17,6 +17,18 @@ namespace TLio.Extensions.ETL;
 /// </summary>
 public static class RegisterETLPack
 {
+    /// <summary>
+    /// Registers every ETL command on <paramref name="target"/> and returns it, so calls chain.
+    /// Delegates to <see cref="RegisterETL{TNode}"/>, which holds the list.
+    /// </summary>
+    public static TSelf WithEtl<TNode, TSelf>(this IRegistrationTarget<TNode, TSelf> target)
+        where TSelf : IRegistrationTarget<TNode, TSelf>
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        target.CommandsRegistrar.RegisterETL<TNode>();
+        return target.Self;
+    }
+
     public static ICommandsProviderRegistrar<TNode> RegisterETL<TNode>(
         this ICommandsProviderRegistrar<TNode> registrar)
     {
