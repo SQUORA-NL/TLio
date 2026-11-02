@@ -70,6 +70,9 @@ jobs:
   publish:
     needs: [test]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # OIDC token, exchanged for a short-lived NuGet key (Trusted Publishing)
     steps:
       - uses: actions/checkout@v7
         with:
@@ -138,10 +141,19 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing ${#PACKAGES[@]} packages at version $VERSION"
 
+      # No stored API key to expire: nuget.org trusts this repo + workflow (a Trusted Publishing
+      # policy on the nuget.org account), and this step swaps the run's OIDC token for a key that
+      # lives for the length of the run. NUGET_USER is the nuget.org profile name, not an email.
+      - name: NuGet login (Trusted Publishing)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Push to NuGet.org
         run: |
           dotnet nuget push ./nupkg-out/*.nupkg \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
 
