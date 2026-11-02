@@ -52,20 +52,29 @@ public sealed class ConvertValueRoundTripTests
         return result.Data;
     }
 
-    // ── opt-in: without valueOnly nothing changes ────────────────────────────
+    // ── valueOnly is the default; false is the way back to the 1.5.0 output ──
 
     [Test]
-    public void WithoutValueOnly_TheOutputIsAsItWas()
+    public void ValueOnlyIsTheDefault()
     {
         var data = Run(JToken.Parse("""{"input":{"field":"1"}}"""),
             """[{"command":"convertValue","path":"$.input","to":"xml"}]""");
 
-        Assert.That(data["input"]!.Value<string>(), Is.EqualTo("<input><field>1</field></input>"),
-            "the property name is the root unless valueOnly says otherwise");
+        Assert.That(data["input"]!.Value<string>(), Is.EqualTo("<root><field>1</field></root>"));
     }
 
     [Test]
-    public void InAnXmlDocument_ValueOnlyWarnsAndConvertsAsBefore()
+    public void ValueOnlyFalse_KeepsTheOutputOf150()
+    {
+        var data = Run(JToken.Parse("""{"input":{"field":"1"}}"""),
+            """[{"command":"convertValue","path":"$.input","to":"xml","settings":{"valueOnly":false}}]""");
+
+        Assert.That(data["input"]!.Value<string>(), Is.EqualTo("<input><field>1</field></input>"),
+            "with valueOnly off the property name is the root, as it was in 1.5.0");
+    }
+
+    [Test]
+    public void InAnXmlDocument_TheElementKeepsItsName_AndNothingIsWarnedAbout()
     {
         var converter = new Converter();
         converter.Register(new JsonFormatAdapter());
@@ -81,7 +90,8 @@ public sealed class ConvertValueRoundTripTests
             """[{"command":"convertValue","path":"/root/input","to":"json","settings":{"valueOnly":true}}]""", doc, context);
 
         Assert.That(result.Success, Is.True);
-        Assert.That(context.GetLogEntries().Any(e => e.Message.Contains("valueOnly has no effect")), Is.True);
+        Assert.That(context.GetLogEntries().Any(e => e.Message.Contains("valueOnly")), Is.False,
+            "an XML document has no bare value to separate, so there is nothing to warn about");
     }
 
     // ── to text: only the value ──────────────────────────────────────────────

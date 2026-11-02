@@ -47,7 +47,7 @@ Each exists because the formats genuinely disagree, not because there was no tim
 | `inferTypes` | `false` | XML and YAML text carries no declared type; whether `42` becomes a number is a policy call. |
 | `cdataAsText` | `false` | Treat CDATA as plain text and drop the marker. |
 | `flattenAnchors` | `true` | Dereference YAML anchors and aliases inline. |
-| `valueOnly`, `rootName` | `false`, `"root"` | [convertValue](ConvertValue.md#valueonly--a-round-trip-without-change) only: convert the value without the node's name, so a round trip returns what it started with. `convert` ignores them. |
+| `valueOnly`, `rootName` | `true`, `"root"` | [convertValue](ConvertValue.md#the-value-and-nothing-around-it) only: convert the value without the node's name (the default), so a round trip returns what it started with; `valueOnly: false` restores the 1.5.0 output. `convert` ignores them. |
 
 Settings apply to **that boundary only**. They do not carry to the next `convert`.
 

@@ -37,8 +37,10 @@
 
 ```
 {"id":"1","payload":"<order><sku>A1</sku></order>"}
-{"id":"1","payload":{"order":{"sku":"A1"}}}
+{"id":"1","payload":{"sku":"A1"}}
 ```
+
+The XML root (`<order>`) holds the value; it is not part of it, so it is taken off.
 
 **Structure into text** — the node is part of the document and leaves as a string:
 
@@ -48,25 +50,17 @@
 
 ```
 {"id":"1","order":{"sku":"A1"}}
-{"id":"1","order":"<order><sku>A1</sku></order>"}
+{"id":"1","order":"<root><sku>A1</sku></root>"}
 ```
 
-By default a subtree is serialised together with the name it is known by, so `$.order` becomes
-`<order>…</order>` rather than its contents with the name dropped. Read back with `from: "xml"`,
-that root becomes a property — so every round trip adds a level of nesting. For a round trip that
-returns exactly what you started with, use `valueOnly`.
+## The value, and nothing around it
 
-## valueOnly — a round trip without change
-
-```json
-{ "command": "convertValue", "path": "$.order", "to": "xml", "settings": { "valueOnly": true } }
-```
-
-With `valueOnly` the command converts the **value** at the path and nothing around it: the node's
-own property name is not part of its value, so it is left out. XML is the one format that cannot
-hold a bare value — a document needs exactly one root element — so going **to** XML the value is
-put under a root (`root`, or `settings.rootName`), and reading **from** XML that root is taken off
-again. The root holds the value; it is never part of it.
+The command converts the **value** at the path. The node's own property name (`order` above) is
+not part of its value, so it is left out. XML is the one format that cannot hold a bare value — a
+document needs exactly one root element — so going **to** XML the value is put under a root
+(`root`, or `settings.rootName`), and reading **from** XML that root is taken off again. The root
+holds the value; it is never part of it. That is what makes a round trip return exactly what it
+started with:
 
 ```
 {"order":{"sku":"A1","qty":"2"}}
@@ -76,13 +70,13 @@ again. The root holds the value; it is never part of it.
 
 | Setting | Default | |
 |---|---|---|
-| `valueOnly` | `false` | Convert the value only. Off keeps the output above, so existing scripts do not change. |
+| `valueOnly` | `true` | Convert the value only. `false` gives the output of 1.5.0 and earlier: the node's name becomes the XML root, and an XML root becomes a property, so each round trip adds a level of nesting. |
 | `rootName` | `"root"` | The root element a value is written under when the target needs one. Dropped again on the way back. |
 
 Objects, arrays and plain strings all come back unchanged through XML and YAML, however many times
 they go round. Two limits: XML has no types, so a number or boolean returns as text unless the
-reading side sets `inferTypes: true`; and in an **XML document** `valueOnly` has no effect — an
-element cannot be separated from its name — and the command logs a warning and converts as before.
+reading side sets `inferTypes: true`; and in an **XML document** a value cannot be told apart from
+the element that holds it, so there the element is converted with its name, as it always was.
 
 Verified by: `TLio.FormatConverter.Tests/Integration/ConvertValueRoundTripTests.cs`.
 
@@ -108,7 +102,7 @@ In XML, replacing keeps the element and swaps its content — `<payload>` stays 
 
 ```
 {"messages":[{"body":"<m><a>1</a></m>"},{"body":"<m><a>2</a></m>"}]}
-{"messages":[{"body":{"m":{"a":"1"}}},{"body":{"m":{"a":"2"}}}]}
+{"messages":[{"body":{"a":"1"}},{"body":{"a":"2"}}]}
 ```
 
 The wildcard reaches every node the path selects, not just the first — both message bodies are
@@ -178,16 +172,12 @@ Result
   "messages": [
     {
       "body": {
-        "m": {
-          "a": "1"
-        }
+        "a": "1"
       }
     },
     {
       "body": {
-        "m": {
-          "a": "2"
-        }
+        "a": "2"
       }
     }
   ]
@@ -263,8 +253,8 @@ Result
 
 ```yaml
 messages:
-- body: '{"m":{"a":"1"}}'
-- body: '{"m":{"a":"2"}}'
+- body: '{"a":"1"}'
+- body: '{"a":"2"}'
 ...
 ```
 

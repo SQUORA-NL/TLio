@@ -117,14 +117,11 @@ public sealed class ConvertValue<TNode> : CommandBase<TNode>
     {
         if (Settings.ValueOnly)
         {
+            // In an XML document a value cannot be told apart from the element that holds it:
+            // the element's name is the only handle there is, so there the element is converted
+            // with its name, as it always was.
             if (!_converter.HasRootElement(_documentFormatId))
                 return TryConvertValueOnly(target, context);
-
-            // In an XML document a value cannot be told apart from the element that holds it:
-            // the element's name is the only handle there is. Say so, and convert as before.
-            context.LogWarning(CoreConstants.CommandExecution,
-                $"{CommandName}: valueOnly has no effect in a {_documentFormatId} document — " +
-                "an element cannot be separated from its name — so the value is converted with its element");
         }
 
         var adapter = context.NodeAdapter;
