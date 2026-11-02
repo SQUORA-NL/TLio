@@ -46,7 +46,7 @@ unchanged — not a failure).
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(
     "[{\"command\":\"set\",\"path\":\"$.code\",\"value\":\"=replace($.code,'-','_')\"}]",

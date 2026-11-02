@@ -56,7 +56,7 @@ Verified by: `TLio.Functions.Tests/Fixtures/Text/substring/01-from-start.json`,
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(
     "[{\"command\":\"add\",\"path\":\"$.abbr\",\"value\":\"=substring($.name,0,3)\"}]",

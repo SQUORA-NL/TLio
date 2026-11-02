@@ -23,7 +23,7 @@ var script = """
 """;
 
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterTimeDate<JToken>();
+options.WithTimeDate();
 
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(script, data, JsonExecutionContext.CreateDefault());

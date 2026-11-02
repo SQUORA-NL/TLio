@@ -53,8 +53,8 @@ TLio.Extensions.Looping/   ← forEach, while — the loop primitives, opt-in vi
 TLio.Xml.Tests/             ← XML adapter tests, SlashPath + NativeXPath fixtures
 TLio.Yaml.Tests/            ← YAML adapter tests and fixtures
 TLio.Mcp/                   ← MCP stdio server (tlio_list_commands, tlio_describe, tlio_execute, tlio_analyze, 019).
-                              Registers every pack incl. Looping (a new pack must be added in ExecutionTools.CreateEngine
-                              or tlio_execute rejects commands the ai-ref documents). Publish bundles docs/ai-ref.
+                              Registers every pack incl. Looping (a new pack must get a `With<Pack>()` and be added in
+                              ExecutionTools.CreateEngine or tlio_execute rejects commands the ai-ref documents). Publish bundles docs/ai-ref.
                               Setup for clients: TLio.Mcp/README.md
 TLio.Mcp.Tests/             ← MCP server tests (DiscoveryTools, ExecutionTools, AnalysisTools, E2E workflow)
 TLio.Parity.Tests/          ← Cross-format regression net (020): one fixture corpus run against
@@ -288,6 +288,30 @@ the rules JSON and YAML must spell identically; when they were separate, an attr
 
 One asymmetry to know: TLio's XML adapter ignores attributes by design, but after a `convert` to
 JSON or YAML they are ordinary `@name` properties. Converting is how a script edits an attribute.
+
+## Registering packs
+
+One call per pack, on `ParseOptions<TNode>`, covering its commands *and* functions, returning the
+options so calls chain:
+
+```csharp
+ParseOptions<TNode>.CreateDefault()
+    .WithMath().WithText().WithTimeDate().WithEtl().WithLooping()
+    .WithFormatConversion(converter, documentFormatId);   // both args required
+```
+
+- Packs reference only `TLio.Core`, so the `With*` extension methods target
+  `IRegistrationTarget<TNode, TSelf>` (`TLio.Core/Contracts`), which `ParseOptions` implements
+  explicitly; `TSelf` is what keeps the chain returning the concrete type. A new pack adds one
+  `With<Pack>()` that **delegates** to its `Register<Pack>()` (the single list of names) —
+  never a second list.
+- `PackRegistrationTests` (`TLio.Parity.Tests`) asserts each `With*` registers exactly what its
+  `Register*` does, by enumerating the providers. `PackCompletenessTests` scans each pack
+  assembly and fails, naming the class, if a command/function class is not registered (or a
+  registration is left dangling). Add a new pack to both.
+- A pack left out of a host is silent: unknown commands are `NotFoundCommand` — warn, then succeed.
+  That is how a host that skipped format conversion ran `convertValue` as a no-op "success".
+- `RegisterTextPack` is `[Obsolete]` (Text was the only pack with an alias); removed next major.
 
 ## Infix arithmetic
 

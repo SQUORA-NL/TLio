@@ -15,6 +15,18 @@ namespace TLio.Extensions.Looping;
 /// </summary>
 public static class RegisterLoopingPack
 {
+    /// <summary>
+    /// Registers every Looping command on <paramref name="target"/> and returns it, so calls
+    /// chain. Delegates to <see cref="RegisterLooping{TNode}"/>, which holds the list.
+    /// </summary>
+    public static TSelf WithLooping<TNode, TSelf>(this IRegistrationTarget<TNode, TSelf> target)
+        where TSelf : IRegistrationTarget<TNode, TSelf>
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        target.CommandsRegistrar.RegisterLooping<TNode>();
+        return target.Self;
+    }
+
     public static ICommandsProviderRegistrar<TNode> RegisterLooping<TNode>(
         this ICommandsProviderRegistrar<TNode> registrar)
     {

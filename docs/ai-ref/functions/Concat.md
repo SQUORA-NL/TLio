@@ -42,7 +42,7 @@ Verified by: `TLio.Functions.Tests/Fixtures/Text/concat/01-three-strings.json` (
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(
     "[{\"command\":\"add\",\"path\":\"$.full\",\"value\":\"=concat($.first,' ',$.last)\"}]",

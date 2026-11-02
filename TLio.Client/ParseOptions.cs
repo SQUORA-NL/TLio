@@ -21,10 +21,16 @@ namespace TLio.Client;
 ///   var result  = engine.Execute(scriptJson, data, context);
 /// </code>
 /// </summary>
-public class ParseOptions<TNode>
+public class ParseOptions<TNode> : IRegistrationTarget<TNode, ParseOptions<TNode>>
 {
     public CommandsProvider<TNode> CommandsProvider { get; } = new();
     public FunctionsProvider<TNode> FunctionsProvider { get; } = new();
+
+    // What the packs' single With<Pack>() extension methods register on. Explicit, so they do not
+    // widen ParseOptions' own surface.
+    ICommandsProviderRegistrar<TNode> IRegistrationTarget<TNode, ParseOptions<TNode>>.CommandsRegistrar => CommandsProvider;
+    IFunctionsProviderRegistrar<TNode> IRegistrationTarget<TNode, ParseOptions<TNode>>.FunctionsRegistrar => FunctionsProvider;
+    ParseOptions<TNode> IRegistrationTarget<TNode, ParseOptions<TNode>>.Self => this;
 
     /// <summary>Fluently register a parameterless command by name.</summary>
     public ParseOptions<TNode> RegisterCommand<TCommand>(string name)

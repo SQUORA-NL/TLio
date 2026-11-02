@@ -57,7 +57,7 @@ against the same input: `02-array.json` (`=parse($.arr)` on `"[1,2,3]"` → the 
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(
     "[{\"command\":\"add\",\"path\":\"$.obj\",\"value\":\"=parse($.jsonString)\"}]",

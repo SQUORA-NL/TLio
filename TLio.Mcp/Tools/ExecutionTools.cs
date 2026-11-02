@@ -287,13 +287,13 @@ public sealed class ExecutionTools
     private static ScriptEngine<TNode> CreateEngine<TNode>(
         TLio.FormatConverter.Core.FormatConverter converter, string documentFormatId)
     {
-        var options = ParseOptions<TNode>.CreateDefault();
-        options.FunctionsProvider.RegisterMath<TNode>();
-        options.FunctionsProvider.RegisterText<TNode>();
-        options.FunctionsProvider.RegisterTimeDate<TNode>();
-        options.CommandsProvider.RegisterETL<TNode>();
-        options.CommandsProvider.RegisterLooping<TNode>();
-        options.CommandsProvider.RegisterFormatConversion<TNode>(converter, documentFormatId);
+        var options = ParseOptions<TNode>.CreateDefault()
+            .WithMath()
+            .WithText()
+            .WithTimeDate()
+            .WithEtl()
+            .WithLooping()
+            .WithFormatConversion(converter, documentFormatId);
         return new ScriptEngine<TNode>(options.CommandsProvider, options.FunctionsProvider)
             // All three notations on every engine: the notation a script is written in is
             // independent of the document it transforms, so an XML script may drive a JSON

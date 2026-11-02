@@ -67,7 +67,7 @@ Verified by: `TLio.Functions.Tests/Fixtures/Text/regexreplace/03-no-match-unchan
 
 ```csharp
 var options = ParseOptions<JToken>.CreateDefault();
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
 var result = engine.Execute(
     "[{\"command\":\"add\",\"path\":\"$.compact\",\"value\":\"=regexReplace($.plate,'[^A-Z0-9]','')\"}]",

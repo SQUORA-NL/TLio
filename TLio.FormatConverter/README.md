@@ -70,9 +70,16 @@ needs the runner or a plain `ScriptEngine`.
 script that uses it inline gets an explanation rather than "unknown command".
 
 ```csharp
-var options = ParseOptions<JToken>.CreateDefault();
-options.CommandsProvider.RegisterFormatConversion<JToken>(converter, "json");
+var options = ParseOptions<JToken>.CreateDefault()
+    .WithFormatConversion(converter, "json");
 ```
+
+Both arguments are required: the format id (`"json"` for a `JToken` engine, `"xml"` for
+`XElement`, `"yaml"` for `YamlNode`) decides whether `convertValue` writes its result back as
+structure or as a string. Leaving this call out does not fail — `convertValue` parses as an
+unknown command, logs a warning, and the script succeeds with the document unchanged.
+`options.CommandsProvider.RegisterFormatConversion<JToken>(converter, "json")` is the older
+spelling and still works.
 
 ## Settings
 

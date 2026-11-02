@@ -154,26 +154,38 @@ var result  = engine.Execute(scriptJson, data, JsonExecutionContext.CreateDefaul
 
 ### Register extension packs
 
+One call per pack registers everything it provides, commands and functions alike, and returns
+`options`, so calls chain. `WithFormatConversion` also takes the converter and the document's
+format id. An omitted pack is silent: its commands warn as unknown and the script still succeeds.
+
+```csharp
+var options = ParseOptions<JToken>.CreateDefault()
+    .WithMath().WithText().WithTimeDate().WithEtl().WithLooping()
+    .WithFormatConversion(converter, "json");
+```
+
+Each pack individually:
+
 ```csharp
 // ETL commands: flatten, restore, resolve, tocsv
-options.CommandsProvider.RegisterETL<JToken>();
+options.WithEtl();
 
 // Looping commands: forEach, while, with (TLio.Extensions.Looping)
-options.CommandsProvider.RegisterLooping<JToken>();
+options.WithLooping();
 
 // Text functions: concat, format, substring, right, toLower, toUpper, trim, trimStart, trimEnd,
 //   split, join, contains, startsWith, endsWith, indexOf, isEmpty, replace, regexReplace,
 //   regexExtract, parse, toString, toFixed, newguid, padleft, padright, length
-options.FunctionsProvider.RegisterText<JToken>();
+options.WithText();
 
 // Math functions: sum, subtract, multiply, divide, clamp, sign, round, ceiling, floor,
 //   abs, sqrt, pow, modulo, calculate, avg, count, min, max, median + the conditional
 //   aggregates (sumIf(s), countIf(s), averageIf(s), minIfs, maxIfs)
-options.FunctionsProvider.RegisterMath<JToken>();
+options.WithMath();
 
 // Date functions: dateDiff, dateAdd, datePart, formatDate, parseDate, startOfMonth,
 //   endOfMonth, dateCompare, isDateBetween, minDate, maxDate, avgDate
-options.FunctionsProvider.RegisterTimeDate<JToken>();
+options.WithTimeDate();
 ```
 
 Predicates for `ifElse` / `decisionTable` conditions — equals, notEquals, greaterThan,

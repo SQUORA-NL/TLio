@@ -17,6 +17,19 @@ namespace TLio.Extensions.Math;
 /// </summary>
 public static class RegisterMathPack
 {
+    /// <summary>
+    /// Registers every Math function on <paramref name="target"/> and returns it, so calls chain:
+    /// <c>ParseOptions&lt;JToken&gt;.CreateDefault().WithMath().WithText()</c>. Delegates to
+    /// <see cref="RegisterMath{TNode}"/>, which holds the list of what the pack provides.
+    /// </summary>
+    public static TSelf WithMath<TNode, TSelf>(this IRegistrationTarget<TNode, TSelf> target)
+        where TSelf : IRegistrationTarget<TNode, TSelf>
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        target.FunctionsRegistrar.RegisterMath<TNode>();
+        return target.Self;
+    }
+
     public static IFunctionsProviderRegistrar<TNode> RegisterMath<TNode>(
         this IFunctionsProviderRegistrar<TNode> registrar)
     {
