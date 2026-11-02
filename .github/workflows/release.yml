@@ -136,6 +136,10 @@ jobs:
     needs: [tag]
     if: ${{ inputs.dry_run == false }}
     uses: ./.github/workflows/publish.yml
+    # A called workflow cannot hold more permission than its caller grants it.
+    permissions:
+      contents: read
+      id-token: write
     with:
       expected_version: ${{ needs.tag.outputs.version }}
     secrets: inherit

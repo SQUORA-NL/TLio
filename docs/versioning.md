@@ -26,6 +26,18 @@ Every preview sorts **above** the release it follows and **below** the release i
 towards: `0.8.0` < `0.9.0-preview.3` < `0.9.0-preview.11` < `0.9.0`. All fifteen packages always
 carry the same number; the pipeline fails if they ever don't.
 
+## How the pipeline authenticates to NuGet
+
+No API key is stored. nuget.org holds a **Trusted Publishing** policy for this repository
+(owner `SQUORA-NL`, repository `TLio`, workflow `publish.yml`, packages `TLio.*`), and the
+publish job swaps its GitHub OIDC token for a key that lives for that one run
+(`NuGet/login`). The only secret is `NUGET_USER`, the nuget.org profile name (not an email).
+The job needs `id-token: write`; `release.yml` grants it to the job that calls `publish.yml`,
+because a called workflow cannot hold more permission than its caller gives it.
+
+If publishing fails with a 401/403 from `nuget.org`, check the policy on the nuget.org account
+before looking at the workflow.
+
 ## Steering the next release
 
 ### Before you cut it: the release PR
