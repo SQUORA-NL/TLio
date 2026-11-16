@@ -1,0 +1,18 @@
+{
+  "input": {
+    "flags": [ true, false, true, true ],
+    "n": [ 1, 2, 3, 4 ]
+  },
+  "script": [
+    { "command": "put", "path": "$.yes", "value": "=countif($.flags, true)" },
+    { "command": "put", "path": "$.no", "value": "=countif($.flags, 'false')" },
+    { "command": "put", "path": "$.both", "value": "=countifs($.flags, true, $.n, '>1')" }
+  ],
+  "result": {
+    "flags": [ true, false, true, true ],
+    "n": [ 1, 2, 3, 4 ],
+    "yes": 3,
+    "no": 1,
+    "both": 2
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "input": {
+    "s": { "properties": { "id": {} } },
+    "items": [
+      { "id": "1", "secret": "x" }
+    ]
+  },
+  "script": [
+    {
+      "command": "forEach",
+      "path": "$.items",
+      "commands": [
+        { "command": "put", "path": "@.clean", "value": "=filterBySchema($.s, @)" }
+      ]
+    }
+  ],
+  "result": {
+    "s": { "properties": { "id": {} } },
+    "items": [
+      { "id": "1", "secret": "x", "clean": { "id": "1" } }
+    ]
+  }
+}

@@ -24,7 +24,10 @@ The first qualifying node, whole — including objects and arrays
 
 **If nothing qualifies the function fails, and a failed function aborts the script.** That is
 deliberate: "none of these sources had a value" is a mapping error, not an empty answer. **End
-the argument list with a literal default** whenever the absent case is legitimate.
+the argument list with a literal default** whenever the absent case is legitimate. That final
+literal is returned exactly as written — **`=coalesce($.a, '')` yields `""`** when `$.a` is null or
+empty — while a *path* in the last position can still come up empty and fail. (An empty literal
+anywhere but last is still skipped.)
 
 ## Verified example
 

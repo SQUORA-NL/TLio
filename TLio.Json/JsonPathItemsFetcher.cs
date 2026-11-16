@@ -250,6 +250,10 @@ public class JsonPathItemsFetcher : IItemsFetcher<JToken>
             if (pathAfterCurrent.StartsWith(PathDelimiter))
                 pathAfterCurrent = pathAfterCurrent.Substring(PathDelimiter.Length);
 
+            // "@." with nothing after the dot still means the current node, not "<path>."
+            if (pathAfterCurrent.Length == 0)
+                return currentPath;
+
             return $"{currentPath}{PathDelimiter}{pathAfterCurrent}";
         }
 

@@ -1,0 +1,16 @@
+{
+  "input": {
+    "a": null,
+    "b": "Ada"
+  },
+  "script": [
+    { "command": "put", "path": "$.none", "value": "=coalesce($.a, $.missing, '')" },
+    { "command": "put", "path": "$.some", "value": "=coalesce($.a, $.b, '')" }
+  ],
+  "result": {
+    "a": null,
+    "b": "Ada",
+    "none": "",
+    "some": "Ada"
+  }
+}

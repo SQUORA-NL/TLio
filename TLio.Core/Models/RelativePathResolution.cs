@@ -23,6 +23,12 @@ public static class RelativePathResolution
     public static SelectedNodes<TNode> SelectRelative<TNode>(
         string path, TNode currentNode, TNode dataContext, IExecutionContext<TNode> context)
     {
+        // A bare "@" (or "@.") is "the current node" in every notation. JSON and YAML already
+        // spell the marker that way; XML's marker is "." — map to it, so one script text works
+        // in all three formats.
+        if (path is "@" or "@.")
+            path = context.ItemsFetcher.CurrentItemPathIndicator;
+
         var absolutePath = path.StartsWith(context.ItemsFetcher.CurrentItemPathIndicator)
             ? context.ItemsFetcher.ResolveRelativePath(path, currentNode, dataContext)
             : path;

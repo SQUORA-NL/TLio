@@ -250,6 +250,9 @@ result: 2
 - You need **two or more conditions at once** (AND) — use `countifs`.
 - The criteria is a **numeric literal** — wrap it in single quotes: `'42'`, not `42`.
 
+Booleans are counted too: `=countif($.flags, true)` (or `'true'`) over `[true,false,true]` is `2`;
+`'<>true'` counts the rest. Case does not matter.
+
 ## Performance
 
 `countif` walks the resolved range once, calling `ConditionEvaluator.EvaluateCondition` per
