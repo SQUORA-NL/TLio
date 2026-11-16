@@ -277,7 +277,8 @@ there are no separate camelCase aliases.
 
 > **Rule**: Relative paths in JSON/YAML always use `@.` (with the dot). The one exception is the
 > current node itself: a bare `@` (or `@.`) as a function argument means "this node" —
-> `=filterBySchema($.schema, @)` inside `forEach` — not the text `"@"`.
+> `=filterBySchema($.schema, @)` inside `forEach` — not the text `"@"`. This spelling works in
+> XML scripts too, where it means the same as `.`.
 > `@field` (no dot) is invalid in JSON/YAML context and triggers a parser warning —
 > at value level and inside function arguments alike.
 >
