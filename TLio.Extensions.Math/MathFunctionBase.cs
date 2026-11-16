@@ -216,6 +216,9 @@ public abstract class MathFunctionBase<TNode> : FunctionBase<TNode>
     protected static object? ExtractPrimitiveValue(TNode node, INodeAdapter<TNode> adapter)
     {
         if (adapter.IsNull(node)) return null;
+        // Booleans first: the Newtonsoft adapter converts true/false to 1/0 in TryGetDouble, which
+        // would make a boolean range compare as numbers and never equal the criterion 'true'.
+        if (adapter.TryGetBoolean(node) is { } flag) return flag ? "true" : "false";
         var num = adapter.TryGetDouble(node);
         if (num.HasValue) return num.Value;
         return adapter.TryGetString(node);
@@ -224,7 +227,11 @@ public abstract class MathFunctionBase<TNode> : FunctionBase<TNode>
     /// <summary>Extract the criteria string from a node, stripping surrounding single quotes.</summary>
     protected static string ExtractCriteria(TNode node, INodeAdapter<TNode> adapter)
     {
-        var s = adapter.TryGetString(node) ?? string.Empty;
+        // A criterion written bare (true, 5) arrives as a boolean or number node, not text.
+        var s = adapter.TryGetString(node)
+                ?? (adapter.TryGetBoolean(node) is { } flag ? (flag ? "true" : "false") : null)
+                ?? (adapter.TryGetDouble(node) is { } num ? num.ToString(System.Globalization.CultureInfo.InvariantCulture) : null)
+                ?? string.Empty;
         if (s.StartsWith("'") && s.EndsWith("'") && s.Length >= 2)
             s = s[1..^1];
         return s;

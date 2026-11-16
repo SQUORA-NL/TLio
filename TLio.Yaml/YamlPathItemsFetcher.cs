@@ -81,7 +81,8 @@ public class YamlPathItemsFetcher : IItemsFetcher<YamlNode>
         if (string.IsNullOrEmpty(relativePath))
             return GetPath(currentNode);
 
-        if (relativePath == CurrentItemPathIndicator)
+        if (relativePath == CurrentItemPathIndicator ||
+            relativePath == CurrentItemPathIndicator + PathDelimiter)
             return GetPath(currentNode);
 
         if (relativePath.StartsWith(CurrentItemPathIndicator + PathDelimiter, StringComparison.Ordinal))

@@ -118,6 +118,48 @@ public class CoalesceTests
         Assert.That(result.Data.First!["role"]!.Value<string>(), Is.EqualTo("policyholder"));
     }
 
+    // ── A literal in the last position is the default ─────────────────────────
+
+    [Test]
+    public void Coalesce_EmptyStringLiteralAsLastArgument_IsTheDefault()
+    {
+        var result = Coalesce(new PathValue<JToken>("$.primary"), Literal(""))
+            .Execute(data, data, context);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo(""));
+    }
+
+    [Test]
+    public void Coalesce_EmptyStringLiteralAsLastArgument_ThroughTheEngine()
+    {
+        var options = ParseOptions<JToken>.CreateDefault();
+        var engine = new ScriptEngine<JToken>(options.CommandsProvider, options.FunctionsProvider);
+        var script = """[{ "command": "add", "path": "$.x", "value": "=coalesce($.primary,$.missing,'')" }]""";
+
+        var result = engine.Execute(script, JToken.Parse(Document), context);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data["x"]!.Value<string>(), Is.EqualTo(""));
+    }
+
+    [Test]
+    public void Coalesce_EmptyLiteralInTheMiddle_IsStillSkipped()
+    {
+        var result = Coalesce(Literal(""), Literal("later")).Execute(data, data, context);
+
+        Assert.That(result.Data.First!.Value<string>(), Is.EqualTo("later"));
+    }
+
+    [Test]
+    public void Coalesce_PathAsLastArgument_IsNotADefault()
+    {
+        var result = Coalesce(new PathValue<JToken>("$.primary"), new PathValue<JToken>("$.secondary"))
+            .Execute(data, data, context);
+
+        Assert.That(result.Success, Is.False);
+    }
+
     // ── Failure ───────────────────────────────────────────────────────────────
 
     [Test]

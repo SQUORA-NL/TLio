@@ -326,7 +326,8 @@ birthdays passed, not `days/365.25`.
 running several commands — still needs the command. `if` replaces `ifElse`-used-as-a-ternary.
 
 `coalesce` skips only null and `""`. `0`, `false`, `[]` and `{}` all qualify, which is where it
-differs from a JavaScript `||`.
+differs from a JavaScript `||`. A literal in the last position is the default and is returned as
+written, so `=coalesce($.a, '')` gives `""` instead of failing.
 
 ### Collections
 

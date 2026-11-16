@@ -239,7 +239,13 @@ public class FunctionConverter<TNode>
         IFunctionSupportedValue<TNode>? argValue;
         // Path expressions inside function calls are treated as string literals
         // so that functions like fetch() and partial() can evaluate the path themselves.
-        if (trimmed.StartsWith("$") || trimmed.StartsWith("@"))
+        if (trimmed is "@" or "@.")
+        {
+            // The current node itself — =filterBySchema($.schema, @) inside forEach. Left as the
+            // text "@" it was handed to the function as a string and never resolved.
+            argValue = new PathValue<TNode>(trimmed);
+        }
+        else if (trimmed.StartsWith("$") || trimmed.StartsWith("@"))
         {
             // The path is handed to the function as a string, so ParseValue never sees it —
             // run the same notation check here.

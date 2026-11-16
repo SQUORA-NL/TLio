@@ -53,6 +53,8 @@ public class IfFunction<TNode> : PredicateFunctionBase<TNode>
 /// When nothing qualifies the function fails, which aborts the script (docs/behaviour-decisions.md
 /// B2). That is deliberate: "none of these sources had a value" is a mapping error, not an empty
 /// answer. End the argument list with a literal default when the absent case is legitimate.
+/// That final literal is returned as written, so <c>=coalesce($.a, '')</c> yields <c>''</c>
+/// rather than failing; only a *path* in the last position can still come up empty.
 ///
 /// An empty object or an empty array qualifies — only null and the empty string are skipped.
 /// Use <c>=isEmpty(...)</c> when empty collections should count as absent too.
@@ -68,10 +70,18 @@ public class CoalesceFunction<TNode> : PredicateFunctionBase<TNode>
 
         var adapter = context.NodeAdapter;
 
-        foreach (var arg in Arguments)
+        for (var i = 0; i < Arguments.Count; i++)
         {
+            var arg = Arguments[i];
             if (!TryResolveNode(arg, currentNode, dataContext, context, out var node))
                 continue;
+
+            // A literal written as the last of several arguments is the default: whatever it
+            // is — including '' — is the answer when nothing before it qualified. Without this
+            // =coalesce($.a, '') failed exactly when the empty string was wanted.
+            if (i == Arguments.Count - 1 && i > 0 && arg is FixedValue<TNode> fixedValue &&
+                !IsPathText(fixedValue.Node, adapter, context))
+                return FunctionResult<TNode>.Successful(node);
 
             if (adapter.IsNull(node))
                 continue;
@@ -87,4 +97,8 @@ public class CoalesceFunction<TNode> : PredicateFunctionBase<TNode>
             $"{FunctionName}: no argument produced a value — add a literal default as the last argument.");
         return FunctionResult<TNode>.Failed(currentNode);
     }
+
+    /// <summary>True when a fixed argument is really a path in disguise (arguments carry paths as text).</summary>
+    private static bool IsPathText(TNode node, INodeAdapter<TNode> adapter, IExecutionContext<TNode> context) =>
+        adapter.TryGetString(node) is { } text && context.ItemsFetcher.IsPathExpression(text);
 }
